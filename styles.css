@@ -54,16 +54,19 @@ body{
   gap:12px;
   font-weight:800;
 }
+
+/* ✅ FIX: зробили лого прямокутним + contain (не ріже) */
 .brand__logo{
-  width: 46px;
+  width: 160px;
   height: 46px;
-  border-radius: 14px;
-  background: rgba(255,255,255,.08);
+  border-radius: 16px;
+  background: rgba(0,0,0,.22);
   border: 1px solid rgba(255,255,255,.14);
   box-shadow: 0 10px 26px rgba(0,0,0,.35);
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  display:block;
 }
-.brand__name{ font-size:18px; }
 
 /* Layout */
 .container{
@@ -71,6 +74,7 @@ body{
   margin: 0 auto;
   padding: 34px 18px 54px;
 }
+
 .hero__title{
   margin:0;
   font-size: clamp(34px, 5vw, 56px);
@@ -90,6 +94,7 @@ body{
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+
 .card{
   border-radius: var(--radius);
   background: rgba(0,0,0,.34);
@@ -98,10 +103,11 @@ body{
   padding: 18px;
   backdrop-filter: blur(12px);
 }
+
 .card--done{
   border-color: rgba(255,255,255,.22);
-  box-shadow: 0 18px 50px rgba(0,0,0,.55);
 }
+
 .card__title{
   margin:0;
   font-size: 12px;
@@ -109,6 +115,7 @@ body{
   text-transform: uppercase;
   color: rgba(255,255,255,.66);
 }
+
 .card__headline{ margin:10px 0 0; font-weight:800; font-size:18px; }
 .card__text{ margin:10px 0 14px; color: rgba(255,255,255,.74); line-height:1.5; font-size:14px; }
 
@@ -124,13 +131,36 @@ body{
   font-weight:800;
   background: rgba(0,0,0,.26);
   cursor:pointer;
+  transition: background .14s ease, border-color .14s ease, transform .14s ease;
 }
-.btn:hover{ background: rgba(0,0,0,.36); }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
 
+.btn:hover{ background: rgba(0,0,0,.36); }
+.btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+/* ✅ Варіанти відповідей */
 .choiceBtn{
   width: 100%;
   justify-content: flex-start;
+}
+
+/* ✅ hover підсвітка */
+.choiceBtn:hover{
+  border-color: rgba(255,255,255,.34);
+  background: rgba(255,255,255,.06);
+  transform: translateY(-1px);
+}
+
+/* ✅ вибраний/правильний/неправильний (легка підсвітка) */
+.choiceBtn.selected{
+  border-color: rgba(255,255,255,.40);
+}
+.choiceBtn.correct{
+  background: rgba(0,255,160,.10);
+  border-color: rgba(0,255,160,.25);
+}
+.choiceBtn.wrong{
+  background: rgba(255,60,120,.10);
+  border-color: rgba(255,60,120,.25);
 }
 
 .badge{
@@ -161,6 +191,13 @@ body{
 }
 .input:focus{ border-color: rgba(255,255,255,.34); }
 
+.small{
+  margin-top: 10px;
+  color: rgba(255,255,255,.62);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* Result UI */
 .resultCard{
   margin-top: 16px;
@@ -170,19 +207,25 @@ body{
   background: rgba(0,0,0,.30);
   backdrop-filter: blur(12px);
 }
+
 .resultHeader{
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
+/* ✅ FIX: результат-лого теж не ріже */
 .resultLogo{
-  width: 56px;
+  width: 200px;
   height: 56px;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.08);
-  object-fit: cover;
+  background: rgba(0,0,0,.22);
+  object-fit: contain;
+  object-position: center;
+  display:block;
 }
+
 .resultTitle{
   margin: 0;
   font-size: 20px;
@@ -193,17 +236,20 @@ body{
   color: rgba(255,255,255,.70);
   font-size: 13px;
 }
+
 .resultGrid{
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 12px;
 }
+
 .avatarRow{
   display: flex;
   align-items: center;
   gap: 12px;
 }
+
 .avatar{
   width: 72px;
   height: 72px;
@@ -212,6 +258,7 @@ body{
   background: rgba(255,255,255,.08);
   object-fit: cover;
 }
+
 .resultTable{
   width: 100%;
   border-collapse: collapse;
@@ -235,14 +282,9 @@ body{
   font-weight: 800;
 }
 
-.small{
-  margin-top: 10px;
-  color: rgba(255,255,255,.62);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 @media (max-width: 920px){
   .grid{ grid-template-columns: 1fr; }
   .resultGrid{ grid-template-columns: 1fr; }
+  .brand__logo{ width: 140px; }
+  .resultLogo{ width: 180px; }
 }
