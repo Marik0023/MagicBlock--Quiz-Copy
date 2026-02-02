@@ -47,25 +47,32 @@ body{
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
-/* Brand */
+/* ✅ Brand is a link now */
 .brand{
   display:flex;
   align-items:center;
   gap:12px;
-  font-weight:800;
+  text-decoration:none;
+  cursor:pointer;
+}
+.brand:focus-visible{
+  outline: 2px solid rgba(255,255,255,.35);
+  outline-offset: 6px;
+  border-radius: 12px;
 }
 
-/* ✅ FIX: зробили лого прямокутним + contain (не ріже) */
+/* ✅ BIG LOGO, NO RECTANGLE */
 .brand__logo{
-  width: 160px;
-  height: 46px;
-  border-radius: 16px;
-  background: rgba(0,0,0,.22);
-  border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+  width: 320px;
+  height: 80px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   object-fit: contain;
-  object-position: center;
+  object-position: left center;
   display:block;
+  pointer-events: none; /* ✅ click goes to <a> */
 }
 
 /* Layout */
@@ -133,24 +140,19 @@ body{
   cursor:pointer;
   transition: background .14s ease, border-color .14s ease, transform .14s ease;
 }
-
 .btn:hover{ background: rgba(0,0,0,.36); }
 .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
 
-/* ✅ Варіанти відповідей */
+/* ✅ Answer buttons */
 .choiceBtn{
   width: 100%;
   justify-content: flex-start;
 }
-
-/* ✅ hover підсвітка */
 .choiceBtn:hover{
   border-color: rgba(255,255,255,.34);
   background: rgba(255,255,255,.06);
   transform: translateY(-1px);
 }
-
-/* ✅ вибраний/правильний/неправильний (легка підсвітка) */
 .choiceBtn.selected{
   border-color: rgba(255,255,255,.40);
 }
@@ -207,23 +209,24 @@ body{
   background: rgba(0,0,0,.30);
   backdrop-filter: blur(12px);
 }
-
 .resultHeader{
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-/* ✅ FIX: результат-лого теж не ріже */
+/* ✅ result logo also without rectangle */
 .resultLogo{
-  width: 200px;
-  height: 56px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(0,0,0,.22);
+  width: 260px;
+  height: 70px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
   object-fit: contain;
-  object-position: center;
+  object-position: left center;
   display:block;
+  pointer-events: none;
 }
 
 .resultTitle{
@@ -285,6 +288,6 @@ body{
 @media (max-width: 920px){
   .grid{ grid-template-columns: 1fr; }
   .resultGrid{ grid-template-columns: 1fr; }
-  .brand__logo{ width: 140px; }
-  .resultLogo{ width: 180px; }
+  .brand__logo{ width: 260px; height: 70px; }
+  .resultLogo{ width: 240px; height: 64px; }
 }
