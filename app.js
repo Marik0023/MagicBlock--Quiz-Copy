@@ -1,8 +1,7 @@
-// Footer year
 const y = document.getElementById("year");
 if (y) y.textContent = new Date().getFullYear();
 
-// Some browsers need a manual play() attempt even with autoplay+muted
+// Autoplay helpers
 function forcePlay(selector){
   const v = document.querySelector(selector);
   if (!v) return;
@@ -17,7 +16,7 @@ function forcePlay(selector){
 forcePlay(".bg__video");
 forcePlay(".brand__logo");
 
-// Completed badges on Home
+// Completed logic
 function isDone(key){
   return localStorage.getItem(key) === "1";
 }
@@ -29,23 +28,24 @@ function updateBadges(){
     magicblock: "mb_done_magicblock",
   };
 
-  document.querySelectorAll("[data-badge]").forEach(el => {
-    const k = el.getAttribute("data-badge");
-    const storageKey = map[k];
-    if (!storageKey) return;
+  let allDone = true;
 
+  Object.entries(map).forEach(([k, storageKey]) => {
     const done = isDone(storageKey);
-    el.style.display = done ? "inline-flex" : "none";
+    if (!done) allDone = false;
+
+    const badge = document.querySelector(`[data-badge="${k}"]`);
+    if (badge) badge.style.display = done ? "inline-flex" : "none";
 
     const card = document.getElementById(`card-${k}`);
-    if (card) {
-      card.classList.toggle("card--done", done);
-    }
+    if (card) card.classList.toggle("card--done", done);
 
-    // Optional: change Start to "View results"
-    const start = document.querySelector(`[data-start="${k}"]`);
-    if (start && done) start.textContent = "View results";
+    const btn = document.querySelector(`[data-start="${k}"]`);
+    if (btn && done) btn.textContent = "Open";
   });
+
+  const champ = document.getElementById("championWrap");
+  if (champ) champ.style.display = allDone ? "block" : "none";
 }
 
 updateBadges();
