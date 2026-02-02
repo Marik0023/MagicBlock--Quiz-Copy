@@ -1,4 +1,3 @@
-const QUIZ = "song";
 const DONE_KEY  = "mb_done_song";
 const SCORE_KEY = "mb_score_song";
 const TOTAL_KEY = "mb_total_song";
@@ -8,7 +7,6 @@ const AVATAR_KEY= "mb_avatar_song";
 
 const letters = ["A", "B", "C", "D"];
 
-// ✅ 10 питань (потім ти просто міняєш choices + correctIndex + файли)
 const questions = [
   { src: "../assets/songs/01.mp3", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
   { src: "../assets/songs/02.mp3", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
@@ -24,6 +22,7 @@ const questions = [
 
 let idx = 0;
 let correct = 0;
+let answered = false;
 
 const audio = document.getElementById("audio");
 const choicesEl = document.getElementById("choices");
@@ -47,12 +46,7 @@ const avatarFile = document.getElementById("avatarFile");
 const avatarPreview = document.getElementById("avatarPreview");
 
 function nowText(){
-  const d = new Date();
-  return d.toLocaleString();
-}
-
-function saveProfile(){
-  localStorage.setItem(NAME_KEY, playerName.value || "");
+  return new Date().toLocaleString();
 }
 
 function showAvatar(dataUrl){
@@ -61,15 +55,23 @@ function showAvatar(dataUrl){
 
 function loadProfile(){
   playerName.value = localStorage.getItem(NAME_KEY) || "";
-  const av = localStorage.getItem(AVATAR_KEY) || "";
-  showAvatar(av);
+  showAvatar(localStorage.getItem(AVATAR_KEY) || "");
+}
+
+function saveProfile(){
+  localStorage.setItem(NAME_KEY, playerName.value || "");
 }
 
 function lockButtons(){
   [...choicesEl.querySelectorAll("button")].forEach(b => b.disabled = true);
 }
 
+function setNextText(){
+  nextBtn.textContent = (idx === questions.length - 1) ? "Finish" : "Next";
+}
+
 function render(){
+  answered = false;
   const q = questions[idx];
 
   qCounter.textContent = `Question ${idx + 1} of ${questions.length}`;
@@ -86,31 +88,38 @@ function render(){
     btn.className = "btn choiceBtn";
     btn.type = "button";
     btn.textContent = `${letters[i]}) ${text}`;
-    btn.addEventListener("click", () => pick(i));
+    btn.addEventListener("click", () => pick(i, btn));
     choicesEl.appendChild(btn);
   });
 }
 
-function pick(choiceIndex){
+function pick(choiceIndex, btnEl){
+  if (answered) return;
+  answered = true;
+
   const q = questions[idx];
   lockButtons();
 
-  const ok = choiceIndex === q.correctIndex;
+  btnEl.classList.add("selected");
+  const correctBtn = choicesEl.querySelectorAll("button")[q.correctIndex];
 
+  const ok = choiceIndex === q.correctIndex;
   if (ok){
     correct += 1;
+    btnEl.classList.add("correct");
     feedbackEl.textContent = "✅ Correct!";
-    nextBtn.style.display = "inline-flex";
-    nextBtn.textContent = (idx === questions.length - 1) ? "Finish" : "Next";
-    statusEl.textContent = `Score: ${correct} / ${idx + 1}`;
-    return;
+  } else {
+    btnEl.classList.add("wrong");
+    if (correctBtn) correctBtn.classList.add("correct");
+
+    const right = `${letters[q.correctIndex]}) ${q.choices[q.correctIndex]}`;
+    feedbackEl.textContent = `❌ Wrong. Correct answer: ${right}`;
   }
 
-  const right = `${letters[q.correctIndex]}) ${q.choices[q.correctIndex]}`;
-  feedbackEl.textContent = `❌ Wrong. Correct answer: ${right}. Moving on…`;
   statusEl.textContent = `Score: ${correct} / ${idx + 1}`;
 
-  setTimeout(next, 750);
+  setNextText();
+  nextBtn.style.display = "inline-flex";
 }
 
 function next(){
@@ -150,7 +159,7 @@ function showResult(showLockText){
   const when = localStorage.getItem(WHEN_KEY) || "";
   rWhen.textContent = when ? `Completed: ${when}` : "";
 
-  if (showLockText) {
+  if (showLockText){
     lockedMsg.style.display = "block";
     lockedMsg.textContent = "Quiz completed. You can’t take it again.";
   }
@@ -159,20 +168,16 @@ function showResult(showLockText){
 }
 
 function boot(){
-  // one-time lock
   if (localStorage.getItem(DONE_KEY) === "1"){
     lockedMsg.style.display = "block";
     lockedMsg.textContent = "You already completed this quiz.";
     showResult(false);
     return;
   }
-
-  // normal start
   render();
 }
 
 nextBtn.addEventListener("click", next);
-
 playerName.addEventListener("input", saveProfile);
 
 avatarFile.addEventListener("change", (e) => {
@@ -180,9 +185,9 @@ avatarFile.addEventListener("change", (e) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    const dataUrl = reader.result;
-    localStorage.setItem(AVATAR_KEY, String(dataUrl));
-    showAvatar(String(dataUrl));
+    const dataUrl = String(reader.result);
+    localStorage.setItem(AVATAR_KEY, dataUrl);
+    showAvatar(dataUrl);
   };
   reader.readAsDataURL(file);
 });
