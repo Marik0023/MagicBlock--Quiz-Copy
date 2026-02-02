@@ -24,6 +24,7 @@
     <div class="brand">
       <video class="brand__logo" autoplay muted loop playsinline preload="auto">
         <source src="../assets/logo.webm" type="video/webm">
+        <source src="../assets/logo.mp4" type="video/mp4">
       </video>
       <span class="brand__name">MagicBlock</span>
     </div>
@@ -32,8 +33,77 @@
   <main class="container">
     <section class="card" style="max-width:900px;margin:0 auto;">
       <h1 style="margin:0;font-size:32px;">Guess the Song by the Melody</h1>
-      <p style="color:rgba(255,255,255,.74);line-height:1.5;margin-top:10px;">
-        Listen to a short clip and choose A, B, C, or D.
-      </p>
+      <p class="small">10 questions • A/B/C/D • If you answer wrong, it skips forward.</p>
 
-      <div s
+      <div id="lockedMsg" class="small" style="display:none;"></div>
+
+      <div id="quizUI">
+        <p id="qCounter" class="small"></p>
+
+        <audio id="audio" controls style="width:100%;margin-top:6px;"></audio>
+
+        <div id="choices" style="display:flex;flex-direction:column;gap:10px;margin-top:14px;"></div>
+
+        <p id="feedback" class="small"></p>
+
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;">
+          <button id="next" class="btn" type="button" style="display:none;">Next</button>
+          <a class="btn" href="../index.html">← Back</a>
+        </div>
+
+        <p id="status" class="small">Score: 0 / 0</p>
+      </div>
+
+      <div id="resultUI" style="display:none;">
+        <div class="resultCard">
+          <div class="resultHeader">
+            <video class="resultLogo" autoplay muted loop playsinline preload="auto">
+              <source src="../assets/logo.webm" type="video/webm">
+              <source src="../assets/logo.mp4" type="video/mp4">
+            </video>
+            <div>
+              <h2 class="resultTitle">Results</h2>
+              <p class="resultSubtitle">Quiz 1 • Guess the Song</p>
+            </div>
+          </div>
+
+          <div class="resultGrid">
+            <div>
+              <label class="small" style="display:block;font-weight:800;">Your name</label>
+              <input id="playerName" class="input" placeholder="Type your name…" />
+            </div>
+
+            <div class="avatarRow">
+              <div style="flex:1;">
+                <label class="small" style="display:block;font-weight:800;">Avatar (upload)</label>
+                <input id="avatarFile" class="input" type="file" accept="image/*" />
+              </div>
+              <img id="avatarPreview" class="avatar" alt="Avatar preview" />
+            </div>
+          </div>
+
+          <table class="resultTable">
+            <tr><th>Total questions</th><td id="rTotal"></td></tr>
+            <tr><th>Correct answers</th><td id="rCorrect"></td></tr>
+            <tr><th>Wrong answers</th><td id="rWrong"></td></tr>
+            <tr><th>Accuracy</th><td id="rPercent"></td></tr>
+          </table>
+
+          <p class="small" id="rWhen"></p>
+
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;">
+            <a class="btn" href="../index.html">Back to Home</a>
+          </div>
+
+          <p class="small">
+            Note: this quiz is one-time per device/browser.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./song.js"></script>
+  <script src="../app.js"></script>
+</body>
+</html>
