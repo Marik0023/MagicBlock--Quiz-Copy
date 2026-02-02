@@ -1,4 +1,3 @@
-const QUIZ = "magicblock";
 const DONE_KEY  = "mb_done_magicblock";
 const SCORE_KEY = "mb_score_magicblock";
 const TOTAL_KEY = "mb_total_magicblock";
@@ -8,22 +7,22 @@ const AVATAR_KEY= "mb_avatar_magicblock";
 
 const letters = ["A", "B", "C", "D"];
 
-// ✅ 10 питань (ти потім просто міняєш text/choices/correctIndex)
 const questions = [
   { text: "MagicBlock is…", choices: ["a quiz site", "a band", "a game", "a restaurant"], correctIndex: 0 },
   { text: "This site is hosted on…", choices: ["GitHub Pages", "Steam", "App Store", "Netflix"], correctIndex: 0 },
   { text: "A quiz question has…", choices: ["2 options", "3 options", "4 options", "10 options"], correctIndex: 2 },
-  { text: "If you answer wrong, the quiz…", choices: ["restarts", "skips forward", "closes", "opens Home"], correctIndex: 1 },
-  { text: "The logo is…", choices: ["static", "animated video", "a PDF", "a font"], correctIndex: 1 },
-  { text: "Your result is saved in…", choices: ["localStorage", "a database", "email", "cloud"], correctIndex: 0 },
-  { text: "Movie quiz uses…", choices: ["audio", "frames", "text only", "microphone"], correctIndex: 1 },
-  { text: "Song quiz uses…", choices: ["audio clips", "movie frames", "camera", "chat"], correctIndex: 0 },
-  { text: "Completed quizzes show…", choices: ["a lock", "a badge", "a popup", "a timer"], correctIndex: 1 },
-  { text: "After finishing, you can…", choices: ["retake instantly", "edit name/avatar", "delete repo", "change background"], correctIndex: 1 },
+  { text: "If you answer wrong, you…", choices: ["restart", "still press Next", "close site", "get banned"], correctIndex: 1 },
+  { text: "The background is…", choices: ["a static image", "a looping video", "a PDF", "a screenshot"], correctIndex: 1 },
+  { text: "Your completion is saved in…", choices: ["localStorage", "email", "database", "cloud drive"], correctIndex: 0 },
+  { text: "Movie quiz uses…", choices: ["audio", "frames", "microphone", "camera"], correctIndex: 1 },
+  { text: "Song quiz uses…", choices: ["audio clips", "frames", "text only", "random"], correctIndex: 0 },
+  { text: "Completed quizzes show…", choices: ["a badge", "a timer", "a popup", "a lock screen"], correctIndex: 0 },
+  { text: "Champion Card unlocks when…", choices: ["1 quiz done", "2 quizzes done", "all 3 done", "never"], correctIndex: 2 },
 ];
 
 let idx = 0;
 let correct = 0;
+let answered = false;
 
 const qtext = document.getElementById("qtext");
 const choicesEl = document.getElementById("choices");
@@ -47,12 +46,7 @@ const avatarFile = document.getElementById("avatarFile");
 const avatarPreview = document.getElementById("avatarPreview");
 
 function nowText(){
-  const d = new Date();
-  return d.toLocaleString();
-}
-
-function saveProfile(){
-  localStorage.setItem(NAME_KEY, playerName.value || "");
+  return new Date().toLocaleString();
 }
 
 function showAvatar(dataUrl){
@@ -61,15 +55,23 @@ function showAvatar(dataUrl){
 
 function loadProfile(){
   playerName.value = localStorage.getItem(NAME_KEY) || "";
-  const av = localStorage.getItem(AVATAR_KEY) || "";
-  showAvatar(av);
+  showAvatar(localStorage.getItem(AVATAR_KEY) || "");
+}
+
+function saveProfile(){
+  localStorage.setItem(NAME_KEY, playerName.value || "");
 }
 
 function lockButtons(){
   [...choicesEl.querySelectorAll("button")].forEach(b => b.disabled = true);
 }
 
+function setNextText(){
+  nextBtn.textContent = (idx === questions.length - 1) ? "Finish" : "Next";
+}
+
 function render(){
+  answered = false;
   const q = questions[idx];
 
   qCounter.textContent = `Question ${idx + 1} of ${questions.length}`;
@@ -85,31 +87,38 @@ function render(){
     btn.className = "btn choiceBtn";
     btn.type = "button";
     btn.textContent = `${letters[i]}) ${text}`;
-    btn.addEventListener("click", () => pick(i));
+    btn.addEventListener("click", () => pick(i, btn));
     choicesEl.appendChild(btn);
   });
 }
 
-function pick(choiceIndex){
+function pick(choiceIndex, btnEl){
+  if (answered) return;
+  answered = true;
+
   const q = questions[idx];
   lockButtons();
 
-  const ok = choiceIndex === q.correctIndex;
+  btnEl.classList.add("selected");
+  const correctBtn = choicesEl.querySelectorAll("button")[q.correctIndex];
 
+  const ok = choiceIndex === q.correctIndex;
   if (ok){
     correct += 1;
+    btnEl.classList.add("correct");
     feedbackEl.textContent = "✅ Correct!";
-    nextBtn.style.display = "inline-flex";
-    nextBtn.textContent = (idx === questions.length - 1) ? "Finish" : "Next";
-    statusEl.textContent = `Score: ${correct} / ${idx + 1}`;
-    return;
+  } else {
+    btnEl.classList.add("wrong");
+    if (correctBtn) correctBtn.classList.add("correct");
+
+    const right = `${letters[q.correctIndex]}) ${q.choices[q.correctIndex]}`;
+    feedbackEl.textContent = `❌ Wrong. Correct answer: ${right}`;
   }
 
-  const right = `${letters[q.correctIndex]}) ${q.choices[q.correctIndex]}`;
-  feedbackEl.textContent = `❌ Wrong. Correct answer: ${right}. Moving on…`;
   statusEl.textContent = `Score: ${correct} / ${idx + 1}`;
 
-  setTimeout(next, 750);
+  setNextText();
+  nextBtn.style.display = "inline-flex";
 }
 
 function next(){
@@ -147,7 +156,7 @@ function showResult(showLockText){
   const when = localStorage.getItem(WHEN_KEY) || "";
   rWhen.textContent = when ? `Completed: ${when}` : "";
 
-  if (showLockText) {
+  if (showLockText){
     lockedMsg.style.display = "block";
     lockedMsg.textContent = "Quiz completed. You can’t take it again.";
   }
@@ -166,7 +175,6 @@ function boot(){
 }
 
 nextBtn.addEventListener("click", next);
-
 playerName.addEventListener("input", saveProfile);
 
 avatarFile.addEventListener("change", (e) => {
@@ -174,12 +182,11 @@ avatarFile.addEventListener("change", (e) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    const dataUrl = reader.result;
-    localStorage.setItem(AVATAR_KEY, String(dataUrl));
-    showAvatar(String(dataUrl));
+    const dataUrl = String(reader.result);
+    localStorage.setItem(AVATAR_KEY, dataUrl);
+    showAvatar(dataUrl);
   };
   reader.readAsDataURL(file);
 });
 
 boot();
-
