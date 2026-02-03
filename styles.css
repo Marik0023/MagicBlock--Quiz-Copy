@@ -805,7 +805,7 @@ img{max-width:100%; display:block}
   position:absolute;
 
   /* bigger than card so it starts OUTSIDE and ends OUTSIDE */
-  inset:-70%;
+  inset:-110%;
   pointer-events:none;
   border-radius: 42px;
 
@@ -832,7 +832,7 @@ img{max-width:100%; display:block}
 
 @keyframes mbShineEvery2s{
   0%{
-    transform: translateX(-120%) rotate(-8deg);
+    transform: translateX(+120%) rotate(-8deg);
     opacity: 0;
   }
   18%{ opacity: .55; }
