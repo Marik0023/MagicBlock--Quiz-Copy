@@ -33,7 +33,7 @@ body{
     linear-gradient(to bottom, rgba(0,0,0,.25), rgba(0,0,0,.78));
 }
 
-/* Topbar */
+/* ✅ Topbar (thinner) */
 .topbar{
   position: sticky;
   top: 0;
@@ -41,7 +41,10 @@ body{
   display:flex;
   align-items:center;
   justify-content:flex-start;
-  padding: 16px 20px;
+
+  /* was 16px 20px -> now ~2x thinner */
+  padding: 8px 16px;
+
   backdrop-filter: blur(12px);
   background: rgba(0,0,0,.20);
   border-bottom: 1px solid rgba(255,255,255,.08);
@@ -61,10 +64,10 @@ body{
   border-radius: 12px;
 }
 
-/* BIG LOGO, NO RECTANGLE */
+/* ✅ BIG LOGO, but shorter height to fit thinner topbar */
 .brand__logo{
   width: 320px;
-  height: 80px;
+  height: 44px;     /* was 80px */
   border-radius: 0;
   background: transparent;
   border: none;
@@ -139,7 +142,7 @@ body{
   font-weight:800;
   background: rgba(0,0,0,.26);
   cursor:pointer;
-  transition: background .14s ease, border-color .14s ease, transform .14s ease, box-shadow .14s ease;
+  transition: background .14s ease, border-color .14s ease, transform .14s ease, box-shadow .14s ease, opacity .14s ease;
 }
 .btn:hover{
   background: rgba(0,0,0,.36);
@@ -162,6 +165,22 @@ body{
   border-color: rgba(255,255,255,.55);
   background: linear-gradient(135deg, rgba(255,255,255,.26), rgba(255,255,255,.06));
   box-shadow: 0 0 18px rgba(255,255,255,.10), 0 18px 45px rgba(0,0,0,.55);
+}
+
+/* ✅ Next appear + glow animation */
+@keyframes nextIn {
+  0%   { opacity:0; transform: translateY(8px) scale(.98); filter: blur(2px); }
+  60%  { opacity:1; transform: translateY(-1px) scale(1.01); filter: blur(0); }
+  100% { opacity:1; transform: translateY(0) scale(1); }
+}
+@keyframes nextGlow {
+  0%   { box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+  35%  { box-shadow: 0 0 0 6px rgba(255,255,255,.10), 0 0 22px rgba(255,255,255,.14), 0 18px 45px rgba(0,0,0,.55); }
+  70%  { box-shadow: 0 0 0 0 rgba(255,255,255,0), 0 12px 28px rgba(0,0,0,.45); }
+  100% { box-shadow: 0 12px 28px rgba(0,0,0,.45); }
+}
+.btn--next.is-pop{
+  animation: nextIn .22s ease-out both, nextGlow .85s ease-out 0s 2;
 }
 
 /* Answer buttons: hover white, selected stays */
@@ -418,7 +437,7 @@ body{
 @media (max-width: 920px){
   .grid{ grid-template-columns: 1fr; }
   .resultGrid{ grid-template-columns: 1fr; }
-  .brand__logo{ width: 260px; height: 70px; }
+  .brand__logo{ width: 260px; height: 40px; } /* thinner header */
   .resultLogo{ width: 240px; height: 64px; }
 }
 
@@ -426,4 +445,5 @@ body{
   .player{ gap: 10px; }
   .player__cover{ width: 72px; height: 72px; }
   .vol{ width: 90px; }
+  .brand__logo{ width: 220px; height: 38px; }
 }
