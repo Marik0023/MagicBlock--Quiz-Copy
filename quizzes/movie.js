@@ -22,11 +22,10 @@ const questions = [
 
 let idx = 0;
 let correct = 0;
-let answered = false;
+let selectedIndex = null;
 
 const frame = document.getElementById("frame");
 const choicesEl = document.getElementById("choices");
-const feedbackEl = document.getElementById("feedback");
 const statusEl = document.getElementById("status");
 const nextBtn = document.getElementById("next");
 const qCounter = document.getElementById("qCounter");
@@ -45,38 +44,30 @@ const playerName = document.getElementById("playerName");
 const avatarFile = document.getElementById("avatarFile");
 const avatarPreview = document.getElementById("avatarPreview");
 
-function nowText(){
-  return new Date().toLocaleString();
-}
-
-function showAvatar(dataUrl){
-  avatarPreview.src = dataUrl || "";
-}
+function nowText(){ return new Date().toLocaleString(); }
 
 function loadProfile(){
   playerName.value = localStorage.getItem(NAME_KEY) || "";
-  showAvatar(localStorage.getItem(AVATAR_KEY) || "");
+  avatarPreview.src = localStorage.getItem(AVATAR_KEY) || "";
 }
-
 function saveProfile(){
   localStorage.setItem(NAME_KEY, playerName.value || "");
 }
 
-function lockButtons(){
-  [...choicesEl.querySelectorAll("button")].forEach(b => b.disabled = true);
+function setNextText(){
+  nextBtn.textContent = (idx === questions.length - 1) ? "Finish →" : "Next →";
 }
 
-function setNextText(){
-  nextBtn.textContent = (idx === questions.length - 1) ? "Finish" : "Next";
+function clearSelectionUI(){
+  [...choicesEl.querySelectorAll("button")].forEach(b => b.classList.remove("selected"));
 }
 
 function render(){
-  answered = false;
+  selectedIndex = null;
   const q = questions[idx];
 
   qCounter.textContent = `Question ${idx + 1} of ${questions.length}`;
-  statusEl.textContent = `Score: ${correct} / ${idx}`;
-  feedbackEl.textContent = "";
+  statusEl.textContent = `Progress: ${idx} / ${questions.length}`;
   nextBtn.style.display = "none";
 
   frame.src = q.src;
@@ -87,41 +78,27 @@ function render(){
     btn.className = "btn choiceBtn";
     btn.type = "button";
     btn.textContent = `${letters[i]}) ${text}`;
-    btn.addEventListener("click", () => pick(i, btn));
+    btn.addEventListener("click", () => pick(i));
     choicesEl.appendChild(btn);
   });
 }
 
-function pick(choiceIndex, btnEl){
-  if (answered) return;
-  answered = true;
-
-  const q = questions[idx];
-  lockButtons();
-
-  btnEl.classList.add("selected");
-  const correctBtn = choicesEl.querySelectorAll("button")[q.correctIndex];
-
-  const ok = choiceIndex === q.correctIndex;
-  if (ok){
-    correct += 1;
-    btnEl.classList.add("correct");
-    feedbackEl.textContent = "✅ Correct!";
-  } else {
-    btnEl.classList.add("wrong");
-    if (correctBtn) correctBtn.classList.add("correct");
-
-    const right = `${letters[q.correctIndex]}) ${q.choices[q.correctIndex]}`;
-    feedbackEl.textContent = `❌ Wrong. Correct answer: ${right}`;
-  }
-
-  statusEl.textContent = `Score: ${correct} / ${idx + 1}`;
+function pick(i){
+  selectedIndex = i;
+  clearSelectionUI();
+  const btn = choicesEl.querySelectorAll("button")[i];
+  if (btn) btn.classList.add("selected");
 
   setNextText();
   nextBtn.style.display = "inline-flex";
 }
 
 function next(){
+  if (selectedIndex === null) return;
+
+  const q = questions[idx];
+  if (selectedIndex === q.correctIndex) correct += 1;
+
   if (idx < questions.length - 1){
     idx += 1;
     render();
@@ -135,7 +112,6 @@ function finish(){
   localStorage.setItem(SCORE_KEY, String(correct));
   localStorage.setItem(TOTAL_KEY, String(questions.length));
   localStorage.setItem(WHEN_KEY, nowText());
-
   showResult(true);
 }
 
@@ -171,22 +147,23 @@ function boot(){
     showResult(false);
     return;
   }
+
+  nextBtn.addEventListener("click", next);
+  playerName.addEventListener("input", saveProfile);
+
+  avatarFile.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      localStorage.setItem(AVATAR_KEY, dataUrl);
+      avatarPreview.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  });
+
   render();
 }
-
-nextBtn.addEventListener("click", next);
-playerName.addEventListener("input", saveProfile);
-
-avatarFile.addEventListener("change", (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const dataUrl = String(reader.result);
-    localStorage.setItem(AVATAR_KEY, dataUrl);
-    showAvatar(dataUrl);
-  };
-  reader.readAsDataURL(file);
-});
 
 boot();
