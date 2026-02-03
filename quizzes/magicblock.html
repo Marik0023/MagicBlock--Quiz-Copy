@@ -5,93 +5,91 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>MagicBlock Quiz — MagicBlock</title>
   <link rel="stylesheet" href="../styles.css" />
-
-  <style>
-    #choices{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
-    .choiceBtn{width:100%;text-align:left;padding:16px;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.35);color:#fff;font-weight:800;cursor:pointer;transition:.12s;}
-    .choiceBtn:hover{border-color:rgba(255,255,255,.85); background:rgba(255,255,255,.06);}
-    .choiceBtn.is-selected{border-color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,.55), 0 0 26px rgba(255,255,255,.14); background:rgba(255,255,255,.08);}
-
-    .btn--next[disabled]{opacity:.45;cursor:not-allowed;}
-    .btn--next.is-visible{opacity:1 !important;transform:translateY(0)!important;animation:nextGlow 1.25s ease-in-out infinite;}
-    @keyframes nextGlow{0%,100%{box-shadow:0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 26px rgba(255,255,255,.18)}}
-
-    .qText{
-      margin-top:12px;
-      padding:16px;
-      border-radius:18px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(0,0,0,.28);
-      color:rgba(255,255,255,.92);
-      font-size:18px;
-      font-weight:700;
-      line-height:1.35;
-    }
-    canvas{width:100%;height:auto;border-radius:18px;border:1px solid rgba(255,255,255,.14);}
-  </style>
+  <script src="magicblock.js" defer></script>
 </head>
-<body>
 
+<body>
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
-      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
+      <source src="../assets/bg.webm" type="video/webm" />
+      <source src="../assets/bg.mp4" type="video/mp4" />
     </video>
-    <div class="bg__pixels"></div>
     <div class="bg__vignette"></div>
+    <div class="bg__grain"></div>
   </div>
 
-  <header class="topbar">
-    <a class="brand" href="../index.html" aria-label="Back to Home">
-      <video class="brand__logo" autoplay muted loop playsinline>
-        <source src="../assets/logo.webm" type="video/webm" />
-      </video>
-    </a>
+  <div class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="../index.html" aria-label="Home">
+        <video class="brand__logo" autoplay muted loop playsinline>
+          <source src="../assets/logo.webm" type="video/webm" />
+        </video>
+        <span class="brand__tag">Quiz</span>
+      </a>
 
-    <div class="topbar__right">
-      <button id="profileSlot" class="profile" type="button" style="display:none;">
-        <span class="profile__avatar">
-          <img id="profileAvatarImg" alt="" style="display:none;" />
-          <span id="profileAvatarFallback" class="profile__fallback">MB</span>
-        </span>
-        <span id="profileName" class="profile__name">Player</span>
-      </button>
+      <div id="profilePill" class="profilePill" title="Profile">
+        <div class="profilePill__avatar"><img alt="" /></div>
+        <div>
+          <div class="profilePill__name" data-profile-name>Player</div>
+          <div class="profilePill__hint" data-profile-hint>Edit</div>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
 
-  <main class="page">
-    <h1 class="h1">How well do you know MagicBlock?</h1>
-    <div class="small">10 questions • A/B/C/D • Press Next after each answer.</div>
+  <main class="container">
+    <section class="quizHero">
+      <h1>How well do you know MagicBlock?</h1>
+      <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
+    </section>
 
-    <section class="panel" id="quizPanel" style="margin-top:14px;">
-      <div class="small" id="qMeta">Question 1 of 10</div>
-      <div class="qText" id="qText">Question text</div>
+    <section id="quizView" class="panel">
+      <div class="quizLayout">
+        <div>
+          <div class="questionTitle" id="qStatus">Question 1 of 10</div>
+          <div class="panel" style="background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.10);">
+            <div id="qText" style="font-size:22px; font-weight:900; letter-spacing:-.2px; padding: 8px 6px;">
+              Question text
+            </div>
+          </div>
+          <div class="progressText" id="progressText">Progress: 0 / 10</div>
+        </div>
 
-      <div id="choices"></div>
-
-      <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px;">
-        <div class="small" id="progress">Progress: 0 / 10</div>
-        <button id="nextBtn" class="btn btn--next" type="button" disabled style="opacity:0;transform:translateY(6px);">
-          Next →
-        </button>
+        <div>
+          <div class="options" id="options"></div>
+          <div class="nextWrap">
+            <button id="nextBtn" class="btn nextBtn">Next</button>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="panel" id="resultPanel" style="display:none;margin-top:16px;">
-      <h2 class="h1" style="font-size:28px;">Result</h2>
-      <div class="p" id="resultText"></div>
+    <section id="resultView" class="panel" style="display:none;">
+      <div class="resultBox">
+        <h2>Result</h2>
 
-      <div class="row" style="margin-top:14px;gap:10px;">
-        <button id="genCardBtn" class="btn" type="button">Generate Card</button>
-        <a class="btn" href="../index.html">Back to Home</a>
-      </div>
+        <div class="kv"><div class="k">Name</div><div class="v" id="resName">—</div></div>
+        <div class="kv"><div class="k">Completed</div><div class="v" id="resDone">—</div></div>
+        <div class="kv"><div class="k">Total</div><div class="v" id="resTotal">—</div></div>
+        <div class="kv"><div class="k">Correct</div><div class="v" id="resCorrect">—</div></div>
+        <div class="kv"><div class="k">Wrong</div><div class="v" id="resWrong">—</div></div>
+        <div class="kv"><div class="k">Accuracy</div><div class="v" id="resAcc">—</div></div>
 
-      <div class="qText" id="cardPreviewWrap" style="display:none;margin-top:14px;">
-        <canvas id="cardCanvas" width="1080" height="1920"></canvas>
-        <a id="downloadLink" class="btn" style="display:none;margin-top:10px;" download="magicblock-card.png">Download PNG</a>
+        <div class="btnRow">
+          <button id="genBtn" class="btn">Generate Card</button>
+          <a class="btn btn--ghost" href="../index.html">Back to Home</a>
+        </div>
+
+        <div id="cardZone" class="cardZone">
+          <div class="cardPreview">
+            <canvas id="cardCanvas" width="1080" height="1350"></canvas>
+          </div>
+          <div class="cardActions">
+            <button id="dlBtn" class="btn btn--ghost">Download PNG</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>
-
-  <script src="./magicblock.js" defer></script>
 </body>
 </html>
