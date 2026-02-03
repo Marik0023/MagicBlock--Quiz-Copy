@@ -753,9 +753,9 @@ img{max-width:100%; display:block}
 
 /* ===== FORCE: make shine 3x slower (Champion preview) ===== */
 .cardZone.isOpen .cardPreview::before{
-  animation-duration: 22.8s !important; /* було 7.6s */
+  animation-duration: 1.8s !important; /* було 7.6s */
 }
 
 .cardZone.isOpen .cardPreview::after{
-  animation-duration: 24.3s !important; /* було 8.1s */
+  animation-duration: 6.3s !important; /* було 8.1s */
 }
