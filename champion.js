@@ -25,12 +25,10 @@ forcePlayAll(".brand__logo");
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
   if (!pill) return;
-
   const img = pill.querySelector("img");
   const nameEl = pill.querySelector("[data-profile-name]");
   const hintEl = pill.querySelector("[data-profile-hint]");
   const p = getProfile();
-
   if (!p){
     if (img) img.src = "";
     if (nameEl) nameEl.textContent = "No profile";
@@ -38,7 +36,6 @@ function renderTopProfile(){
     pill.addEventListener("click", () => location.href = "index.html");
     return;
   }
-
   if (img) img.src = p.avatar || "";
   if (nameEl) nameEl.textContent = p.name || "Player";
   if (hintEl) hintEl.textContent = "Edit on Home";
@@ -76,20 +73,17 @@ function computeSummary(){
   const r2 = loadResult(MB_KEYS.resMovie);
   const r3 = loadResult(MB_KEYS.resMagic);
 
-  const results = [r1, r2, r3];
-  const okAll = results.every(Boolean);
-
-  const total = results.reduce((a,r)=>a + (r?.total||0), 0);
-  const correct = results.reduce((a,r)=>a + (r?.correct||0), 0);
+  const results = [r1, r2, r3].filter(Boolean);
+  const total = results.reduce((a,r)=>a + (r.total||0), 0);
+  const correct = results.reduce((a,r)=>a + (r.correct||0), 0);
   const acc = total ? Math.round((correct/total)*100) : 0;
 
   sumTotal.textContent = String(total);
   sumCorrect.textContent = String(correct);
   sumAcc.textContent = `${acc}%`;
 
-  const unlocked = doneCount === 3 && okAll && !!p;
+  const unlocked = doneCount === 3 && results.length === 3 && !!p;
   genBtn.disabled = !unlocked;
-
   return { unlocked, total, correct, acc, profile: p };
 }
 
@@ -131,21 +125,22 @@ async function drawChampionCard(summary){
   ctx.font = "950 86px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("MagicBlock Champion", 160, 240);
 
-  await drawAvatarCircle(ctx, summary.profile?.avatar || "", 160, 472, 74);
-
   const name = summary.profile?.name || "Player";
   ctx.font = "900 62px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.fillText(name, 260, 520);
+
+  await drawAvatarCircle(ctx, summary.profile?.avatar || "", 160, 472, 74);
 
   ctx.font = "800 46px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillStyle = "rgba(255,255,255,0.86)";
   ctx.fillText(`Correct: ${summary.correct} / ${summary.total}`, 160, 650);
+
   ctx.fillStyle = "rgba(255,255,255,0.70)";
   ctx.fillText(`Accuracy: ${summary.acc}%`, 160, 725);
 
   ctx.fillStyle = "rgba(255,255,255,0.10)";
   roundRect(ctx, 160, H-220, W-320, 96, 48, true, false);
+
   ctx.fillStyle = "rgba(255,255,255,0.88)";
   ctx.font = "900 40px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("champion card", 210, H-155);
@@ -164,7 +159,7 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke){
   if (stroke) ctx.stroke();
 }
 
-async function drawAvatarCircle(ctx, src, cx, cy, r){
+async function drawAvatarCircle(ctx, dataUrl, cx, cy, r){
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI*2);
@@ -173,9 +168,10 @@ async function drawAvatarCircle(ctx, src, cx, cy, r){
   ctx.fill();
   ctx.clip();
 
-  if (src && src.startsWith("data:")){
-    const img = await loadImage(src);
-    ctx.drawImage(img, cx-r, cy-r, r*2, r*2);
+  if (dataUrl && dataUrl.startsWith("data:")){
+    const img = await loadImage(dataUrl);
+    const size = r*2;
+    ctx.drawImage(img, cx-r, cy-r, size, size);
   }
   ctx.restore();
 
