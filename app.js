@@ -28,15 +28,12 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
-/* Autoplay (bg + logo) */
 forcePlayAll(".bg__video");
 forcePlayAll(".brand__logo");
 
-/* Year */
 const y = document.getElementById("year");
 if (y) y.textContent = new Date().getFullYear();
 
-/* Topbar profile render */
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
   if (!pill) return;
@@ -58,7 +55,6 @@ function renderTopProfile(){
   if (hintEl) hintEl.textContent = "Edit";
 }
 
-/* Profile modal */
 function openProfileModal(force = false){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
@@ -88,15 +84,6 @@ function closeProfileModal(){
   modal.classList.remove("isOpen");
 }
 
-async function fileToDataURL(file){
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
 function initProfileModal(){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
@@ -106,19 +93,8 @@ function initProfileModal(){
   const nameInput = document.getElementById("profileName");
   const fileInput = document.getElementById("profileFile");
   const preview = document.getElementById("profilePreview");
-  const avatarBox = document.getElementById("avatarBox");
 
   closeBtn?.addEventListener("click", closeProfileModal);
-
-  // Click on avatar box => open file picker
-  const openPicker = () => fileInput?.click();
-  avatarBox?.addEventListener("click", openPicker);
-  avatarBox?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      openPicker();
-    }
-  });
 
   fileInput?.addEventListener("change", async () => {
     const f = fileInput.files?.[0];
@@ -131,14 +107,22 @@ function initProfileModal(){
     const pOld = getProfile() || {};
     const name = (nameInput?.value || "").trim() || "Player";
     const avatar = (preview?.src || "").startsWith("data:") ? preview.src : (pOld.avatar || "");
-    setProfile({ name, avatar });
 
+    setProfile({ name, avatar });
     renderTopProfile();
     closeProfileModal();
   });
+
+  function fileToDataURL(file){
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
 }
 
-/* Home badges */
 function isDone(key){ return localStorage.getItem(key) === "1"; }
 
 function updateBadges(){
@@ -182,7 +166,6 @@ function initHomeButtons(){
   champBtn?.addEventListener("click", () => location.href = "champion.html");
 }
 
-/* Boot */
 renderTopProfile();
 initProfileModal();
 updateBadges();
