@@ -2,9 +2,8 @@ const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
+  idSong: "mb_card_id_song", // ✅ стабільний ID для Song-карти
 };
-
-const QUIZ_ID_TYPE = "MagicListener"; // ✅ музика
 
 function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
 function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
@@ -18,22 +17,51 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", reminder, { once:true });
 }
 
-function makeSerial(len = 6){
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function renderTopProfile(){
+  const pill = document.getElementById("profilePill");
+  if (!pill) return;
+
+  const img = pill.querySelector("img");
+  const nameEl = pill.querySelector("[data-profile-name]");
+  const hintEl = pill.querySelector("[data-profile-hint]");
+
+  const p = getProfile();
+  if (!p){
+    if (img) img.src = "";
+    if (nameEl) nameEl.textContent = "No profile";
+    if (hintEl) hintEl.textContent = "Go Home";
+    pill.addEventListener("click", () => location.href = "../index.html");
+    return;
+  }
+
+  if (img) img.src = p.avatar || "";
+  if (nameEl) nameEl.textContent = p.name || "Player";
+  if (hintEl) hintEl.textContent = "Edit on Home";
+  pill.addEventListener("click", () => location.href = "../index.html");
+}
+
+function randCode(len=6){
+  const abc = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // без схожих 0/O/1/I
   let out = "";
-  for (let i=0; i<len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  for (let i=0;i<len;i++) out += abc[Math.floor(Math.random()*abc.length)];
   return out;
 }
-function ensureCardId(resultObj, type){
-  if (resultObj?.cardId) return resultObj.cardId;
-  const id = `MB-${type}-${makeSerial(6)}`;
-  if (resultObj) resultObj.cardId = id;
-  return id;
+function getOrCreateCardId(storageKey, prefix){
+  try{
+    const have = localStorage.getItem(storageKey);
+    if (have) return have;
+    const id = `MB-${prefix}-${randCode(6)}`;
+    localStorage.setItem(storageKey, id);
+    return id;
+  } catch {
+    return `MB-${prefix}-${randCode(6)}`;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   forcePlayAll(".bg__video");
   forcePlayAll(".brand__logo");
+
   renderTopProfile();
 
   const QUESTIONS = [
@@ -127,14 +155,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const done = localStorage.getItem(MB_KEYS.doneSong) === "1";
 
   if (done && saved){
-    // якщо старий сейв без cardId — додамо
-    ensureCardId(saved, QUIZ_ID_TYPE);
-    localStorage.setItem(MB_KEYS.resSong, JSON.stringify(saved));
     showResult(saved);
   } else {
     renderQuestion();
   }
 
+  // ===== Quiz render =====
   function renderQuestion(){
     const q = QUESTIONS[idx];
     if (!q){
@@ -166,7 +192,6 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.addEventListener("click", () => {
         selectedIndex = i;
         updateSelectedUI();
-
         nextBtn.disabled = false;
         nextBtn.classList.add("isShow");
       });
@@ -197,14 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const acc = Math.round((correct / total) * 100);
     const p = getProfile();
 
-    const result = {
-      total,
-      correct,
-      acc,
-      name: p?.name || "Player",
-      ts: Date.now(),
-      cardId: `MB-${QUIZ_ID_TYPE}-${makeSerial(6)}`
-    };
+    const result = { total, correct, acc, name: p?.name || "Player", ts: Date.now() };
 
     localStorage.setItem(MB_KEYS.doneSong, "1");
     localStorage.setItem(MB_KEYS.resSong, JSON.stringify(result));
@@ -222,7 +240,7 @@ document.addEventListener("DOMContentLoaded", () => {
     rAcc && (rAcc.textContent = `${result.acc}%`);
   }
 
-  // ===== Card =====
+  // ===== Card (NEW DESIGN) =====
   genBtn?.addEventListener("click", async () => {
     if (!cardCanvas) return;
 
@@ -230,17 +248,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
     if (!r) return;
 
-    const quizName = document.querySelector(".quizHero h1")?.textContent?.trim() || "Song Quiz";
-    const cardId = ensureCardId(r, QUIZ_ID_TYPE);
-    localStorage.setItem(MB_KEYS.resSong, JSON.stringify(r));
+    const quizTitle = document.querySelector(".quizHero h1")?.textContent?.trim() || "Song Quiz";
+    const idName = getOrCreateCardId(MB_KEYS.idSong, "MagicListener");
 
-    await drawQuizResultCard(cardCanvas, {
-      quizName,
-      playerName: p?.name || r.name || "Player",
+    await drawQuizWideCard(cardCanvas, {
+      quizTitle,
+      name: p?.name || "Player",
       avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      cardId
+      scoreText: `${r.correct} / ${r.total}`,
+      accText: `${r.acc}%`,
+      idName
     });
 
     cardZone?.classList.add("isOpen");
@@ -255,273 +272,10 @@ document.addEventListener("DOMContentLoaded", () => {
     a.click();
   });
 
-  // =========================
-  // CANVAS DRAW (NEW QUIZ CARD)
-  // =========================
-  async function drawQuizResultCard(canvas, d){
-    const ctx = canvas.getContext("2d");
-    const W = canvas.width, H = canvas.height;
-
-    ctx.setTransform(1,0,0,1,0,0);
-    ctx.clearRect(0,0,W,H);
-    ctx.imageSmoothingEnabled = true;
-
-    const M = 70;
-    const x = M, y = M;
-    const w = W - M*2;
-    const h = H - M*2;
-    const R = 86;
-
-    // shadow
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.55)";
-    ctx.shadowBlur = 55;
-    ctx.shadowOffsetY = 24;
-    ctx.fillStyle = "rgba(0,0,0,0.001)"; // трюк щоб тінь рендерилась
-    roundRect(ctx, x, y, w, h, R, true, false);
-    ctx.restore();
-
-    // card base
-    const baseGrad = ctx.createLinearGradient(x, y, x+w, y+h);
-    baseGrad.addColorStop(0, "#3e3f41");
-    baseGrad.addColorStop(1, "#343537");
-    ctx.fillStyle = baseGrad;
-    roundRect(ctx, x, y, w, h, R, true, false);
-
-    // inner vignette
-    ctx.save();
-    ctx.globalAlpha = 0.9;
-    const rad = ctx.createRadialGradient(x+w*0.46, y+h*0.46, 40, x+w*0.46, y+h*0.46, Math.max(w,h));
-    rad.addColorStop(0, "rgba(255,255,255,0.08)");
-    rad.addColorStop(0.55, "rgba(255,255,255,0.02)");
-    rad.addColorStop(1, "rgba(0,0,0,0.18)");
-    ctx.fillStyle = rad;
-    roundRect(ctx, x+14, y+14, w-28, h-28, R-18, true, false);
-    ctx.restore();
-
-    // border
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, x+10, y+10, w-20, h-20, R-22, false, true);
-
-    // clip to card for decorations
-    ctx.save();
-    roundRectPath(ctx, x, y, w, h, R);
-    ctx.clip();
-
-    // soft highlight
-    const hl = ctx.createRadialGradient(x+w*0.35, y+h*0.28, 30, x+w*0.35, y+h*0.28, w*0.85);
-    hl.addColorStop(0, "rgba(255,255,255,0.12)");
-    hl.addColorStop(0.55, "rgba(255,255,255,0.03)");
-    hl.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = hl;
-    ctx.fillRect(x, y, w, h);
-
-    // waves (top-right & bottom-left)
-    drawWaves(ctx, x+w*0.64, y+40, x+w-60, y+h*0.52, 0.10);
-    drawWaves(ctx, x+40, y+h*0.62, x+w*0.46, y+h-40, 0.08);
-
-    // ===== Header: MagicBlock + Quiz pill
-    const brandX = x + 78;
-    const brandY = y + 92;
-
-    // маленька "іконка" (простий ромб)
-    ctx.save();
-    ctx.translate(brandX-28, brandY-18);
-    ctx.rotate(-0.2);
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.beginPath();
-    ctx.moveTo(12, 0);
-    ctx.lineTo(24, 12);
-    ctx.lineTo(12, 24);
-    ctx.lineTo(0, 12);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.textBaseline = "alphabetic";
-    ctx.textAlign = "left";
-    ctx.fillText("MagicBlock", brandX, brandY);
-
-    // Quiz pill
-    const pillText = "Quiz";
-    ctx.font = "800 20px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    const pillW = Math.ceil(ctx.measureText(pillText).width) + 30;
-    const pillH = 34;
-    const pillX = brandX + Math.ceil(ctx.measureText("MagicBlock").width) + 14;
-    const pillY = brandY - 26;
-
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    roundRect(ctx, pillX, pillY, pillW, pillH, 16, true, false);
-    ctx.fillStyle = "rgba(0,0,0,0.78)";
-    ctx.textBaseline = "middle";
-    ctx.fillText(pillText, pillX + 15, pillY + pillH/2);
-
-    // ===== Center title (Quiz Name)
-    ctx.textAlign = "center";
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.font = "500 48px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText(d.quizName || "Quiz Name", x + w/2, y + 108);
-
-    // ===== Avatar box
-    const avSize = 290;
-    const avX = x + 140;
-    const avY = y + 210;
-    const avR = 72;
-
-    ctx.fillStyle = "rgba(0,0,0,0.16)";
-    roundRect(ctx, avX, avY, avSize, avSize, avR, true, false);
-
-    ctx.strokeStyle = "rgba(0,0,0,0.55)";
-    ctx.lineWidth = 4;
-    roundRect(ctx, avX, avY, avSize, avSize, avR, false, true);
-
-    // avatar image (cover)
-    if (d.avatar){
-      try{
-        const img = await loadImage(d.avatar);
-        ctx.save();
-        roundRectPath(ctx, avX, avY, avSize, avSize, avR);
-        ctx.clip();
-
-        const iw = img.width, ih = img.height;
-        const scale = Math.max(avSize/iw, avSize/ih);
-        const dw = iw * scale;
-        const dh = ih * scale;
-        const dx = avX + (avSize - dw)/2;
-        const dy = avY + (avSize - dh)/2;
-
-        ctx.drawImage(img, dx, dy, dw, dh);
-        ctx.restore();
-      } catch {
-        // fallback text
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.font = "700 36px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("AVATAR", avX + avSize/2, avY + avSize/2);
-      }
-    } else {
-      ctx.fillStyle = "rgba(255,255,255,0.85)";
-      ctx.font = "700 36px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("AVATAR", avX + avSize/2, avY + avSize/2);
-    }
-
-    // ===== Right info
-    const rx = x + 540;
-    const rightPad = x + w - 140;
-
-    function divider(yy){
-      ctx.strokeStyle = "rgba(255,255,255,0.12)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(rx, yy);
-      ctx.lineTo(rightPad, yy);
-      ctx.stroke();
-    }
-
-    // Your Name
-    ctx.textAlign = "left";
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.font = "600 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText("Your Name:", rx, y + 290);
-
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.font = "800 54px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(d.playerName || "Player", rx, y + 355);
-
-    divider(y + 395);
-
-    // Score
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.font = "800 36px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("Score", rx, y + 470);
-
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.font = "900 62px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(`${d.correct} / ${d.total}`, rx, y + 545);
-
-    divider(y + 585);
-
-    // ID Name
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("ID Name:", rx, y + 660);
-
-    // ID pill
-    const idText = d.cardId || "MB-XXXXXX-000000";
-    ctx.font = "900 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    const idW = Math.min(rightPad - rx, Math.ceil(ctx.measureText(idText).width) + 46);
-    const idH = 64;
-    const idX = rx;
-    const idY = y + 688;
-
-    ctx.fillStyle = "rgba(0,0,0,0.20)";
-    roundRect(ctx, idX, idY, idW, idH, 26, true, false);
-
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.textBaseline = "middle";
-    ctx.fillText(idText, idX + 22, idY + idH/2);
-
-    ctx.restore(); // clip
-
-    // final tiny noise overlay (very subtle)
-    ctx.save();
-    ctx.globalAlpha = 0.06;
-    for (let i=0; i<2200; i++){
-      const px = Math.random()*W;
-      const py = Math.random()*H;
-      ctx.fillStyle = Math.random() > 0.5 ? "#fff" : "#000";
-      ctx.fillRect(px, py, 1, 1);
-    }
-    ctx.restore();
-  }
-
-  function drawWaves(ctx, x1, y1, x2, y2, alpha){
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = "rgba(255,255,255,1)";
-    ctx.lineWidth = 1;
-
-    const lines = 26;
-    const width = (x2 - x1);
-    const height = (y2 - y1);
-
-    for (let i=0; i<lines; i++){
-      const t = i/(lines-1);
-      const yy = y1 + t*height;
-      ctx.beginPath();
-      const amp = 20 + t*18;
-      const steps = 9;
-      for (let s=0; s<=steps; s++){
-        const tt = s/steps;
-        const xx = x1 + tt*width;
-        const wob = Math.sin((tt*2.8 + t*1.8) * Math.PI) * amp;
-        if (s === 0) ctx.moveTo(xx, yy + wob);
-        else ctx.lineTo(xx, yy + wob);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function loadImage(src){
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      if (!src.startsWith("data:")) img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = src;
-    });
-  }
-
-  function roundRectPath(ctx, x, y, w, h, r){
+  // ============================
+  // Canvas drawing helpers
+  // ============================
+  function rrPath(ctx, x, y, w, h, r){
     const rr = Math.min(r, w/2, h/2);
     ctx.beginPath();
     ctx.moveTo(x+rr, y);
@@ -531,33 +285,355 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.arcTo(x, y, x+w, y, rr);
     ctx.closePath();
   }
-  function roundRect(ctx, x, y, w, h, r, fill, stroke){
-    roundRectPath(ctx, x, y, w, h, r);
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
+
+  function fillRR(ctx, x, y, w, h, r){
+    rrPath(ctx, x, y, w, h, r);
+    ctx.fill();
+  }
+
+  function strokeRR(ctx, x, y, w, h, r){
+    rrPath(ctx, x, y, w, h, r);
+    ctx.stroke();
+  }
+
+  function loadImage(src){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  function loadVideoFrame(src, time=0.05){
+    return new Promise((resolve, reject) => {
+      const v = document.createElement("video");
+      v.muted = true;
+      v.playsInline = true;
+      v.preload = "auto";
+      v.src = src;
+
+      const cleanup = () => {
+        v.onloadedmetadata = null;
+        v.onseeked = null;
+        v.onerror = null;
+      };
+
+      v.onerror = (e) => { cleanup(); reject(e); };
+
+      v.onloadedmetadata = () => {
+        try{
+          v.currentTime = Math.min(Math.max(time, 0), Math.max((v.duration || 1) - 0.05, 0.05));
+        }catch{
+          // якщо currentTime не дається — просто пробуємо loadeddata
+          resolve(v);
+        }
+      };
+
+      v.onseeked = () => {
+        cleanup();
+        resolve(v);
+      };
+    });
+  }
+
+  async function loadLogoAsset(){
+    // ✅ не “створюємо” логотип — пробуємо взяти з assets
+    const candidates = [
+      "../assets/logo.png",
+      "../assets/logo.webp",
+      "../assets/logo.svg",
+      "../assets/logo.jpg",
+      "../assets/logo.jpeg",
+    ];
+
+    for (const src of candidates){
+      try{
+        const img = await loadImage(src);
+        return { kind: "img", node: img };
+      }catch{}
+    }
+
+    // fallback: якщо у тебе тільки logo.webm — беремо 1 кадр
+    try{
+      const vid = await loadVideoFrame("../assets/logo.webm", 0.05);
+      return { kind: "video", node: vid };
+    }catch{}
+
+    return null;
+  }
+
+  function makeNoisePattern(scale=240){
+    const c = document.createElement("canvas");
+    c.width = scale; c.height = scale;
+    const n = c.getContext("2d");
+
+    const img = n.createImageData(scale, scale);
+    for (let i=0; i<img.data.length; i+=4){
+      const v = (Math.random()*255)|0;
+      img.data[i] = v;
+      img.data[i+1] = v;
+      img.data[i+2] = v;
+      img.data[i+3] = 18; // alpha
+    }
+    n.putImageData(img, 0, 0);
+    return c;
+  }
+
+  function drawWaves(ctx, x, y, w, h, amp=10, lines=14, alpha=0.11){
+    ctx.save();
+    rrPath(ctx, x, y, w, h, 60);
+    ctx.clip();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+
+    const stepY = h / (lines + 2);
+    for (let i=0; i<lines; i++){
+      const yy = y + stepY*(i+1);
+      ctx.beginPath();
+
+      const freq = 90 + i*2.2;
+      const phase = i * 0.7;
+      for (let xx = 0; xx <= w; xx += 10){
+        const t = (xx / freq) + phase;
+        const dy = Math.sin(t) * (amp * (0.55 + i/lines*0.55));
+        ctx.lineTo(x + xx, yy + dy);
+      }
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  async function drawAvatarRounded(ctx, dataUrl, x, y, size, r){
+    ctx.save();
+    rrPath(ctx, x, y, size, size, r);
+    ctx.clip();
+
+    // base
+    const g = ctx.createLinearGradient(x, y, x+size, y+size);
+    g.addColorStop(0, "rgba(255,255,255,0.12)");
+    g.addColorStop(1, "rgba(0,0,0,0.14)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, size, size);
+
+    if (dataUrl && dataUrl.startsWith("data:")){
+      try{
+        const img = await loadImage(dataUrl);
+        // cover-crop
+        const iw = img.naturalWidth || img.width;
+        const ih = img.naturalHeight || img.height;
+        const s = Math.max(size/iw, size/ih);
+        const dw = iw*s;
+        const dh = ih*s;
+        const dx = x + (size - dw)/2;
+        const dy = y + (size - dh)/2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+      }catch{}
+    }
+
+    // subtle overlay
+    const rg = ctx.createRadialGradient(x+size*0.25, y+size*0.2, 0, x+size*0.25, y+size*0.2, size*0.95);
+    rg.addColorStop(0, "rgba(255,255,255,0.20)");
+    rg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(x, y, size, size);
+
+    ctx.restore();
+
+    // border
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    strokeRR(ctx, x, y, size, size, r);
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0,0,0,0.30)";
+    strokeRR(ctx, x+7, y+7, size-14, size-14, Math.max(10, r-8));
+  }
+
+  // ============================
+  // NEW: wide quiz card (like champion size)
+  // ============================
+  async function drawQuizWideCard(canvas, d){
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+
+    ctx.clearRect(0,0,W,H);
+
+    // page bg (transparent look not needed, but keep nice)
+    const pageG = ctx.createLinearGradient(0, 0, W, H);
+    pageG.addColorStop(0, "#07080d");
+    pageG.addColorStop(1, "#05060a");
+    ctx.fillStyle = pageG;
+    ctx.fillRect(0,0,W,H);
+
+    // card geometry
+    const pad = 110;
+    const x = pad, y = pad, w = W - pad*2, h = H - pad*2;
+    const r = 84;
+
+    // shadow
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 22;
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    fillRR(ctx, x, y, w, h, r);
+    ctx.restore();
+
+    // main metallic panel
+    const g = ctx.createLinearGradient(x, y, x+w, y+h);
+    g.addColorStop(0, "rgba(255,255,255,0.16)");
+    g.addColorStop(0.20, "rgba(255,255,255,0.10)");
+    g.addColorStop(0.55, "rgba(255,255,255,0.08)");
+    g.addColorStop(1, "rgba(255,255,255,0.12)");
+    ctx.fillStyle = g;
+    fillRR(ctx, x, y, w, h, r);
+
+    // inner dark glaze
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    fillRR(ctx, x+16, y+16, w-32, h-32, r-16);
+
+    // noise
+    const noise = makeNoisePattern(260);
+    ctx.save();
+    rrPath(ctx, x+16, y+16, w-32, h-32, r-16);
+    ctx.clip();
+    ctx.globalAlpha = 0.16;
+    ctx.drawImage(noise, x+16, y+16, w-32, h-32);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // center glow
+    ctx.save();
+    rrPath(ctx, x+16, y+16, w-32, h-32, r-16);
+    ctx.clip();
+    const rg = ctx.createRadialGradient(x+w*0.46, y+h*0.44, 0, x+w*0.46, y+h*0.44, h*0.75);
+    rg.addColorStop(0, "rgba(255,255,255,0.14)");
+    rg.addColorStop(0.55, "rgba(255,255,255,0.05)");
+    rg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+
+    // waves (right top + left bottom, like твоє реф)
+    drawWaves(ctx, x+w*0.63, y+h*0.18, w*0.34, h*0.44, 9, 16, 0.11);
+    drawWaves(ctx, x+w*0.06, y+h*0.56, w*0.40, h*0.36, 10, 14, 0.09);
+
+    // strokes
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    strokeRR(ctx, x, y, w, h, r);
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    strokeRR(ctx, x+22, y+22, w-44, h-44, r-22);
+
+    // logo (top-left)
+    const logo = await loadLogoAsset();
+    const lx = x + 60;
+    const ly = y + 44;
+    const lh = 54;
+
+    if (logo?.kind === "img"){
+      const img = logo.node;
+      const ratio = (img.naturalWidth || img.width) / (img.naturalHeight || img.height || 1);
+      const lw = lh * ratio;
+      ctx.globalAlpha = 0.92;
+      ctx.drawImage(img, lx, ly, lw, lh);
+      ctx.globalAlpha = 1;
+    } else if (logo?.kind === "video"){
+      const v = logo.node;
+      const vw = v.videoWidth || 320;
+      const vh = v.videoHeight || 120;
+      const ratio = vw / (vh || 1);
+      const lw = lh * ratio;
+      ctx.globalAlpha = 0.92;
+      ctx.drawImage(v, lx, ly, lw, lh);
+      ctx.globalAlpha = 1;
+    } else {
+      // fallback (якщо раптом нема файлу)
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.fillText("MagicBlock", lx, ly+40);
+    }
+
+    // Title centered
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.shadowColor = "rgba(0,0,0,0.30)";
+    ctx.shadowBlur = 10;
+    ctx.fillText(d.quizTitle || "Quiz", x + w/2, y + 92);
+    ctx.restore();
+
+    // avatar block
+    const avSize = 270;
+    const avX = x + 110;
+    const avY = y + 210;
+    await drawAvatarRounded(ctx, d.avatar, avX, avY, avSize, 64);
+
+    // text layout
+    const tx = x + 520;
+    const startY = y + 290;
+
+    // separators
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(tx, y + 410);
+    ctx.lineTo(x + w - 140, y + 410);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(tx, y + 590);
+    ctx.lineTo(x + w - 140, y + 590);
+    ctx.stroke();
+
+    // labels
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("Your Name:", tx, startY);
+
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "950 64px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(d.name || "Player", tx, startY + 78);
+
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("Score", tx, startY + 190);
+
+    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    ctx.font = "950 70px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(d.scoreText || "0 / 10", tx, startY + 270);
+
+    // ID label
+    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("ID Name:", tx, startY + 390);
+
+    // ID pill
+    const pillW = 760;
+    const pillH = 74;
+    const pillX = tx;
+    const pillY = startY + 430;
+
+    ctx.fillStyle = "rgba(0,0,0,0.30)";
+    fillRR(ctx, pillX, pillY, pillW, pillH, 28);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.lineWidth = 2;
+    strokeRR(ctx, pillX, pillY, pillW, pillH, 28);
+
+    ctx.fillStyle = "rgba(255,255,255,0.90)";
+    ctx.font = "900 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(d.idName || "MB-MagicListener-XXXXXX", pillX + 26, pillY + 50);
+
+    // small accuracy bottom-left (не заважає, виглядає як “чемпіон”)
+    ctx.fillStyle = "rgba(255,255,255,0.40)";
+    ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(`Accuracy: ${d.accText || "0%"}`, x + 92, y + h - 72);
   }
 });
-
-function renderTopProfile(){
-  const pill = document.getElementById("profilePill");
-  if (!pill) return;
-
-  const img = pill.querySelector("img");
-  const nameEl = pill.querySelector("[data-profile-name]");
-  const hintEl = pill.querySelector("[data-profile-hint]");
-
-  const p = getProfile();
-  if (!p){
-    if (img) img.src = "";
-    if (nameEl) nameEl.textContent = "No profile";
-    if (hintEl) hintEl.textContent = "Go Home";
-    pill.addEventListener("click", () => location.href = "../index.html");
-    return;
-  }
-
-  if (img) img.src = p.avatar || "";
-  if (nameEl) nameEl.textContent = p.name || "Player";
-  if (hintEl) hintEl.textContent = "Edit on Home";
-  pill.addEventListener("click", () => location.href = "../index.html");
-}
- 
