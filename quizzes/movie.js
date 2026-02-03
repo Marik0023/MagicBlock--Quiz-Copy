@@ -1,197 +1,226 @@
-const DONE_KEY = "mb_done_movie";
-const RESULT_KEY = "mb_result_movie";
-const PROFILE_NAME_KEY = "mb_profile_name";
-const PROFILE_AVATAR_KEY = "mb_profile_avatar";
+const MB_KEYS = {
+  profile: "mb_profile",
+  done: "mb_done_movie",
+  result: "mb_result_movie",
+};
+function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
+function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
 
 function forcePlayAll(selector){
   const vids = document.querySelectorAll(selector);
+  if (!vids.length) return;
   const tryPlay = () => vids.forEach(v => v.play().catch(()=>{}));
   tryPlay();
   window.addEventListener("click", tryPlay, { once:true });
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
+forcePlayAll(".bg__video");
+forcePlayAll(".brand__logo");
 
-function getProfile(){
-  return {
-    name: localStorage.getItem(PROFILE_NAME_KEY) || "Player",
-    avatar: localStorage.getItem(PROFILE_AVATAR_KEY) || ""
-  };
-}
-
-function renderProfilePill(){
-  const slot = document.getElementById("profileSlot");
-  const nameEl = document.getElementById("profileName");
-  const img = document.getElementById("profileAvatarImg");
-  const fallback = document.getElementById("profileAvatarFallback");
-  if (!slot || !nameEl || !img || !fallback) return;
-
-  const { name, avatar } = getProfile();
-  slot.style.display = "inline-flex";
-  nameEl.textContent = name;
-
-  if (avatar){
-    img.src = avatar;
-    img.style.display = "block";
-    fallback.style.display = "none";
-  } else {
-    img.style.display = "none";
-    fallback.style.display = "flex";
-    fallback.textContent = (name.slice(0,2) || "MB").toUpperCase();
-  }
-
-  slot.addEventListener("click", () => location.href = "../index.html");
-}
-
-function qs(name){ return new URLSearchParams(location.search).get(name); }
-function resetIfAsked(){
-  if (qs("reset") === "1"){
-    localStorage.removeItem(DONE_KEY);
-    localStorage.removeItem(RESULT_KEY);
-    location.replace(location.pathname);
-  }
-}
-function loadResult(){
-  try{
-    const raw = localStorage.getItem(RESULT_KEY);
-    return raw ? JSON.parse(raw) : null;
-  }catch{ return null; }
-}
-function saveResult(result){
-  localStorage.setItem(DONE_KEY, "1");
-  localStorage.setItem(RESULT_KEY, JSON.stringify(result));
-}
-
-function showResultScreen(result){
-  const quizPanel = document.getElementById("quizPanel");
-  const resultPanel = document.getElementById("resultPanel");
-  const resultText = document.getElementById("resultText");
-  if (!quizPanel || !resultPanel || !resultText) return;
-
-  quizPanel.style.display = "none";
-  resultPanel.style.display = "block";
-
-  const prof = getProfile();
-  if (!result){
-    resultText.innerHTML = `
-      <div class="small">Saved result not found. Reset and retake:</div>
-      <div class="small"><b>Open:</b> movie.html?reset=1</div>
-    `;
+function renderTopProfile(){
+  const pill = document.getElementById("profilePill");
+  if (!pill) return;
+  const img = pill.querySelector("img");
+  const nameEl = pill.querySelector("[data-profile-name]");
+  const hintEl = pill.querySelector("[data-profile-hint]");
+  const p = getProfile();
+  if (!p){
+    if (img) img.src = "";
+    if (nameEl) nameEl.textContent = "No profile";
+    if (hintEl) hintEl.textContent = "Go Home";
+    pill.addEventListener("click", () => location.href = "../index.html");
     return;
   }
-
-  const date = new Date(result.completedAt);
-  const when = isNaN(date.getTime()) ? "" : date.toLocaleString();
-
-  resultText.innerHTML = `
-    <div class="small"><b>${prof.name}</b></div>
-    <div class="small">Completed: ${when}</div>
-    <div style="height:10px;"></div>
-    <div class="small"><b>Total</b> ${result.total}</div>
-    <div class="small"><b>Correct</b> ${result.correct}</div>
-    <div class="small"><b>Wrong</b> ${result.wrong}</div>
-    <div class="small"><b>Accuracy</b> ${result.accuracy}%</div>
-  `;
-
-  const genBtn = document.getElementById("genCardBtn");
-  if (genBtn) genBtn.onclick = () => generateCard(result, "Movie Result");
+  if (img) img.src = p.avatar || "";
+  if (nameEl) nameEl.textContent = p.name || "Player";
+  if (hintEl) hintEl.textContent = "Edit on Home";
+  pill.addEventListener("click", () => location.href = "../index.html");
 }
+renderTopProfile();
 
-/**
- * EDIT HERE:
- * Put frames into assets/movies/*.jpg
- */
+// Replace with your frames & answers
 const QUESTIONS = [
-  { image: "../assets/movies/01.jpg", options: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], answer: 1 },
-  { image: "../assets/movies/02.jpg", options: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], answer: 2 },
-  { image: "../assets/movies/03.jpg", options: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], answer: 0 },
-  { image: "../assets/movies/04.jpg", options: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], answer: 3 },
-  { image: "../assets/movies/05.jpg", options: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], answer: 1 },
-  { image: "../assets/movies/06.jpg", options: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], answer: 2 },
-  { image: "../assets/movies/07.jpg", options: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], answer: 0 },
-  { image: "../assets/movies/08.jpg", options: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], answer: 3 },
-  { image: "../assets/movies/09.jpg", options: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], answer: 1 },
-  { image: "../assets/movies/10.jpg", options: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], answer: 2 },
+  { image: "../assets/movies/f1.jpg", choices:["A","B","C","D"], correctIndex:0 },
+  { image: "../assets/movies/f2.jpg", choices:["A","B","C","D"], correctIndex:1 },
+  { image: "../assets/movies/f3.jpg", choices:["A","B","C","D"], correctIndex:2 },
+  { image: "../assets/movies/f4.jpg", choices:["A","B","C","D"], correctIndex:3 },
+  { image: "../assets/movies/f5.jpg", choices:["A","B","C","D"], correctIndex:0 },
+  { image: "../assets/movies/f6.jpg", choices:["A","B","C","D"], correctIndex:1 },
+  { image: "../assets/movies/f7.jpg", choices:["A","B","C","D"], correctIndex:2 },
+  { image: "../assets/movies/f8.jpg", choices:["A","B","C","D"], correctIndex:3 },
+  { image: "../assets/movies/f9.jpg", choices:["A","B","C","D"], correctIndex:0 },
+  { image: "../assets/movies/f10.jpg", choices:["A","B","C","D"], correctIndex:1 },
 ];
+
+const quizView = document.getElementById("quizView");
+const resultView = document.getElementById("resultView");
+const qStatus = document.getElementById("qStatus");
+const progressText = document.getElementById("progressText");
+const frameImg = document.getElementById("frameImg");
+const optionsEl = document.getElementById("options");
+const nextBtn = document.getElementById("nextBtn");
+
+const resName = document.getElementById("resName");
+const resDone = document.getElementById("resDone");
+const resTotal = document.getElementById("resTotal");
+const resCorrect = document.getElementById("resCorrect");
+const resWrong = document.getElementById("resWrong");
+const resAcc = document.getElementById("resAcc");
+const genBtn = document.getElementById("genBtn");
+const cardZone = document.getElementById("cardZone");
+const cardCanvas = document.getElementById("cardCanvas");
+const dlBtn = document.getElementById("dlBtn");
 
 let idx = 0;
 let correct = 0;
-let selected = null;
+let locked = false;
 
-function renderQuestion(){
+function render(){
+  locked = false;
+  nextBtn.classList.remove("isShow");
+
+  qStatus.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  progressText.textContent = `Progress: ${idx} / ${QUESTIONS.length}`;
+
   const q = QUESTIONS[idx];
-  const qMeta = document.getElementById("qMeta");
-  const progress = document.getElementById("progress");
-  const img = document.getElementById("frameImg");
-  const choices = document.getElementById("choices");
-  const nextBtn = document.getElementById("nextBtn");
-  const missing = document.getElementById("missingMedia");
-  if (!q || !qMeta || !progress || !img || !choices || !nextBtn || !missing) return;
+  frameImg.src = q.image;
+  frameImg.onerror = () => { frameImg.alt = "Missing frame image"; };
 
-  qMeta.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
-  progress.textContent = `Progress: ${idx} / ${QUESTIONS.length}`;
-
-  missing.style.display = "none";
-  missing.textContent = "";
-
-  img.src = q.image || "";
-  img.onerror = () => {
-    missing.style.display = "block";
-    missing.textContent = `Image missing. Put frame to ${q.image}`;
-  };
-
-  choices.innerHTML = "";
-  selected = null;
-  nextBtn.disabled = true;
-  nextBtn.classList.remove("is-visible");
-  nextBtn.style.opacity = "0";
-  nextBtn.style.transform = "translateY(6px)";
-
-  const letters = ["A","B","C","D"];
-  q.options.forEach((t,i) => {
-    const b = document.createElement("button");
-    b.className = "choiceBtn";
-    b.type = "button";
-    b.textContent = `${letters[i]}) ${t}`;
-    b.onclick = () => {
-      selected = i;
-      [...choices.children].forEach(ch => ch.classList.remove("is-selected"));
-      b.classList.add("is-selected");
-      nextBtn.disabled = false;
-      nextBtn.style.opacity = "1";
-      nextBtn.style.transform = "translateY(0)";
-      nextBtn.classList.add("is-visible");
-    };
-    choices.appendChild(b);
+  optionsEl.innerHTML = "";
+  q.choices.forEach((c, i) => {
+    const btn = document.createElement("button");
+    btn.className = "optionBtn";
+    btn.textContent = `${String.fromCharCode(65+i)}) ${c}`;
+    btn.addEventListener("click", () => pick(i));
+    optionsEl.appendChild(btn);
   });
 
-  nextBtn.onclick = () => {
-    if (selected === null) return;
-    if (selected === q.answer) correct++;
-    idx++;
-    if (idx >= QUESTIONS.length) finish();
-    else renderQuestion();
-  };
+  nextBtn.textContent = (idx === QUESTIONS.length - 1) ? "Finish" : "Next";
 }
+
+function pick(i){
+  if (locked) return;
+  locked = true;
+
+  const q = QUESTIONS[idx];
+  const ok = i === q.correctIndex;
+  if (ok) correct += 1;
+
+  const buttons = [...optionsEl.querySelectorAll("button")];
+  buttons.forEach((b, bi) => {
+    b.disabled = true;
+    if (bi === q.correctIndex) b.classList.add("isCorrect");
+    if (bi === i && !ok) b.classList.add("isWrong");
+  });
+
+  nextBtn.classList.add("isShow");
+  progressText.textContent = `Progress: ${idx + 1} / ${QUESTIONS.length}`;
+}
+
+nextBtn.addEventListener("click", () => {
+  if (!locked) return;
+  if (idx < QUESTIONS.length - 1){
+    idx += 1;
+    render();
+  } else finish();
+});
 
 function finish(){
   const total = QUESTIONS.length;
   const wrong = total - correct;
   const accuracy = Math.round((correct / total) * 100);
+  const completedAt = new Date().toISOString();
 
-  const result = {
-    quizId: "movie",
-    total,
-    correct,
-    wrong,
-    accuracy,
-    completedAt: new Date().toISOString()
-  };
-
-  saveResult(result);
-  showResultScreen(result);
+  const result = { quiz:"movie", total, correct, wrong, accuracy, completedAt };
+  localStorage.setItem(MB_KEYS.result, JSON.stringify(result));
+  localStorage.setItem(MB_KEYS.done, "1");
+  showResult(result);
 }
 
-function roundRect(ctx, x, y, w, h, r){
+function showResult(result){
+  quizView.style.display = "none";
+  resultView.style.display = "block";
+
+  const p = getProfile();
+  resName.textContent = p?.name || "Player";
+
+  const d = new Date(result.completedAt);
+  resDone.textContent = `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
+
+  resTotal.textContent = String(result.total);
+  resCorrect.textContent = String(result.correct);
+  resWrong.textContent = String(result.wrong);
+  resAcc.textContent = `${result.accuracy}%`;
+
+  cardZone.classList.remove("isOpen");
+}
+
+genBtn.addEventListener("click", async () => {
+  const result = safeJSONParse(localStorage.getItem(MB_KEYS.result), null);
+  if (!result) return;
+
+  await drawCard({
+    title: "MagicBlock Quiz\nMovie Result",
+    result,
+  });
+  cardZone.classList.add("isOpen");
+  cardZone.scrollIntoView({ behavior:"smooth", block:"start" });
+});
+
+dlBtn.addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.download = "magicblock-movie-card.png";
+  a.href = cardCanvas.toDataURL("image/png");
+  a.click();
+});
+
+async function drawCard({ title, result }){
+  const ctx = cardCanvas.getContext("2d");
+  const W = cardCanvas.width, H = cardCanvas.height;
+
+  ctx.clearRect(0,0,W,H);
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0, "#0b0d12");
+  g.addColorStop(1, "#05060a");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  roundRect(ctx, 70, 70, W-140, H-140, 70, true, false);
+
+  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  roundRect(ctx, 110, 110, W-220, H-220, 64, true, false);
+
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "900 74px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  drawMultiline(ctx, title, 160, 230, 82);
+
+  const p = getProfile() || { name:"Player", avatar:"" };
+  ctx.font = "900 62px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(p.name || "Player", 260, 520);
+
+  await drawAvatarCircle(ctx, p.avatar, 160, 472, 74);
+
+  ctx.font = "800 44px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillStyle = "rgba(255,255,255,0.86)";
+  ctx.fillText(`Correct: ${result.correct} / ${result.total}`, 160, 640);
+  ctx.fillStyle = "rgba(255,255,255,0.70)";
+  ctx.fillText(`Accuracy: ${result.accuracy}%`, 160, 710);
+
+  const d = new Date(result.completedAt);
+  const done = `${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}, ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
+  ctx.fillStyle = "rgba(255,255,255,0.62)";
+  ctx.font = "700 36px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(`Completed: ${done}`, 160, 780);
+
+  ctx.fillStyle = "rgba(255,255,255,0.10)";
+  roundRect(ctx, 160, H-220, W-320, 96, 48, true, false);
+  ctx.fillStyle = "rgba(255,255,255,0.88)";
+  ctx.font = "900 40px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("magicblock quiz card", 210, H-155);
+}
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke){
   const rr = Math.min(r, w/2, h/2);
   ctx.beginPath();
   ctx.moveTo(x+rr, y);
@@ -200,63 +229,51 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x, y+h, x, y, rr);
   ctx.arcTo(x, y, x+w, y, rr);
   ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
 }
+function drawMultiline(ctx, text, x, y, lineH){
+  const lines = String(text).split("\n");
+  lines.forEach((ln, i) => ctx.fillText(ln, x, y + i*lineH));
+}
+async function drawAvatarCircle(ctx, dataUrl, cx, cy, r){
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fill();
+  ctx.clip();
 
-function generateCard(result, subtitle){
-  const wrap = document.getElementById("cardPreviewWrap");
-  const canvas = document.getElementById("cardCanvas");
-  const link = document.getElementById("downloadLink");
-  if (!wrap || !canvas || !link) return;
+  if (dataUrl && dataUrl.startsWith("data:")){
+    const img = await loadImage(dataUrl);
+    const size = r*2;
+    ctx.drawImage(img, cx-r, cy-r, size, size);
+  }
+  ctx.restore();
 
-  wrap.style.display = "block";
-  const ctx = canvas.getContext("2d");
-  const W = canvas.width, H = canvas.height;
-
-  ctx.clearRect(0,0,W,H);
-  const g = ctx.createLinearGradient(0,0,W,H);
-  g.addColorStop(0, "#0b0b0f");
-  g.addColorStop(1, "#111118");
-  ctx.fillStyle = g;
-  ctx.fillRect(0,0,W,H);
-
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.closePath();
   ctx.strokeStyle = "rgba(255,255,255,0.18)";
-  ctx.lineWidth = 6;
-  roundRect(ctx, 48, 48, W-96, H-96, 48);
+  ctx.lineWidth = 3;
   ctx.stroke();
-
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "700 72px system-ui, -apple-system, Segoe UI, Roboto";
-  ctx.fillText("MagicBlock Quiz", 90, 150);
-  ctx.font = "700 58px system-ui, -apple-system, Segoe UI, Roboto";
-  ctx.fillText(subtitle, 90, 230);
-
-  const prof = getProfile();
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "700 52px system-ui, -apple-system, Segoe UI, Roboto";
-  ctx.fillText(prof.name, 90, 360);
-
-  ctx.fillStyle = "rgba(255,255,255,0.75)";
-  ctx.font = "500 38px system-ui, -apple-system, Segoe UI, Roboto";
-  ctx.fillText(`Correct: ${result.correct} / ${result.total}`, 90, 470);
-  ctx.fillText(`Accuracy: ${result.accuracy}%`, 90, 530);
-
-  const url = canvas.toDataURL("image/png");
-  link.href = url;
-  link.style.display = "inline-flex";
-  link.textContent = "Download PNG";
+}
+function loadImage(src){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
-(function init(){
-  resetIfAsked();
-  forcePlayAll(".bg__video");
-  forcePlayAll(".brand__logo");
-  renderProfilePill();
-
-  const done = localStorage.getItem(DONE_KEY) === "1";
-  if (done){
-    showResultScreen(loadResult());
+(function boot(){
+  const saved = safeJSONParse(localStorage.getItem(MB_KEYS.result), null);
+  const done = localStorage.getItem(MB_KEYS.done) === "1";
+  if (done && saved){
+    showResult(saved);
     return;
   }
-
-  renderQuestion();
+  render();
 })();
