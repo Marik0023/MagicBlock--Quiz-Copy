@@ -11,8 +11,7 @@
 <body>
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
-      <source src="../assets/bg.webm" type="video/webm" />
-      <source src="../assets/bg.mp4" type="video/mp4" />
+      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
     </video>
     <div class="bg__vignette"></div>
     <div class="bg__grain"></div>
@@ -24,7 +23,6 @@
         <video class="brand__logo" autoplay muted loop playsinline>
           <source src="../assets/logo.webm" type="video/webm" />
         </video>
-        <span class="brand__tag">Quiz</span>
       </a>
 
       <div id="profilePill" class="profilePill" title="Profile">
@@ -43,40 +41,39 @@
       <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
     </section>
 
-    <section id="quizView" class="panel">
+    <section id="quizPanel" class="panel">
       <div class="quizLayout">
         <div>
-          <div class="questionTitle" id="qStatus">Question 1 of 10</div>
+          <div class="questionTitle" id="qTitle">Question 1 of 10</div>
 
-          <div class="panel" style="padding:0; overflow:hidden;">
-            <img id="frameImg" alt="Movie frame" style="width:100%; height:auto; display:block;">
+          <div class="mbPlayer" style="padding:12px;">
+            <img id="frameImg" src="../assets/covers/placeholder.jpg" alt="Frame"
+                 style="width:100%; border-radius:16px; border:1px solid rgba(255,255,255,.12);" />
           </div>
 
-          <div class="progressText" id="progressText">Progress: 0 / 10</div>
+          <div class="progressText" id="progressText">Progress: 1 / 10</div>
         </div>
 
         <div>
           <div class="options" id="options"></div>
           <div class="nextWrap">
-            <button id="nextBtn" class="btn nextBtn">Next</button>
+            <button class="btn nextBtn" id="nextBtn" disabled>Next</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="resultView" class="panel" style="display:none;">
+    <section id="resultPanel" class="panel" style="display:none; margin-top:18px;">
       <div class="resultBox">
         <h2>Result</h2>
 
-        <div class="kv"><div class="k">Name</div><div class="v" id="resName">—</div></div>
-        <div class="kv"><div class="k">Completed</div><div class="v" id="resDone">—</div></div>
-        <div class="kv"><div class="k">Total</div><div class="v" id="resTotal">—</div></div>
-        <div class="kv"><div class="k">Correct</div><div class="v" id="resCorrect">—</div></div>
-        <div class="kv"><div class="k">Wrong</div><div class="v" id="resWrong">—</div></div>
-        <div class="kv"><div class="k">Accuracy</div><div class="v" id="resAcc">—</div></div>
+        <div class="kv"><div class="k">Name</div><div class="v" id="rName">—</div></div>
+        <div class="kv"><div class="k">Total</div><div class="v" id="rTotal">—</div></div>
+        <div class="kv"><div class="k">Correct</div><div class="v" id="rCorrect">—</div></div>
+        <div class="kv"><div class="k">Accuracy</div><div class="v" id="rAcc">—</div></div>
 
         <div class="btnRow">
-          <button id="genBtn" class="btn">Generate Card</button>
+          <button id="genBtn" class="btn">Generate Result Card</button>
           <a class="btn btn--ghost" href="../index.html">Back to Home</a>
         </div>
 
