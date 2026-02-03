@@ -3,88 +3,75 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Champion Card • MagicBlock</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="./styles.css" />
+  <title>Champion — MagicBlock</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="champion.js" defer></script>
 </head>
 
 <body>
-  <div class="bg" aria-hidden="true">
-    <video class="bg__video" autoplay muted loop playsinline preload="auto">
-      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4">
+  <div class="bg">
+    <video class="bg__video" autoplay muted loop playsinline>
+      <source src="assets/bg.webm" type="video/webm" />
+      <source src="assets/bg.mp4" type="video/mp4" />
     </video>
     <div class="bg__vignette"></div>
+    <div class="bg__grain"></div>
   </div>
 
-  <header class="topbar">
-    <a class="brand" href="./index.html" aria-label="Go to Home">
-      <video class="brand__logo" autoplay muted loop playsinline preload="auto">
-        <source src="./assets/logo.webm" type="video/webm">
-        <source src="./assets/logo.mp4" type="video/mp4">
-      </video>
-    </a>
-  </header>
+  <div class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="index.html" aria-label="Home">
+        <video class="brand__logo" autoplay muted loop playsinline>
+          <source src="assets/logo.webm" type="video/webm" />
+        </video>
+        <span class="brand__tag">Quiz</span>
+      </a>
+
+      <div id="profilePill" class="profilePill" title="Profile">
+        <div class="profilePill__avatar"><img alt="" /></div>
+        <div>
+          <div class="profilePill__name" data-profile-name>Player</div>
+          <div class="profilePill__hint" data-profile-hint>Edit</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main class="container">
-    <section class="card" style="max-width:900px;margin:0 auto;">
-      <h1 style="margin:0;font-size:32px;">Champion Card</h1>
-      <p class="small">Unlocks only after completing all 3 quizzes.</p>
+    <section class="quizHero">
+      <h1>Champion Card</h1>
+      <p class="sub">Unlocks only after completing all 3 quizzes.</p>
+    </section>
 
-      <div id="locked" class="resultCard" style="display:none;">
-        <p style="margin:0;font-weight:800;">Locked 🔒</p>
-        <p class="small">Complete all 3 quizzes to unlock the champion card.</p>
-        <a class="btn" href="./index.html">Back to Home</a>
-      </div>
+    <section class="panel">
+      <div class="resultBox">
+        <h2>Summary</h2>
 
-      <div id="unlocked" style="display:none;">
-        <div class="resultCard">
-          <div class="resultHeader">
-            <video class="resultLogo" autoplay muted loop playsinline preload="auto">
-              <source src="./assets/logo.webm" type="video/webm">
-              <source src="./assets/logo.mp4" type="video/mp4">
-            </video>
-            <div>
-              <h2 class="resultTitle">Unlocked!</h2>
-              <p class="resultSubtitle">All quizzes completed</p>
-            </div>
+        <div class="kv"><div class="k">Name</div><div class="v" id="sumName">—</div></div>
+        <div class="kv"><div class="k">Completed quizzes</div><div class="v" id="sumDone">—</div></div>
+        <div class="kv"><div class="k">Total (all)</div><div class="v" id="sumTotal">—</div></div>
+        <div class="kv"><div class="k">Correct (all)</div><div class="v" id="sumCorrect">—</div></div>
+        <div class="kv"><div class="k">Accuracy</div><div class="v" id="sumAcc">—</div></div>
+
+        <div class="btnRow">
+          <button id="genChampBtn" class="btn" disabled>Generate Champion Card</button>
+          <a class="btn btn--ghost" href="index.html">Back to Home</a>
+        </div>
+
+        <div id="cardZone" class="cardZone">
+          <div class="cardPreview">
+            <canvas id="cardCanvas" width="1080" height="1350"></canvas>
           </div>
-
-          <div class="resultGrid">
-            <div>
-              <label class="small" style="display:block;font-weight:800;">Your name</label>
-              <input id="cName" class="input" placeholder="Type your name…" />
-            </div>
-
-            <div class="avatarRow">
-              <div style="flex:1;">
-                <label class="small" style="display:block;font-weight:800;">Avatar (upload)</label>
-                <input id="cAvatarFile" class="input" type="file" accept="image/*" />
-              </div>
-              <img id="cAvatarPreview" class="avatar" alt="Avatar preview" />
-            </div>
+          <div class="cardActions">
+            <button id="dlBtn" class="btn btn--ghost">Download PNG</button>
           </div>
+        </div>
 
-          <table class="resultTable">
-            <tr><th>Total (all quizzes)</th><td id="cTotal"></td></tr>
-            <tr><th>Correct (all quizzes)</th><td id="cCorrect"></td></tr>
-            <tr><th>Accuracy</th><td id="cPercent"></td></tr>
-          </table>
-
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;">
-            <a class="btn" href="./index.html">Back to Home</a>
-          </div>
-
-          <p class="small">We’ll redesign this card later (when you send examples).</p>
+        <div class="help" style="margin-top:12px;">
+          Profile edits робляться на Home (клік по профілю справа).
         </div>
       </div>
     </section>
   </main>
-
-  <script src="./champion.js"></script>
-  <script src="./app.js"></script>
 </body>
 </html>
