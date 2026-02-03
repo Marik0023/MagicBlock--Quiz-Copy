@@ -2,29 +2,31 @@ const DONE_KEY  = "mb_done_magicblock";
 const SCORE_KEY = "mb_score_magicblock";
 const TOTAL_KEY = "mb_total_magicblock";
 const WHEN_KEY  = "mb_when_magicblock";
-const NAME_KEY  = "mb_name_magicblock";
-const AVATAR_KEY= "mb_avatar_magicblock";
+
+const PROFILE_NAME_KEY = "mb_profile_name";
+const PROFILE_AVATAR_KEY = "mb_profile_avatar";
 
 const letters = ["A", "B", "C", "D"];
 
+// EDIT QUESTIONS HERE
 const questions = [
-  { text: "MagicBlock is…", choices: ["a quiz site", "a band", "a game", "a restaurant"], correctIndex: 0 },
-  { text: "This site is hosted on…", choices: ["GitHub Pages", "Steam", "App Store", "Netflix"], correctIndex: 0 },
-  { text: "A quiz question has…", choices: ["2 options", "3 options", "4 options", "10 options"], correctIndex: 2 },
-  { text: "After you answer, you…", choices: ["auto-skip", "press Next", "close site", "restart"], correctIndex: 1 },
-  { text: "Background is…", choices: ["static image", "looping video", "PDF", "gif only"], correctIndex: 1 },
-  { text: "Completion is saved in…", choices: ["localStorage", "email", "database", "cloud"], correctIndex: 0 },
-  { text: "Movie quiz uses…", choices: ["audio", "frames", "camera", "mic"], correctIndex: 1 },
-  { text: "Song quiz uses…", choices: ["audio clips", "frames", "text only", "random"], correctIndex: 0 },
-  { text: "Completed quizzes show…", choices: ["a badge", "a timer", "a popup", "a lockscreen"], correctIndex: 0 },
-  { text: "Champion Card unlocks when…", choices: ["1 done", "2 done", "all 3 done", "never"], correctIndex: 2 },
+  { q: "MagicBlock is mainly about…", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
+  { q: "MagicBlock was founded in…", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
+  { q: "MagicBlock’s main product is…", choices: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], correctIndex: 2 },
+  { q: "MagicBlock’s slogan is…", choices: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], correctIndex: 3 },
+  { q: "MagicBlock’s community is called…", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
+  { q: "MagicBlock’s color theme is…", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
+  { q: "MagicBlock partners with…", choices: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], correctIndex: 2 },
+  { q: "MagicBlock’s next release is…", choices: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], correctIndex: 3 },
+  { q: "MagicBlock’s mascot is…", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
+  { q: "MagicBlock’s mission is…", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
 ];
 
 let idx = 0;
 let correct = 0;
 let selectedIndex = null;
 
-const qtext = document.getElementById("qtext");
+const qText = document.getElementById("questionText");
 const choicesEl = document.getElementById("choices");
 const statusEl = document.getElementById("status");
 const nextBtn = document.getElementById("next");
@@ -38,21 +40,13 @@ const rTotal = document.getElementById("rTotal");
 const rCorrect = document.getElementById("rCorrect");
 const rWrong = document.getElementById("rWrong");
 const rPercent = document.getElementById("rPercent");
-const rWhen = document.getElementById("rWhen");
+const resultWhen = document.getElementById("resultWhen");
+const resultName = document.getElementById("resultName");
+const resultAvatar = document.getElementById("resultAvatar");
 
-const playerName = document.getElementById("playerName");
-const avatarFile = document.getElementById("avatarFile");
-const avatarPreview = document.getElementById("avatarPreview");
+const genCardBtn = document.getElementById("genCard");
 
 function nowText(){ return new Date().toLocaleString(); }
-
-function loadProfile(){
-  playerName.value = localStorage.getItem(NAME_KEY) || "";
-  avatarPreview.src = localStorage.getItem(AVATAR_KEY) || "";
-}
-function saveProfile(){
-  localStorage.setItem(NAME_KEY, playerName.value || "");
-}
 
 function setNextText(){
   nextBtn.textContent = (idx === questions.length - 1) ? "Finish →" : "Next →";
@@ -78,7 +72,7 @@ function render(){
   nextBtn.style.display = "none";
   nextBtn.classList.remove("is-pop");
 
-  qtext.textContent = q.text;
+  qText.textContent = q.q;
 
   choicesEl.innerHTML = "";
   q.choices.forEach((text, i) => {
@@ -116,15 +110,7 @@ function next(){
   }
 }
 
-function finish(){
-  localStorage.setItem(DONE_KEY, "1");
-  localStorage.setItem(SCORE_KEY, String(correct));
-  localStorage.setItem(TOTAL_KEY, String(questions.length));
-  localStorage.setItem(WHEN_KEY, nowText());
-  showResult(true);
-}
-
-function showResult(showLockText){
+function showResult(){
   quizUI.style.display = "none";
   resultUI.style.display = "block";
 
@@ -139,40 +125,49 @@ function showResult(showLockText){
   rPercent.textContent = `${percent}%`;
 
   const when = localStorage.getItem(WHEN_KEY) || "";
-  rWhen.textContent = when ? `Completed: ${when}` : "";
+  resultWhen.textContent = when ? `Completed: ${when}` : "";
 
-  if (showLockText){
-    lockedMsg.style.display = "block";
-    lockedMsg.textContent = "Quiz completed. You can’t take it again.";
+  const name = (localStorage.getItem(PROFILE_NAME_KEY) || "Player").trim() || "Player";
+  const avatar = localStorage.getItem(PROFILE_AVATAR_KEY) || "";
+
+  resultName.textContent = name;
+  if (avatar) {
+    resultAvatar.src = avatar;
+    resultAvatar.style.display = "block";
+  } else {
+    resultAvatar.style.display = "none";
   }
+}
 
-  loadProfile();
+function finish(){
+  localStorage.setItem(DONE_KEY, "1");
+  localStorage.setItem(SCORE_KEY, String(correct));
+  localStorage.setItem(TOTAL_KEY, String(questions.length));
+  localStorage.setItem(WHEN_KEY, nowText());
+  showResult();
 }
 
 function boot(){
   if (localStorage.getItem(DONE_KEY) === "1"){
     lockedMsg.style.display = "block";
     lockedMsg.textContent = "You already completed this quiz.";
-    showResult(false);
-    return;
+    showResult();
+  } else {
+    nextBtn.addEventListener("click", next);
+    render();
   }
 
-  nextBtn.addEventListener("click", next);
-  playerName.addEventListener("input", saveProfile);
+  if (genCardBtn) {
+    genCardBtn.addEventListener("click", async () => {
+      const total = Number(localStorage.getItem(TOTAL_KEY) || questions.length);
+      const c = Number(localStorage.getItem(SCORE_KEY) || correct);
+      const scoreText = `Score: ${c} / ${total}`;
 
-  avatarFile.addEventListener("change", (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result);
-      localStorage.setItem(AVATAR_KEY, dataUrl);
-      avatarPreview.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  render();
+      if (typeof window.MB_generateQuizCard === "function") {
+        await window.MB_generateQuizCard({ quizTitle: "MagicBlock Quiz", scoreText });
+      }
+    });
+  }
 }
 
 boot();
