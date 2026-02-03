@@ -788,3 +788,8 @@ body.mbQuiz #cardZone .cardPreview canvas{
   border: 0 !important;
   border-radius: 28px;
 }
+
+/* ===== Bigger logo only on quiz pages ===== */
+body.mbQuiz .brand__logo{
+  height: 70px; /* було 52px */
+}
