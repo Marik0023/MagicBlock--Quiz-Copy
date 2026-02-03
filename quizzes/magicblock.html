@@ -3,100 +3,78 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quiz 3 • MagicBlock Knowledge</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
+  <title>MagicBlock Knowledge</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
+<body data-require-profile="1">
 
-<body>
-  <div class="bg" aria-hidden="true">
-    <video class="bg__video" autoplay muted loop playsinline preload="auto">
-      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4">
-    </video>
+  <div class="bg">
+    <video class="bg__video" autoplay muted loop playsinline
+      src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4"></video>
     <div class="bg__vignette"></div>
   </div>
 
   <header class="topbar">
-    <a class="brand" href="../index.html" aria-label="Go to Home">
-      <video class="brand__logo" autoplay muted loop playsinline preload="auto">
-        <source src="../assets/logo.webm" type="video/webm">
-        <source src="../assets/logo.mp4" type="video/mp4">
-      </video>
+    <a class="brand" href="../index.html" aria-label="MagicBlock home">
+      <video class="brand__logo" autoplay muted loop playsinline src="../assets/logo.webm"></video>
     </a>
+
+    <div class="topbar__right">
+      <button id="profileSlot" class="profile" type="button" aria-label="Profile" style="display:none">
+        <div class="profile__avatar">
+          <img id="profileAvatarImg" alt="Avatar" />
+          <div id="profileAvatarFallback" class="profile__fallback">MB</div>
+        </div>
+        <div id="profileName" class="profile__name"></div>
+      </button>
+    </div>
   </header>
 
   <main class="container">
-    <section class="card" style="max-width:900px;margin:0 auto;">
-      <h1 style="margin:0;font-size:32px;">How Well Do You Know MagicBlock?</h1>
-      <p class="small">10 questions • A/B/C/D • Pick an answer, then press Next.</p>
+    <h1 class="hero__title">How well do you know MagicBlock?</h1>
+    <p class="hero__subtitle">10 questions • A/B/C/D • Press Next after each answer.</p>
 
-      <div id="lockedMsg" class="small" style="display:none;"></div>
+    <section class="card quizWrap" id="quizUI">
+      <div class="qCounter" id="qCounter">Question 1 of 10</div>
 
-      <div id="quizUI">
-        <p id="qCounter" class="small"></p>
-        <p id="qtext" style="margin:10px 0 0;font-size:18px;font-weight:800;"></p>
+      <div id="questionText" class="questionText">Question text</div>
 
-        <div id="choices" style="display:flex;flex-direction:column;gap:10px;margin-top:14px;"></div>
+      <div id="choices" class="quizWrap"></div>
 
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;">
-          <button id="next" class="btn btn--next" type="button" style="display:none;">Next →</button>
-        </div>
-
-        <p id="status" class="small"></p>
+      <div class="actions">
+        <button id="next" class="btn btn--next" type="button" style="display:none">Next →</button>
       </div>
 
-      <div id="resultUI" style="display:none;">
-        <div class="resultCard">
-          <div class="resultHeader">
-            <video class="resultLogo" autoplay muted loop playsinline preload="auto">
-              <source src="../assets/logo.webm" type="video/webm">
-              <source src="../assets/logo.mp4" type="video/mp4">
-            </video>
-            <div>
-              <h2 class="resultTitle">Results</h2>
-              <p class="resultSubtitle">Quiz 3 • MagicBlock Knowledge</p>
-            </div>
+      <div class="small" id="status">Progress: 0 / 10</div>
+      <div class="small" id="lockedMsg" style="display:none"></div>
+    </section>
+
+    <section class="resultCard" id="resultUI" style="display:none">
+      <div class="resultHeader">
+        <div class="resultProfile">
+          <img id="resultAvatar" class="resultAvatar" alt="Avatar" />
+          <div>
+            <div id="resultName" class="resultName">Player</div>
+            <div id="resultWhen" class="resultMeta"></div>
           </div>
-
-          <div class="resultGrid">
-            <div>
-              <label class="small" style="display:block;font-weight:800;">Your name</label>
-              <input id="playerName" class="input" placeholder="Type your name…" />
-            </div>
-
-            <div class="avatarRow">
-              <div style="flex:1;">
-                <label class="small" style="display:block;font-weight:800;">Avatar (upload)</label>
-                <input id="avatarFile" class="input" type="file" accept="image/*" />
-              </div>
-              <img id="avatarPreview" class="avatar" alt="Avatar preview" />
-            </div>
-          </div>
-
-          <table class="resultTable">
-            <tr><th>Total questions</th><td id="rTotal"></td></tr>
-            <tr><th>Correct answers</th><td id="rCorrect"></td></tr>
-            <tr><th>Wrong answers</th><td id="rWrong"></td></tr>
-            <tr><th>Accuracy</th><td id="rPercent"></td></tr>
-          </table>
-
-          <p class="small" id="rWhen"></p>
-
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;">
-            <a class="btn" href="../index.html">Back to Home</a>
-          </div>
-
-          <p class="small">Note: one-time per device/browser.</p>
         </div>
+      </div>
+
+      <table class="resultTable">
+        <tr><th>Total</th><td id="rTotal">10</td></tr>
+        <tr><th>Correct</th><td id="rCorrect">0</td></tr>
+        <tr><th>Wrong</th><td id="rWrong">0</td></tr>
+        <tr><th>Accuracy</th><td id="rPercent">0%</td></tr>
+      </table>
+
+      <div class="resultActions">
+        <button id="genCard" class="btn btn--next" type="button">Generate Card</button>
+        <a class="btn" href="../index.html">Back to Home</a>
       </div>
     </section>
   </main>
 
-  <script src="./magicblock.js"></script>
-  <script src="../app.js"></script>
+  <script src="../app.js" defer></script>
+  <script src="./magicblock.js" defer></script>
 </body>
 </html>
