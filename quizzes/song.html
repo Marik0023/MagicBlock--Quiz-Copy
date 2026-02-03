@@ -11,8 +11,7 @@
 <body>
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
-      <source src="../assets/bg.webm" type="video/webm" />
-      <source src="../assets/bg.mp4" type="video/mp4" />
+      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
     </video>
     <div class="bg__vignette"></div>
     <div class="bg__grain"></div>
@@ -24,7 +23,6 @@
         <video class="brand__logo" autoplay muted loop playsinline>
           <source src="../assets/logo.webm" type="video/webm" />
         </video>
-        <span class="brand__tag">Quiz</span>
       </a>
 
       <div id="profilePill" class="profilePill" title="Profile">
@@ -43,60 +41,57 @@
       <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
     </section>
 
-    <!-- Question view -->
-    <section id="quizView" class="panel">
+    <!-- QUIZ -->
+    <section id="quizPanel" class="panel">
       <div class="quizLayout">
         <div>
-          <div class="questionTitle" id="qStatus">Question 1 of 10</div>
+          <div class="questionTitle" id="qTitle">Question 1 of 10</div>
 
-          <!-- Player -->
           <div class="mbPlayer">
             <div class="mbPlayer__row">
               <div class="mbPlayer__cover">
-                <img id="coverImg" src="../assets/covers/song.png" alt="" />
+                <img id="playerCover" src="../assets/covers/placeholder.jpg" alt="" />
               </div>
               <div class="mbPlayer__meta">
-                <div class="mbPlayer__title" id="trackTitle">Guess the song</div>
-                <div class="mbPlayer__time" id="timeText">0:00 / 0:00</div>
+                <div class="mbPlayer__title" id="playerName">Guess the song</div>
+                <div class="mbPlayer__time" id="playerTime">0:00 / 0:00</div>
               </div>
-              <button id="playBtn" class="mbPlayer__btn" aria-label="Play/Pause">►</button>
+              <button class="mbPlayer__btn" id="playBtn" aria-label="Play/Pause">▶</button>
             </div>
             <div class="mbPlayer__bar">
-              <input id="seek" class="range" type="range" min="0" max="100" value="0" />
+              <input class="range" id="seekBar" type="range" min="0" max="100" value="0" />
             </div>
           </div>
 
-          <div class="progressText" id="progressText">Progress: 0 / 10</div>
+          <div class="progressText" id="progressText">Progress: 1 / 10</div>
+
+          <audio id="audio" preload="metadata"></audio>
         </div>
 
         <div>
           <div class="options" id="options"></div>
-
           <div class="nextWrap">
-            <button id="nextBtn" class="btn nextBtn">Next</button>
+            <button class="btn nextBtn" id="nextBtn" disabled>Next</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Result view -->
-    <section id="resultView" class="panel" style="display:none;">
+    <!-- RESULT -->
+    <section id="resultPanel" class="panel" style="display:none; margin-top:18px;">
       <div class="resultBox">
         <h2>Result</h2>
 
-        <div class="kv"><div class="k">Name</div><div class="v" id="resName">—</div></div>
-        <div class="kv"><div class="k">Completed</div><div class="v" id="resDone">—</div></div>
-        <div class="kv"><div class="k">Total</div><div class="v" id="resTotal">—</div></div>
-        <div class="kv"><div class="k">Correct</div><div class="v" id="resCorrect">—</div></div>
-        <div class="kv"><div class="k">Wrong</div><div class="v" id="resWrong">—</div></div>
-        <div class="kv"><div class="k">Accuracy</div><div class="v" id="resAcc">—</div></div>
+        <div class="kv"><div class="k">Name</div><div class="v" id="rName">—</div></div>
+        <div class="kv"><div class="k">Total</div><div class="v" id="rTotal">—</div></div>
+        <div class="kv"><div class="k">Correct</div><div class="v" id="rCorrect">—</div></div>
+        <div class="kv"><div class="k">Accuracy</div><div class="v" id="rAcc">—</div></div>
 
         <div class="btnRow">
-          <button id="genBtn" class="btn">Generate Card</button>
+          <button id="genBtn" class="btn">Generate Result Card</button>
           <a class="btn btn--ghost" href="../index.html">Back to Home</a>
         </div>
 
-        <!-- Canvas Card (not huge) -->
         <div id="cardZone" class="cardZone">
           <div class="cardPreview">
             <canvas id="cardCanvas" width="1080" height="1350"></canvas>
