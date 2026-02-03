@@ -12,8 +12,7 @@
   <!-- Background -->
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
-      <source src="assets/bg.webm" type="video/webm" />
-      <source src="assets/bg.mp4" type="video/mp4" />
+      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
     </video>
     <div class="bg__vignette"></div>
     <div class="bg__grain"></div>
@@ -50,7 +49,7 @@
         <div class="badgeDone" data-badge="song" style="display:none;">✓ Completed</div>
         <div class="quizCard__inner">
           <div class="quizCard__media">
-            <!-- ВАЖЛИВО: tiles -->
+            <!-- ВАЖЛИВО: у тебе обкладинки лежать в assets/tiles -->
             <img src="assets/tiles/song.png" alt="Song quiz cover" />
           </div>
           <div class="quizCard__meta">QUIZ 1</div>
@@ -123,9 +122,9 @@
 
       <div class="modalCard__body">
         <div class="profileForm">
-          <div class="avatarBox">
+          <div class="avatarBox" id="avatarBox" role="button" tabindex="0" aria-label="Upload avatar">
             <img id="profilePreview" alt="" />
-            <div class="avatarBox__label">Upload Avatar</div>
+            <div class="avatarBox__hint">Click to upload</div>
           </div>
 
           <div class="field">
@@ -133,10 +132,12 @@
             <div class="help">Tip: you can click your profile later to change it.</div>
 
             <div class="btnRow">
+              <!-- тільки Upload avatar -->
               <label class="btn btn--ghost" style="cursor:pointer;">
-                Choose image
+                Upload avatar
                 <input id="profileFile" type="file" accept="image/*" style="display:none;">
               </label>
+
               <button id="profileSaveBtn" class="btn">Start</button>
             </div>
           </div>
