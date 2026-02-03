@@ -1,4 +1,4 @@
-// champion.js (UPDATED - better header + logo top-left, improved typography)
+// champion.js (UPDATED - remove right logo, bigger left logo, add subtle shine)
 
 const MB_KEYS = {
   profile: "mb_profile",
@@ -179,18 +179,54 @@ async function drawChampionCard(summary) {
   roundRect(ctx, 0, 0, W, H, 80, true, false);
   ctx.restore();
 
-  // border
+  // ----- subtle SHINE (glint) -----
+  // diagonal band (screen blend) + soft top highlight
+  ctx.save();
+  roundedRectPath(ctx, 0, 0, W, H, 80);
+  ctx.clip();
+
+  ctx.globalCompositeOperation = "screen";
+  ctx.globalAlpha = 0.35;
+
+  const shine = ctx.createLinearGradient(-W * 0.2, H * 0.25, W * 1.2, H * 0.75);
+  shine.addColorStop(0.00, "rgba(255,255,255,0.00)");
+  shine.addColorStop(0.40, "rgba(255,255,255,0.00)");
+  shine.addColorStop(0.50, "rgba(255,255,255,0.14)");
+  shine.addColorStop(0.58, "rgba(255,255,255,0.06)");
+  shine.addColorStop(0.70, "rgba(255,255,255,0.00)");
+  shine.addColorStop(1.00, "rgba(255,255,255,0.00)");
+  ctx.fillStyle = shine;
+  ctx.fillRect(0, 0, W, H);
+
+  // soft top-left bloom
+  ctx.globalAlpha = 0.22;
+  const bloom = ctx.createRadialGradient(W * 0.18, H * 0.18, 40, W * 0.18, H * 0.18, H * 0.55);
+  bloom.addColorStop(0, "rgba(255,255,255,0.20)");
+  bloom.addColorStop(1, "rgba(255,255,255,0.00)");
+  ctx.fillStyle = bloom;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
+  ctx.globalCompositeOperation = "source-over";
+
+  // border (dark outside)
   ctx.lineWidth = 3;
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
   roundRect(ctx, 0, 0, W, H, 80, false, true);
 
+  // inner glossy border (light)
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(255,255,255,0.16)";
+  roundRect(ctx, 6, 6, W - 12, H - 12, 76, false, true);
+
   const pad = 70;
 
   // ===== HEADER =====
-  // LEFT: logo (no "MagicBlock", no "Quiz")
-  await drawLogo(ctx, pad, pad - 30, 230, 92);
+  // LEFT: logo (slightly bigger)
+  // was: 230x92
+  await drawLogo(ctx, pad, pad - 36, 285, 112, 0.95);
 
-  // CENTER: title (cleaner)
+  // CENTER: title
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "800 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
@@ -201,8 +237,7 @@ async function drawChampionCard(summary) {
   clearTextShadow(ctx);
   ctx.restore();
 
-  // Optional subtle mark top-right (можеш прибрати якщо захочеш)
-  await drawLogo(ctx, W - pad - 150, pad - 22, 150, 70, 0.65);
+  // RIGHT logo removed ✅
 
   // ===== AVATAR BLOCK =====
   const ax = pad;
@@ -235,7 +270,6 @@ async function drawChampionCard(summary) {
   const scoreText = `${summary.correct} / ${summary.total}`;
   const tierLabel = theme.label;
 
-  // nicer spacing + separators
   let y = 260;
 
   drawLabelValue(ctx, tx, y, "Your Name", name);
@@ -272,13 +306,11 @@ async function drawChampionCard(summary) {
 function drawLabelValue(ctx, x, y, label, value) {
   ctx.save();
 
-  // label
   ctx.fillStyle = "rgba(255,255,255,0.76)";
   ctx.font = "700 38px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   applyTextShadow(ctx, 0.22, 8, 0, 2);
   ctx.fillText(label, x, y);
 
-  // value
   ctx.fillStyle = "rgba(255,255,255,0.95)";
   ctx.font = "950 72px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   applyTextShadow(ctx, 0.35, 10, 0, 3);
