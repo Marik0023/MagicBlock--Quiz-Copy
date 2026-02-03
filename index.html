@@ -12,9 +12,7 @@
   <!-- Background -->
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
-      <!-- головний фон (як ти казав — по лінку) -->
-      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
-      <!-- fallback, якщо захочеш локальний -->
+      <source src="assets/bg.webm" type="video/webm" />
       <source src="assets/bg.mp4" type="video/mp4" />
     </video>
     <div class="bg__vignette"></div>
@@ -52,7 +50,7 @@
         <div class="badgeDone" data-badge="song" style="display:none;">✓ Completed</div>
         <div class="quizCard__inner">
           <div class="quizCard__media">
-            <!-- ВАЖЛИВО: в тебе обкладинки в assets/tiles -->
+            <!-- В тебе обкладинки в assets/tiles -->
             <img src="assets/tiles/song.png" alt="Song quiz cover" />
           </div>
           <div class="quizCard__meta">QUIZ 1</div>
@@ -125,13 +123,12 @@
 
       <div class="modalCard__body">
         <div class="profileForm">
-          <div class="avatarBox">
+          <div class="avatarBox" id="avatarBox">
             <img id="profilePreview" alt="" />
-            <!-- ОДНА кнопка: label + input всередині (так file picker НЕ відкриється 2 рази) -->
-            <label class="btn btn--upload">
+            <button id="profileUploadBtn" class="avatarUploadBtn" type="button">
               Upload Avatar
-              <input id="profileFile" type="file" accept="image/*" />
-            </label>
+            </button>
+            <input id="profileFile" type="file" accept="image/*" hidden />
           </div>
 
           <div class="field">
