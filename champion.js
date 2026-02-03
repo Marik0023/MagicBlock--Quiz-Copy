@@ -1,4 +1,4 @@
-// champion.js (UPDATED - landscape card only + top-right logo)
+// champion.js (UPDATED - better header + logo top-left, improved typography)
 
 const MB_KEYS = {
   profile: "mb_profile",
@@ -138,7 +138,7 @@ let _logoFrame = null;
 async function drawChampionCard(summary) {
   if (!cardCanvas) return;
 
-  // landscape size => canvas = card (ніякого заднього фону)
+  // canvas = card only
   const W = 1400;
   const H = 800;
 
@@ -159,8 +159,8 @@ async function drawChampionCard(summary) {
 
   // soft highlight
   const hi = ctx.createRadialGradient(W * 0.48, H * 0.35, 120, W * 0.55, H * 0.55, H * 0.95);
-  hi.addColorStop(0, "rgba(255,255,255,0.18)");
-  hi.addColorStop(1, "rgba(0,0,0,0.10)");
+  hi.addColorStop(0, "rgba(255,255,255,0.16)");
+  hi.addColorStop(1, "rgba(0,0,0,0.12)");
   ctx.fillStyle = hi;
   roundRect(ctx, 0, 0, W, H, 80, true, false);
 
@@ -168,7 +168,7 @@ async function drawChampionCard(summary) {
   ctx.save();
   roundedRectPath(ctx, 0, 0, W, H, 80);
   ctx.clip();
-  drawMesh(ctx, W, H, 0.16);
+  drawMesh(ctx, W, H, 0.14);
   ctx.restore();
 
   // grain
@@ -184,28 +184,27 @@ async function drawChampionCard(summary) {
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
   roundRect(ctx, 0, 0, W, H, 80, false, true);
 
-  // ---- top row ----
   const pad = 70;
 
-  // left brand
+  // ===== HEADER =====
+  // LEFT: logo (no "MagicBlock", no "Quiz")
+  await drawLogo(ctx, pad, pad - 30, 230, 92);
+
+  // CENTER: title (cleaner)
+  ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "900 46px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText("MagicBlock", pad, pad + 10);
-
-  drawPill(ctx, pad + 310, pad - 26, 120, 48, "Quiz");
-
-  // center title
-  ctx.font = "700 54px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.font = "800 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.textAlign = "center";
-  ctx.fillText("Champion Card", W / 2, pad + 10);
-  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  applyTextShadow(ctx, 0.35, 10, 0, 3);
+  ctx.fillText("Champion Card", W / 2, pad + 6);
+  clearTextShadow(ctx);
+  ctx.restore();
 
-  // top-right logo (assets/logo.webm first frame)
-  await drawTopRightLogo(ctx, W - pad, pad - 15);
+  // Optional subtle mark top-right (можеш прибрати якщо захочеш)
+  await drawLogo(ctx, W - pad - 150, pad - 22, 150, 70, 0.65);
 
-  // ---- avatar block (left) ----
+  // ===== AVATAR BLOCK =====
   const ax = pad;
   const ay = 210;
   const as = 360;
@@ -229,66 +228,102 @@ async function drawChampionCard(summary) {
     ar - 14
   );
 
-  // ---- text block (right) ----
+  // ===== TEXT BLOCK =====
   const tx = 520;
-  let ty = 245;
 
   const name = (summary.profile?.name || "Player").trim();
   const scoreText = `${summary.correct} / ${summary.total}`;
   const tierLabel = theme.label;
 
-  drawLabelValue(ctx, tx, ty, "Your Name:", name);
-  ty += 190;
-  drawLabelValue(ctx, tx, ty, "Total Score", scoreText);
-  ty += 190;
+  // nicer spacing + separators
+  let y = 260;
 
-  // Card status line
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.font = "600 42px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("Card status:", tx, ty);
+  drawLabelValue(ctx, tx, y, "Your Name", name);
+  y += 195;
+
+  drawDivider(ctx, tx, y - 40, W - pad - tx);
+  drawLabelValue(ctx, tx, y, "Total Score", scoreText);
+  y += 195;
+
+  drawDivider(ctx, tx, y - 40, W - pad - tx);
+
+  // Card status
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.80)";
+  ctx.font = "650 42px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.25, 8, 0, 2);
+  ctx.fillText("Card status:", tx, y);
 
   ctx.fillStyle = "rgba(255,255,255,0.96)";
-  ctx.font = "950 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(tierLabel, tx + 280, ty);
+  ctx.font = "950 60px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.35, 10, 0, 3);
+  ctx.fillText(tierLabel, tx + 300, y);
+  clearTextShadow(ctx);
+  ctx.restore();
 
-  // Accuracy small
+  // Accuracy bottom-left
+  ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.40)";
   ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText(`Accuracy: ${summary.acc}%`, pad, H - 60);
+  ctx.restore();
 }
 
 function drawLabelValue(ctx, x, y, label, value) {
-  ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.font = "600 42px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.save();
+
+  // label
+  ctx.fillStyle = "rgba(255,255,255,0.76)";
+  ctx.font = "700 38px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.22, 8, 0, 2);
   ctx.fillText(label, x, y);
 
+  // value
   ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.font = "950 66px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(value, x, y + 84);
+  ctx.font = "950 72px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.35, 10, 0, 3);
+  ctx.fillText(value, x, y + 90);
+
+  clearTextShadow(ctx);
+  ctx.restore();
 }
 
-// ===== Logo drawing (top-right) =====
-async function drawTopRightLogo(ctx, rightX, topY) {
-  // logo size
-  const targetW = 160;
-  const targetH = 80;
+function drawDivider(ctx, x, y, w) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.stroke();
+  ctx.restore();
+}
 
+function applyTextShadow(ctx, alpha, blur, ox, oy) {
+  ctx.shadowColor = `rgba(0,0,0,${alpha})`;
+  ctx.shadowBlur = blur;
+  ctx.shadowOffsetX = ox;
+  ctx.shadowOffsetY = oy;
+}
+function clearTextShadow(ctx) {
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+// ===== Logo drawing =====
+async function drawLogo(ctx, x, y, w, h, opacity = 0.95) {
   try {
     if (!_logoFrame) {
       _logoFrame = await loadVideoFrame("assets/logo.webm", 0.0);
     }
-    // draw aligned to top-right
     ctx.save();
-    ctx.globalAlpha = 0.95;
-    ctx.drawImage(_logoFrame, rightX - targetW, topY, targetW, targetH);
+    ctx.globalAlpha = opacity;
+    ctx.drawImage(_logoFrame, x, y, w, h);
     ctx.restore();
   } catch {
-    // fallback: small MB text
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
-    ctx.font = "900 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.textAlign = "right";
-    ctx.fillText("MB", rightX, topY + 40);
-    ctx.textAlign = "left";
+    // fallback: do nothing
   }
 }
 
@@ -309,10 +344,8 @@ function loadVideoFrame(src, time = 0) {
     v.onerror = () => { clean(); reject(new Error("video load failed")); };
 
     v.onloadeddata = () => {
-      // seek to time (usually 0 is enough)
       try { v.currentTime = time; } catch {}
       v.onseeked = () => { clean(); resolve(v); };
-      // if seeked doesn't fire (some browsers at 0), resolve soon
       setTimeout(() => { clean(); resolve(v); }, 150);
     };
   });
@@ -336,27 +369,11 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke) {
   if (stroke) ctx.stroke();
 }
 
-function drawPill(ctx, x, y, w, h, text) {
-  ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  ctx.strokeStyle = "rgba(0,0,0,0.35)";
-  ctx.lineWidth = 2;
-  roundRect(ctx, x, y, w, h, 999, true, true);
-
-  ctx.fillStyle = "rgba(0,0,0,0.70)";
-  ctx.font = "900 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, x + w / 2, y + h / 2 + 1);
-  ctx.restore();
-}
-
 function drawMesh(ctx, W, H, alpha = 0.12) {
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.lineWidth = 1;
 
-  // horizontal
   ctx.strokeStyle = "rgba(255,255,255,0.75)";
   const rows = 22;
   for (let i = 0; i < rows; i++) {
@@ -374,7 +391,6 @@ function drawMesh(ctx, W, H, alpha = 0.12) {
     ctx.stroke();
   }
 
-  // vertical lighter
   ctx.globalAlpha = alpha * 0.55;
   ctx.strokeStyle = "rgba(255,255,255,0.55)";
   const cols = 16;
@@ -423,7 +439,6 @@ async function drawAvatarRounded(ctx, src, x, y, w, h, r) {
   ctx.clip();
 
   if (!src || !src.startsWith("data:")) {
-    // fallback blurred placeholder (assets/uploadavatar.jpg)
     try {
       const fallback = await loadImage("assets/uploadavatar.jpg");
       ctx.filter = "blur(7px)";
