@@ -1,108 +1,144 @@
-const $ = (id) => document.getElementById(id);
+// ====== Helpers (shared via copy on each page where needed) ======
+const MB_KEYS = {
+  profile: "mb_profile",
+  doneSong: "mb_done_song",
+  doneMovie: "mb_done_movie",
+  doneMagic: "mb_done_magicblock",
+  resSong: "mb_result_song",
+  resMovie: "mb_result_movie",
+  resMagic: "mb_result_magicblock",
+};
 
-/* Autoplay helper */
-function forcePlayAll(selector){
-  const videos = document.querySelectorAll(selector);
-  if (!videos.length) return;
-
-  const tryPlay = () => videos.forEach(v => v.play().catch(() => {}));
-  tryPlay();
-  window.addEventListener("click", tryPlay, { once: true });
-  window.addEventListener("touchstart", tryPlay, { once: true });
+function safeJSONParse(v, fallback = null){
+  try { return JSON.parse(v); } catch { return fallback; }
 }
-
-/* Profile storage */
-const PROFILE_NAME_KEY = "mb_profile_name";
-const PROFILE_AVATAR_KEY = "mb_profile_avatar"; // dataURL
 
 function getProfile(){
-  return {
-    name: localStorage.getItem(PROFILE_NAME_KEY) || "",
-    avatar: localStorage.getItem(PROFILE_AVATAR_KEY) || ""
-  };
+  return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
-function setProfile(name, avatar){
-  localStorage.setItem(PROFILE_NAME_KEY, name.trim());
-  if (avatar) localStorage.setItem(PROFILE_AVATAR_KEY, avatar);
+function setProfile(profile){
+  localStorage.setItem(MB_KEYS.profile, JSON.stringify(profile));
+}
+function forcePlayAll(selector){
+  const vids = document.querySelectorAll(selector);
+  if (!vids.length) return;
+  const tryPlay = () => vids.forEach(v => v.play().catch(()=>{}));
+  tryPlay();
+  window.addEventListener("click", tryPlay, { once:true });
+  window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
-/* Profile UI */
-function renderProfile(){
-  const { name, avatar } = getProfile();
+// ====== Autoplay (bg + logo) ======
+forcePlayAll(".bg__video");
+forcePlayAll(".brand__logo");
+forcePlayAll(".resultLogo");
 
-  const slot = $("profileSlot");
-  const nameEl = $("profileName");
-  const img = $("profileAvatarImg");
-  const fallback = $("profileAvatarFallback");
+// ====== Year (optional) ======
+const y = document.getElementById("year");
+if (y) y.textContent = new Date().getFullYear();
 
-  if (!slot || !nameEl || !img || !fallback) return;
+// ====== Topbar profile pill render ======
+function renderTopProfile(){
+  const pill = document.getElementById("profilePill");
+  if (!pill) return;
 
-  if (!name){
-    slot.style.display = "none";
+  const avatarImg = pill.querySelector("img");
+  const nameEl = pill.querySelector("[data-profile-name]");
+  const hintEl = pill.querySelector("[data-profile-hint]");
+
+  const p = getProfile();
+  if (!p){
+    if (avatarImg) avatarImg.src = "";
+    if (nameEl) nameEl.textContent = "Create profile";
+    if (hintEl) hintEl.textContent = "Click to set";
     return;
   }
 
-  slot.style.display = "inline-flex";
-  nameEl.textContent = name;
+  if (avatarImg) avatarImg.src = p.avatar || "";
+  if (nameEl) nameEl.textContent = p.name || "Player";
+  if (hintEl) hintEl.textContent = "Edit";
+}
 
-  if (avatar){
-    img.src = avatar;
-    img.style.display = "block";
-    fallback.style.display = "none";
-  } else {
-    img.style.display = "none";
-    fallback.style.display = "flex";
-    fallback.textContent = (name.slice(0,2) || "MB").toUpperCase();
+// ====== Profile modal logic (index page) ======
+function openProfileModal(force = false){
+  const modal = document.getElementById("profileModal");
+  if (!modal) return;
+  modal.classList.add("isOpen");
+
+  const p = getProfile();
+  const nameInput = document.getElementById("profileName");
+  const fileInput = document.getElementById("profileFile");
+  const preview = document.getElementById("profilePreview");
+  const startBtn = document.getElementById("profileSaveBtn");
+
+  if (nameInput) nameInput.value = p?.name || "";
+  if (preview) preview.src = p?.avatar || "";
+  if (fileInput) fileInput.value = "";
+
+  // when forced and no profile, we disable close X
+  const closeBtn = document.getElementById("profileCloseBtn");
+  if (closeBtn){
+    closeBtn.style.display = (force && !p) ? "none" : "flex";
+  }
+
+  if (startBtn){
+    startBtn.disabled = false;
   }
 }
 
-function openGate(prefill = true){
-  const gate = $("profileGate");
-  if (!gate) return;
+function closeProfileModal(){
+  const modal = document.getElementById("profileModal");
+  if (!modal) return;
+  modal.classList.remove("isOpen");
+}
 
-  gate.classList.add("is-open");
-  gate.setAttribute("aria-hidden", "false");
+function initProfileModal(){
+  const modal = document.getElementById("profileModal");
+  if (!modal) return;
 
-  const { name, avatar } = getProfile();
+  const closeBtn = document.getElementById("profileCloseBtn");
+  const saveBtn = document.getElementById("profileSaveBtn");
+  const nameInput = document.getElementById("profileName");
+  const fileInput = document.getElementById("profileFile");
+  const preview = document.getElementById("profilePreview");
 
-  const nameInput = $("gateName");
-  const avatarImg = $("gateAvatarImg");
-  const avatarText = $("gateAvatarText");
+  closeBtn?.addEventListener("click", closeProfileModal);
 
-  if (prefill && nameInput) nameInput.value = name || "";
+  fileInput?.addEventListener("change", async () => {
+    const f = fileInput.files?.[0];
+    if (!f) return;
+    const dataUrl = await fileToDataURL(f);
+    if (preview) preview.src = dataUrl;
+  });
 
-  if (avatar && avatarImg && avatarText){
-    avatarImg.src = avatar;
-    avatarImg.style.display = "block";
-    avatarText.style.display = "none";
-  } else if (avatarImg && avatarText){
-    avatarImg.style.display = "none";
-    avatarText.style.display = "flex";
+  saveBtn?.addEventListener("click", () => {
+    const pOld = getProfile() || {};
+    const name = (nameInput?.value || "").trim() || "Player";
+    const avatar = (preview?.src || "").startsWith("data:") ? preview.src : (pOld.avatar || "");
+
+    setProfile({ name, avatar });
+    renderTopProfile();
+    closeProfileModal();
+  });
+
+  async function fileToDataURL(file){
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
   }
 }
 
-function closeGate(){
-  const gate = $("profileGate");
-  if (!gate) return;
-
-  gate.classList.remove("is-open");
-  gate.setAttribute("aria-hidden", "true");
-}
-
-/* ✅ Done check (fix for Completed) */
-function isDone(key){
-  const v = localStorage.getItem(key);
-  if (v === null) return false;
-  // accept multiple representations
-  if (v === "0" || v === "false") return false;
-  return true;
-}
+// ====== Quiz cards (home) ======
+function isDone(key){ return localStorage.getItem(key) === "1"; }
 
 function updateBadges(){
   const map = {
-    song: "mb_done_song",
-    movie: "mb_done_movie",
-    magicblock: "mb_done_magicblock",
+    song: MB_KEYS.doneSong,
+    movie: MB_KEYS.doneMovie,
+    magicblock: MB_KEYS.doneMagic,
   };
 
   let allDone = true;
@@ -111,85 +147,42 @@ function updateBadges(){
     const done = isDone(storageKey);
     if (!done) allDone = false;
 
-    const card = document.getElementById(`card-${k}`);
-    if (card) card.classList.toggle("card--done", done);
+    const badge = document.querySelector(`[data-badge="${k}"]`);
+    if (badge) badge.style.display = done ? "inline-flex" : "none";
 
     const btn = document.querySelector(`[data-start="${k}"]`);
-    if (btn && done) btn.textContent = "Open";
-    if (btn && !done) btn.textContent = "Start";
+    if (btn) btn.textContent = done ? "Open" : "Start";
   });
 
-  const champ = $("championWrap");
+  const champ = document.getElementById("championWrap");
   if (champ) champ.style.display = allDone ? "block" : "none";
 }
 
-/* init */
-document.addEventListener("DOMContentLoaded", () => {
-  const y = $("year");
-  if (y) y.textContent = new Date().getFullYear();
+function initHomeButtons(){
+  const pill = document.getElementById("profilePill");
+  if (pill) pill.addEventListener("click", () => openProfileModal(false));
 
-  forcePlayAll(".bg__video");
-  forcePlayAll(".brand__logo");
-  forcePlayAll(".resultLogo");
+  document.querySelectorAll("[data-start]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const k = btn.getAttribute("data-start");
+      if (k === "song") location.href = "quizzes/song.html";
+      if (k === "movie") location.href = "quizzes/movie.html";
+      if (k === "magicblock") location.href = "quizzes/magicblock.html";
+    });
+  });
 
-  renderProfile();
-  updateBadges();
+  const champBtn = document.getElementById("openChampionBtn");
+  champBtn?.addEventListener("click", () => location.href = "champion.html");
+}
 
-  /* Gate wiring */
-  const gate = $("profileGate");
-  if (gate){
-    const require = document.body.getAttribute("data-require-profile") === "1";
-    const { name } = getProfile();
-    if (require && !name) openGate(false);
+// ====== Bootstrap (home only) ======
+renderTopProfile();
+initProfileModal();
+updateBadges();
+initHomeButtons();
 
-    const closeBtn = $("gateClose");
-    if (closeBtn){
-      closeBtn.addEventListener("click", () => {
-        const { name: n } = getProfile();
-        if (require && !n) return;
-        closeGate();
-      });
-    }
-
-    const avatarInput = $("gateAvatarInput");
-    const avatarImg = $("gateAvatarImg");
-    const avatarText = $("gateAvatarText");
-    if (avatarInput){
-      avatarInput.addEventListener("change", () => {
-        const file = avatarInput.files && avatarInput.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-          const dataUrl = String(reader.result || "");
-          if (avatarImg && avatarText){
-            avatarImg.src = dataUrl;
-            avatarImg.style.display = "block";
-            avatarText.style.display = "none";
-          }
-          localStorage.setItem(PROFILE_AVATAR_KEY, dataUrl);
-          renderProfile();
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    const startBtn = $("gateStart");
-    if (startBtn){
-      startBtn.addEventListener("click", () => {
-        const nameInput = $("gateName");
-        const n = (nameInput?.value || "").trim();
-        if (!n) return;
-
-        setProfile(n, "");
-        renderProfile();
-        closeGate();
-      });
-    }
-
-    const profileSlot = $("profileSlot");
-    if (profileSlot){
-      profileSlot.addEventListener("click", () => openGate(true));
-    }
-  }
-});
+// Force profile before usage (home)
+const mustCreate = document.body.getAttribute("data-require-profile") === "1";
+if (mustCreate && !getProfile()){
+  openProfileModal(true);
+}
