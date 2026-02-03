@@ -5,7 +5,6 @@
   const RETURN_TO_KEY = "mb_return_to";
 
   function qs(sel, root = document) { return root.querySelector(sel); }
-  function qsa(sel, root = document) { return [...root.querySelectorAll(sel)]; }
 
   function getProfile() {
     return {
@@ -19,16 +18,22 @@
     if (avatar) localStorage.setItem(PROFILE_AVATAR_KEY, avatar);
   }
 
-  function clearProfile() {
-    localStorage.removeItem(PROFILE_NAME_KEY);
-    localStorage.removeItem(PROFILE_AVATAR_KEY);
-  }
-
   function initials(name) {
     const n = (name || "").trim();
     if (!n) return "MB";
     const parts = n.split(/\s+/).slice(0, 2);
     return parts.map(p => p[0]?.toUpperCase() || "").join("") || "MB";
+  }
+
+  // ---------- Autoplay helper (restored) ----------
+  function forcePlayAll(selector){
+    const videos = document.querySelectorAll(selector);
+    if (!videos.length) return;
+
+    const tryPlay = () => videos.forEach(v => v.play().catch(() => {}));
+    tryPlay();
+    window.addEventListener("click", tryPlay, { once: true });
+    window.addEventListener("touchstart", tryPlay, { once: true });
   }
 
   // ---------- Header profile render ----------
@@ -66,7 +71,7 @@
     }
   }
 
-  // ---------- Profile Gate (create if missing) ----------
+  // ---------- Profile Gate ----------
   function ensureGate() {
     let gate = qs("#profileGate");
     if (gate) return gate;
@@ -116,10 +121,8 @@
     const profile = getProfile();
     const mustSetup = !profile.name;
 
-    // If first time: no close
     if (closeBtn) closeBtn.style.display = (mustSetup || force) ? "none" : "inline-flex";
 
-    // Fill existing
     const nameInput = qs("#gateName", gate);
     const preview = qs("#gateAvatarPreview", gate);
     const text = qs("#gateAvatarText", gate);
@@ -194,7 +197,6 @@
         renderHeaderProfile();
         closeGate();
 
-        // If we came from a quiz page, go back
         const returnTo = sessionStorage.getItem(RETURN_TO_KEY) || "";
         if (returnTo) {
           sessionStorage.removeItem(RETURN_TO_KEY);
@@ -203,11 +205,8 @@
       });
     }
 
-    if (closeBtn) {
-      closeBtn.addEventListener("click", closeGate);
-    }
+    if (closeBtn) closeBtn.addEventListener("click", closeGate);
 
-    // click outside closes only if profile already exists
     gate.addEventListener("click", (e) => {
       if (e.target !== gate) return;
       const p = getProfile();
@@ -215,7 +214,7 @@
     });
   }
 
-  // ---------- Redirect logic for pages that require profile ----------
+  // ---------- Require profile on quiz pages ----------
   function enforceProfileIfNeeded() {
     const require = document.body?.dataset?.requireProfile === "1";
     if (!require) return;
@@ -223,15 +222,12 @@
     const p = getProfile();
     if (p.name) return;
 
-    // remember where to return
     sessionStorage.setItem(RETURN_TO_KEY, location.href);
-
-    // go to index and open setup
     const indexUrl = new URL("../index.html?setup=1", location.href).href;
     location.href = indexUrl;
   }
 
-  // ---------- Card generation (basic v1, we’ll redesign later) ----------
+  // ---------- Card generation (basic v1) ----------
   function loadImage(src) {
     return new Promise((resolve) => {
       if (!src) return resolve(null);
@@ -251,6 +247,17 @@
     a.remove();
   }
 
+  function roundRect(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
   async function generateCard({ title, subtitle, filename = "card.png" }) {
     const { name, avatar } = getProfile();
 
@@ -262,11 +269,9 @@
     canvas.height = H;
     const ctx = canvas.getContext("2d");
 
-    // background
     ctx.fillStyle = "#07070a";
     ctx.fillRect(0, 0, W, H);
 
-    // subtle stripes
     ctx.globalAlpha = 0.18;
     for (let x = -H; x < W; x += 28) {
       ctx.fillStyle = x % 56 === 0 ? "#ffffff" : "#bfbfbf";
@@ -274,14 +279,12 @@
     }
     ctx.globalAlpha = 1;
 
-    // vignette
     const g = ctx.createRadialGradient(W * 0.3, H * 0.35, 80, W * 0.3, H * 0.35, 800);
     g.addColorStop(0, "rgba(255,255,255,0.10)");
     g.addColorStop(1, "rgba(0,0,0,0.85)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
-    // card panel
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     roundRect(ctx, 70, 70, W - 140, H - 140, 44);
     ctx.fill();
@@ -291,12 +294,10 @@
     roundRect(ctx, 70, 70, W - 140, H - 140, 44);
     ctx.stroke();
 
-    // avatar
     const AV = 140;
     const ax = 110;
     const ay = 170;
 
-    // avatar ring
     ctx.fillStyle = "rgba(255,255,255,0.10)";
     ctx.beginPath();
     ctx.arc(ax + AV / 2, ay + AV / 2, AV / 2 + 6, 0, Math.PI * 2);
@@ -309,7 +310,6 @@
 
     const img = await loadImage(avatar);
     if (img) {
-      // cover crop
       const r = Math.max(AV / img.width, AV / img.height);
       const nw = img.width * r;
       const nh = img.height * r;
@@ -317,7 +317,6 @@
       const ny = ay + (AV - nh) / 2;
       ctx.drawImage(img, nx, ny, nw, nh);
     } else {
-      // fallback initials
       ctx.fillStyle = "rgba(255,255,255,0.10)";
       ctx.fillRect(ax, ay, AV, AV);
       ctx.fillStyle = "rgba(255,255,255,0.92)";
@@ -328,7 +327,6 @@
     }
     ctx.restore();
 
-    // text
     ctx.fillStyle = "rgba(255,255,255,0.92)";
     ctx.font = "900 54px Inter, system-ui, sans-serif";
     ctx.textAlign = "left";
@@ -349,17 +347,6 @@
 
     const dataUrl = canvas.toDataURL("image/png");
     downloadDataUrl(dataUrl, filename);
-  }
-
-  function roundRect(ctx, x, y, w, h, r) {
-    const rr = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + rr, y);
-    ctx.arcTo(x + w, y, x + w, y + h, rr);
-    ctx.arcTo(x + w, y + h, x, y + h, rr);
-    ctx.arcTo(x, y + h, x, y, rr);
-    ctx.arcTo(x, y, x + w, y, rr);
-    ctx.closePath();
   }
 
   // Public helpers
@@ -384,7 +371,11 @@
     bindGateEvents();
     renderHeaderProfile();
 
-    // clicking profile opens gate (edit profile)
+    // Restore autoplay behavior
+    forcePlayAll(".bg__video");
+    forcePlayAll(".brand__logo");
+
+    // clicking profile opens gate
     const slot = qs("#profileSlot");
     if (slot) slot.addEventListener("click", () => openGate({ force: false }));
 
@@ -392,8 +383,7 @@
     const url = new URL(location.href);
     const wantSetup = url.searchParams.get("setup") === "1";
     const p = getProfile();
-    if (!p.name && (wantSetup || location.pathname.endsWith("/index.html") || location.pathname === "/" )) {
-      openGate({ force: true });
-    }
+    const isIndex = location.pathname.endsWith("/index.html") || location.pathname === "/" || location.pathname.endsWith("/");
+    if (!p.name && (wantSetup || isIndex)) openGate({ force: true });
   });
 })();
