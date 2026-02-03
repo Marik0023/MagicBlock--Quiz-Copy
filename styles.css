@@ -97,7 +97,7 @@ img{max-width:100%; display:block}
   overflow:hidden;
 }
 .brand__logo{
-  height: 52px;   /* ЛОГО ТРОХИ БІЛЬШЕ */
+  height: 52px;
   width:auto;
   border-radius: 12px;
   display:block;
@@ -169,7 +169,7 @@ img{max-width:100%; display:block}
   border: 1px solid rgba(255,255,255,.10);
   box-shadow: var(--shadow);
   overflow:hidden;
-  min-height: 395px; /* ТРОХИ МЕНШЕ */
+  min-height: 395px;
   display:flex;
   flex-direction:column;
   transition: transform .18s ease, border-color .18s ease, background .18s ease;
@@ -181,9 +181,10 @@ img{max-width:100%; display:block}
 .quizCard::before{
   content:"";
   position:absolute; inset:-2px;
-  background: radial-gradient(700px 280px at 25% 10%, rgba(120,140,255,.16), transparent 60%),
-              radial-gradient(600px 260px at 85% 5%, rgba(255,120,200,.12), transparent 58%),
-              radial-gradient(700px 300px at 50% 115%, rgba(255,180,80,.10), transparent 60%);
+  background:pk
+    radial-gradient(700px 280px at 25% 10%, rgba(120,140,255,.16), transparent 60%),
+    radial-gradient(600px 260px at 85% 5%, rgba(255,120,200,.12), transparent 58%),
+    radial-gradient(700px 300px at 50% 115%, rgba(255,180,80,.10), transparent 60%);
   pointer-events:none;
 }
 .quizCard__inner{ position:relative; padding:16px; display:flex; flex-direction:column; height:100%;}
@@ -192,13 +193,13 @@ img{max-width:100%; display:block}
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(0,0,0,.25);
   overflow:hidden;
-  height: 170px; /* МЕНШЕ */
+  height: 170px;
   display:flex;
   align-items:center;
   justify-content:center;
 }
 .quizCard__media img{
-  height: 140px; /* МЕНШЕ */
+  height: 140px;
   width:auto;
   filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
 }
@@ -264,7 +265,12 @@ img{max-width:100%; display:block}
   transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
   user-select:none;
 }
-.btn:hover{ transform: translateY(-1px); background: var(--btn2); border-color: rgba(255,255,255,.26); box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset; }
+.btn:hover{
+  transform: translateY(-1px);
+  background: var(--btn2);
+  border-color: rgba(255,255,255,.26);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset;
+}
 .btn:active{ transform: translateY(0px); }
 .btn--ghost{ background: rgba(0,0,0,.20); }
 .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
@@ -337,7 +343,7 @@ img{max-width:100%; display:block}
   background: rgba(0,0,0,.22);
   padding: 16px;
   display:grid;
-  grid-template-columns: 200px 1fr; /* ТРОХИ МЕНШЕ */
+  grid-template-columns: 200px 1fr;
   gap: 16px;
   align-items:center;
 }
@@ -463,7 +469,6 @@ img{max-width:100%; display:block}
 }
 .optionBtn:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
 
-/* ТІЛЬКИ ВИБРАНИЙ ВАРІАНТ */
 .optionBtn.isSelected{
   border-color: rgba(255,255,255,.38);
   background: rgba(255,255,255,.08);
@@ -585,7 +590,7 @@ img{max-width:100%; display:block}
 .kv .k{ color: var(--muted); font-weight:800; }
 .kv .v{ font-weight:900; }
 
-/* ===== Card preview (canvas) ===== */
+/* ===== Card preview (canvas container) ===== */
 .cardZone{
   margin-top: 14px;
   border-radius: 24px;
@@ -595,15 +600,7 @@ img{max-width:100%; display:block}
   display:none;
 }
 .cardZone.isOpen{ display:block; }
-.cardPreview{ width: min(420px, 100%); margin: 0 auto; }
-.cardPreview canvas{
-  width: 100%;
-  height: auto;
-  border-radius: 22px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.35);
-  display:block;
-}
+
 .cardActions{
   margin-top: 12px;
   display:flex;
@@ -618,17 +615,44 @@ img{max-width:100%; display:block}
   font-size: 13px;
 }
 
-/* ===== Card pop-in animation ===== */
+/* =========================================================
+   CHAMPION CARD PREVIEW: POP-IN + SHINE (clean, no duplicates)
+   - shine every 2s
+   - starts outside, ends outside
+   - smooth, reaches edges
+========================================================= */
+
 .cardPreview{
   position: relative;
+  width: min(420px, 100%);
+  margin: 0 auto;
+
+  border-radius: 22px;
+  overflow: hidden;
+  isolation: isolate;
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.35);
+
   transform-origin: 50% 30%;
 }
 
-.cardZone.isOpen .cardPreview{
-  animation: cardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
+.cardPreview canvas{
+  width: 100%;
+  height: auto;
+  display: block;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
-@keyframes cardPopIn{
+/* pop-in */
+.cardZone.isOpen .cardPreview{
+  animation: mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
+}
+
+@keyframes mbCardPopIn{
   from{
     opacity: 0;
     transform: translateY(16px) scale(.985);
@@ -641,180 +665,53 @@ img{max-width:100%; display:block}
   }
 }
 
-/* subtle shine overlay */
-.cardPreview::after{
-  content:"";
-  position:absolute;
-  inset: -20px;
-  pointer-events:none;
-  opacity: 0;
-  border-radius: 42px;
-  background: linear-gradient(
-    115deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,.18) 42%,
-    rgba(255,255,255,.06) 50%,
-    rgba(255,255,255,0) 62%
-  );
-  mix-blend-mode: screen;
-  transform: translateX(-35%) translateY(-10%) rotate(-8deg);
-}
-
-.cardZone.isOpen .cardPreview::after{
-  opacity: .55;
-  animation: cardSheen 1.3s ease-out .15s both;
-}
-
-@keyframes cardSheen{
-  0%{
-    transform: translateX(-55%) translateY(-10%) rotate(-8deg);
-    opacity: 0;
-  }
-  25%{ opacity: .55; }
-  100%{
-    transform: translateX(55%) translateY(6%) rotate(-8deg);
-    opacity: 0;
-  }
-}
-
-/* button appears nicely too */
+/* actions pop */
 .cardZone.isOpen .cardActions{
-  animation: actionsPop .35s ease-out .15s both;
+  animation: mbActionsPop .35s ease-out .12s both;
 }
-
-@keyframes actionsPop{
+@keyframes mbActionsPop{
   from{ opacity:0; transform: translateY(8px); }
   to{ opacity:1; transform: translateY(0); }
 }
 
-/* ===== Champion card: stronger animated shine (preview only) ===== */
-.cardPreview{
-  position: relative;
-  border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.35);
-}
-
-.cardPreview canvas{
-  width: 100%;
-  height: auto;
-  display: block;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-/* soft pulsing glow */
-.cardZone.isOpen .cardPreview::before{
-  content:"";
-  position:absolute;
-  inset:-18%;
-  background: radial-gradient(700px 420px at 30% 20%,
-    rgba(255,255,255,.22),
-    rgba(255,255,255,0) 60%);
-  mix-blend-mode: screen;
-  opacity: .22;
-  animation: mbGlowPulse 7.6s ease-in-out infinite;
-  pointer-events:none;
-}
-
-/* big shine sweep */
-.cardZone.isOpen .cardPreview::after{
-  content:"";
-  position:absolute;
-  inset:-55%;
-  background: linear-gradient(120deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0) 38%,
-    rgba(255,255,255,.16) 46%,
-    rgba(255,255,255,.55) 50%,
-    rgba(255,255,255,.16) 54%,
-    rgba(255,255,255,0) 62%,
-    rgba(255,255,255,0) 100%);
-  mix-blend-mode: screen;
-  opacity: .95;
-  filter: blur(.4px);
-  transform: translateX(-160%);
-  animation: mbShineSweep 8.1s ease-in-out infinite;
-  pointer-events:none;
-}
-
-@keyframes mbGlowPulse{
-  0%,100%{ opacity:.12; transform: scale(1); }
-  50%{ opacity:.30; transform: scale(1.02); }
-}
-
-@keyframes mbShineSweep{
-  0%{ transform: translateX(-170%); }
-  40%{ transform: translateX(-170%); } /* пауза */
-  100%{ transform: translateX(170%); }
-}
-
-/* ============================
-   CHAMPION CARD: ANIMATED SHINE (preview only)
-   Replace ALL old shine blocks with this
-   Put at the END of styles.css
-============================ */
-
-/* make sure preview clips overlays */
-.cardPreview{
-  position: relative;
-  border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.35);
-}
-
-.cardPreview canvas{
-  width: 100%;
-  height: auto;
-  display: block;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-/* soft ambient glow (subtle, always running) */
+/* subtle breathing glow */
 .cardZone.isOpen .cardPreview::before{
   content:"";
   position:absolute;
   inset:-25%;
   pointer-events:none;
-  border-radius: 42px;
 
   background: radial-gradient(900px 520px at 28% 18%,
     rgba(255,255,255,.18),
     rgba(255,255,255,0) 60%);
 
   mix-blend-mode: screen;
-  opacity: .18;
+  opacity: .16;
   filter: blur(1px);
 
   animation: mbGlowBreath 4s ease-in-out infinite;
 }
 
 @keyframes mbGlowBreath{
-  0%,100%{ opacity:.12; transform: scale(1); }
-  50%{ opacity:.22; transform: scale(1.015); }
+  0%,100%{ opacity:.10; transform: scale(1); }
+  50%{ opacity:.20; transform: scale(1.015); }
 }
 
-/* main shine sweep (every ~2 seconds) */
+/* MAIN shine sweep - every 2 seconds, starts outside, ends outside */
 .cardZone.isOpen .cardPreview::after{
   content:"";
   position:absolute;
 
-  /* bigger than card so it starts OUTSIDE and ends OUTSIDE */
-  inset:-110%;
-  pointer-events:none;
-  border-radius: 42px;
+  /* bigger than card => guarantees "from outside" and "to outside" */
+  inset:-90%;
 
-  /* wide soft band */
+  pointer-events:none;
+
   background: linear-gradient(120deg,
     rgba(255,255,255,0)    0%,
     rgba(255,255,255,0)   34%,
     rgba(255,255,255,.10) 44%,
-    rgba(255,255,255,.45) 50%,
+    rgba(255,255,255,.48) 50%,
     rgba(255,255,255,.10) 56%,
     rgba(255,255,255,0)   66%,
     rgba(255,255,255,0)  100%
@@ -824,25 +721,50 @@ img{max-width:100%; display:block}
   filter: blur(.9px);
 
   /* start fully outside left */
-  transform: translateX(-120%) rotate(-8deg);
+  transform: translateX(-110%) rotate(-8deg);
   opacity: 0;
 
+  /* cycle = 2s */
   animation: mbShineEvery2s 2s ease-in-out infinite;
 }
 
+/* плавно проходить через всю карту і виходить за межі */
 @keyframes mbShineEvery2s{
+  /* small pause outside */
   0%{
-    transform: translateX(+120%) rotate(-8deg);
+    transform: translateX(-110%) rotate(-8deg);
     opacity: 0;
   }
-  18%{ opacity: .55; }
+  10%{
+    transform: translateX(-110%) rotate(-8deg);
+    opacity: 0;
+  }
+
+  /* sweep */
+  22%{ opacity: .55; }
   50%{
     transform: translateX(0%) rotate(-8deg);
     opacity: .75;
   }
-  82%{ opacity: .55; }
-  100%{
-    transform: translateX(120%) rotate(-8deg);
+  78%{ opacity: .55; }
+
+  /* exit outside */
+  90%{
+    transform: translateX(110%) rotate(-8deg);
     opacity: 0;
+  }
+  100%{
+    transform: translateX(110%) rotate(-8deg);
+    opacity: 0;
+  }
+}
+
+/* reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .cardZone.isOpen .cardPreview,
+  .cardZone.isOpen .cardPreview::before,
+  .cardZone.isOpen .cardPreview::after,
+  .cardZone.isOpen .cardActions{
+    animation: none !important;
   }
 }
