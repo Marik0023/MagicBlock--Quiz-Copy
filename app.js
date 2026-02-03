@@ -28,20 +28,15 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
-function getHomeHref(){
-  const brand = document.querySelector("a.brand");
-  return brand?.getAttribute("href") || "index.html";
-}
-
-// Autoplay (bg + logo)
+/* Autoplay (bg + logo) */
 forcePlayAll(".bg__video");
 forcePlayAll(".brand__logo");
 
-// Year
+/* Year */
 const y = document.getElementById("year");
 if (y) y.textContent = new Date().getFullYear();
 
-// Topbar profile pill render
+/* Topbar profile render */
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
   if (!pill) return;
@@ -63,7 +58,7 @@ function renderTopProfile(){
   if (hintEl) hintEl.textContent = "Edit";
 }
 
-// Profile modal
+/* Profile modal */
 function openProfileModal(force = false){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
@@ -93,6 +88,15 @@ function closeProfileModal(){
   modal.classList.remove("isOpen");
 }
 
+async function fileToDataURL(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
 function initProfileModal(){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
@@ -102,8 +106,19 @@ function initProfileModal(){
   const nameInput = document.getElementById("profileName");
   const fileInput = document.getElementById("profileFile");
   const preview = document.getElementById("profilePreview");
+  const avatarBox = document.getElementById("avatarBox");
 
   closeBtn?.addEventListener("click", closeProfileModal);
+
+  // Click on avatar box => open file picker
+  const openPicker = () => fileInput?.click();
+  avatarBox?.addEventListener("click", openPicker);
+  avatarBox?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openPicker();
+    }
+  });
 
   fileInput?.addEventListener("change", async () => {
     const f = fileInput.files?.[0];
@@ -116,23 +131,14 @@ function initProfileModal(){
     const pOld = getProfile() || {};
     const name = (nameInput?.value || "").trim() || "Player";
     const avatar = (preview?.src || "").startsWith("data:") ? preview.src : (pOld.avatar || "");
-
     setProfile({ name, avatar });
+
     renderTopProfile();
     closeProfileModal();
   });
-
-  function fileToDataURL(file){
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
 }
 
-// Home badges
+/* Home badges */
 function isDone(key){ return localStorage.getItem(key) === "1"; }
 
 function updateBadges(){
@@ -159,19 +165,10 @@ function updateBadges(){
   if (champ) champ.style.display = allDone ? "block" : "none";
 }
 
-function initGlobalProfilePill(){
-  const pill = document.getElementById("profilePill");
-  if (!pill) return;
-
-  pill.addEventListener("click", () => {
-    // якщо є модалка — редагуємо тут, якщо нема — перекидаємо на home
-    const modal = document.getElementById("profileModal");
-    if (modal) openProfileModal(false);
-    else location.href = getHomeHref();
-  });
-}
-
 function initHomeButtons(){
+  const pill = document.getElementById("profilePill");
+  if (pill) pill.addEventListener("click", () => openProfileModal(false));
+
   document.querySelectorAll("[data-start]").forEach(btn => {
     btn.addEventListener("click", () => {
       const k = btn.getAttribute("data-start");
@@ -185,14 +182,12 @@ function initHomeButtons(){
   champBtn?.addEventListener("click", () => location.href = "champion.html");
 }
 
-// Bootstrap
+/* Boot */
 renderTopProfile();
 initProfileModal();
-initGlobalProfilePill();
 updateBadges();
 initHomeButtons();
 
-// Force profile before usage (home)
 const mustCreate = document.body.getAttribute("data-require-profile") === "1";
 if (mustCreate && !getProfile()){
   openProfileModal(true);
