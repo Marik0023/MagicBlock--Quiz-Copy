@@ -1,173 +1,252 @@
-const DONE_KEY  = "mb_done_magicblock";
-const SCORE_KEY = "mb_score_magicblock";
-const TOTAL_KEY = "mb_total_magicblock";
-const WHEN_KEY  = "mb_when_magicblock";
-
+const DONE_KEY = "mb_done_magicblock";
+const RESULT_KEY = "mb_result_magicblock";
 const PROFILE_NAME_KEY = "mb_profile_name";
 const PROFILE_AVATAR_KEY = "mb_profile_avatar";
 
-const letters = ["A", "B", "C", "D"];
+function forcePlayAll(selector){
+  const vids = document.querySelectorAll(selector);
+  const tryPlay = () => vids.forEach(v => v.play().catch(()=>{}));
+  tryPlay();
+  window.addEventListener("click", tryPlay, { once:true });
+  window.addEventListener("touchstart", tryPlay, { once:true });
+}
 
-// EDIT QUESTIONS HERE
-const questions = [
-  { q: "MagicBlock is mainly about…", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
-  { q: "MagicBlock was founded in…", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
-  { q: "MagicBlock’s main product is…", choices: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], correctIndex: 2 },
-  { q: "MagicBlock’s slogan is…", choices: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], correctIndex: 3 },
-  { q: "MagicBlock’s community is called…", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
-  { q: "MagicBlock’s color theme is…", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
-  { q: "MagicBlock partners with…", choices: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], correctIndex: 2 },
-  { q: "MagicBlock’s next release is…", choices: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], correctIndex: 3 },
-  { q: "MagicBlock’s mascot is…", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
-  { q: "MagicBlock’s mission is…", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
+function getProfile(){
+  return {
+    name: localStorage.getItem(PROFILE_NAME_KEY) || "Player",
+    avatar: localStorage.getItem(PROFILE_AVATAR_KEY) || ""
+  };
+}
+
+function renderProfilePill(){
+  const slot = document.getElementById("profileSlot");
+  const nameEl = document.getElementById("profileName");
+  const img = document.getElementById("profileAvatarImg");
+  const fallback = document.getElementById("profileAvatarFallback");
+  if (!slot || !nameEl || !img || !fallback) return;
+
+  const { name, avatar } = getProfile();
+  slot.style.display = "inline-flex";
+  nameEl.textContent = name;
+
+  if (avatar){
+    img.src = avatar;
+    img.style.display = "block";
+    fallback.style.display = "none";
+  } else {
+    img.style.display = "none";
+    fallback.style.display = "flex";
+    fallback.textContent = (name.slice(0,2) || "MB").toUpperCase();
+  }
+
+  slot.addEventListener("click", () => location.href = "../index.html");
+}
+
+function qs(name){ return new URLSearchParams(location.search).get(name); }
+function resetIfAsked(){
+  if (qs("reset") === "1"){
+    localStorage.removeItem(DONE_KEY);
+    localStorage.removeItem(RESULT_KEY);
+    location.replace(location.pathname);
+  }
+}
+function loadResult(){
+  try{
+    const raw = localStorage.getItem(RESULT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch{ return null; }
+}
+function saveResult(result){
+  localStorage.setItem(DONE_KEY, "1");
+  localStorage.setItem(RESULT_KEY, JSON.stringify(result));
+}
+
+function showResultScreen(result){
+  const quizPanel = document.getElementById("quizPanel");
+  const resultPanel = document.getElementById("resultPanel");
+  const resultText = document.getElementById("resultText");
+  if (!quizPanel || !resultPanel || !resultText) return;
+
+  quizPanel.style.display = "none";
+  resultPanel.style.display = "block";
+
+  const prof = getProfile();
+  if (!result){
+    resultText.innerHTML = `
+      <div class="small">Saved result not found. Reset and retake:</div>
+      <div class="small"><b>Open:</b> magicblock.html?reset=1</div>
+    `;
+    return;
+  }
+
+  const date = new Date(result.completedAt);
+  const when = isNaN(date.getTime()) ? "" : date.toLocaleString();
+
+  resultText.innerHTML = `
+    <div class="small"><b>${prof.name}</b></div>
+    <div class="small">Completed: ${when}</div>
+    <div style="height:10px;"></div>
+    <div class="small"><b>Total</b> ${result.total}</div>
+    <div class="small"><b>Correct</b> ${result.correct}</div>
+    <div class="small"><b>Wrong</b> ${result.wrong}</div>
+    <div class="small"><b>Accuracy</b> ${result.accuracy}%</div>
+  `;
+
+  const genBtn = document.getElementById("genCardBtn");
+  if (genBtn) genBtn.onclick = () => generateCard(result, "MagicBlock Result");
+}
+
+/**
+ * EDIT HERE: your MagicBlock questions
+ */
+const QUESTIONS = [
+  { text: "Question 1 (edit me)", options: ["A", "B", "C", "D"], answer: 0 },
+  { text: "Question 2 (edit me)", options: ["A", "B", "C", "D"], answer: 1 },
+  { text: "Question 3 (edit me)", options: ["A", "B", "C", "D"], answer: 2 },
+  { text: "Question 4 (edit me)", options: ["A", "B", "C", "D"], answer: 3 },
+  { text: "Question 5 (edit me)", options: ["A", "B", "C", "D"], answer: 0 },
+  { text: "Question 6 (edit me)", options: ["A", "B", "C", "D"], answer: 1 },
+  { text: "Question 7 (edit me)", options: ["A", "B", "C", "D"], answer: 2 },
+  { text: "Question 8 (edit me)", options: ["A", "B", "C", "D"], answer: 3 },
+  { text: "Question 9 (edit me)", options: ["A", "B", "C", "D"], answer: 0 },
+  { text: "Question 10 (edit me)", options: ["A", "B", "C", "D"], answer: 1 },
 ];
 
 let idx = 0;
 let correct = 0;
-let selectedIndex = null;
+let selected = null;
 
-const qText = document.getElementById("questionText");
-const choicesEl = document.getElementById("choices");
-const statusEl = document.getElementById("status");
-const nextBtn = document.getElementById("next");
-const qCounter = document.getElementById("qCounter");
-const lockedMsg = document.getElementById("lockedMsg");
+function renderQuestion(){
+  const q = QUESTIONS[idx];
+  const qMeta = document.getElementById("qMeta");
+  const qText = document.getElementById("qText");
+  const progress = document.getElementById("progress");
+  const choices = document.getElementById("choices");
+  const nextBtn = document.getElementById("nextBtn");
+  if (!q || !qMeta || !qText || !progress || !choices || !nextBtn) return;
 
-const quizUI = document.getElementById("quizUI");
-const resultUI = document.getElementById("resultUI");
+  qMeta.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  qText.textContent = q.text;
+  progress.textContent = `Progress: ${idx} / ${QUESTIONS.length}`;
 
-const rTotal = document.getElementById("rTotal");
-const rCorrect = document.getElementById("rCorrect");
-const rWrong = document.getElementById("rWrong");
-const rPercent = document.getElementById("rPercent");
-const resultWhen = document.getElementById("resultWhen");
-const resultName = document.getElementById("resultName");
-const resultAvatar = document.getElementById("resultAvatar");
+  choices.innerHTML = "";
+  selected = null;
+  nextBtn.disabled = true;
+  nextBtn.classList.remove("is-visible");
+  nextBtn.style.opacity = "0";
+  nextBtn.style.transform = "translateY(6px)";
 
-const genCardBtn = document.getElementById("genCard");
-
-function nowText(){ return new Date().toLocaleString(); }
-
-function setNextText(){
-  nextBtn.textContent = (idx === questions.length - 1) ? "Finish →" : "Next →";
-}
-
-function popNext(){
-  nextBtn.classList.remove("is-pop");
-  void nextBtn.offsetWidth;
-  nextBtn.classList.add("is-pop");
-}
-
-function clearSelectionUI(){
-  [...choicesEl.querySelectorAll("button")].forEach(b => b.classList.remove("selected"));
-}
-
-function render(){
-  selectedIndex = null;
-  const q = questions[idx];
-
-  qCounter.textContent = `Question ${idx + 1} of ${questions.length}`;
-  statusEl.textContent = `Progress: ${idx} / ${questions.length}`;
-
-  nextBtn.style.display = "none";
-  nextBtn.classList.remove("is-pop");
-
-  qText.textContent = q.q;
-
-  choicesEl.innerHTML = "";
-  q.choices.forEach((text, i) => {
-    const btn = document.createElement("button");
-    btn.className = "btn choiceBtn";
-    btn.type = "button";
-    btn.textContent = `${letters[i]}) ${text}`;
-    btn.addEventListener("click", () => pick(i));
-    choicesEl.appendChild(btn);
+  const letters = ["A","B","C","D"];
+  q.options.forEach((t,i) => {
+    const b = document.createElement("button");
+    b.className = "choiceBtn";
+    b.type = "button";
+    b.textContent = `${letters[i]}) ${t}`;
+    b.onclick = () => {
+      selected = i;
+      [...choices.children].forEach(ch => ch.classList.remove("is-selected"));
+      b.classList.add("is-selected");
+      nextBtn.disabled = false;
+      nextBtn.style.opacity = "1";
+      nextBtn.style.transform = "translateY(0)";
+      nextBtn.classList.add("is-visible");
+    };
+    choices.appendChild(b);
   });
-}
 
-function pick(i){
-  selectedIndex = i;
-  clearSelectionUI();
-  const btn = choicesEl.querySelectorAll("button")[i];
-  if (btn) btn.classList.add("selected");
-
-  setNextText();
-  nextBtn.style.display = "inline-flex";
-  popNext();
-}
-
-function next(){
-  if (selectedIndex === null) return;
-
-  const q = questions[idx];
-  if (selectedIndex === q.correctIndex) correct += 1;
-
-  if (idx < questions.length - 1){
-    idx += 1;
-    render();
-  } else {
-    finish();
-  }
-}
-
-function showResult(){
-  quizUI.style.display = "none";
-  resultUI.style.display = "block";
-
-  const total = Number(localStorage.getItem(TOTAL_KEY) || questions.length);
-  const c = Number(localStorage.getItem(SCORE_KEY) || correct);
-  const wrong = total - c;
-  const percent = total ? Math.round((c / total) * 100) : 0;
-
-  rTotal.textContent = String(total);
-  rCorrect.textContent = String(c);
-  rWrong.textContent = String(wrong);
-  rPercent.textContent = `${percent}%`;
-
-  const when = localStorage.getItem(WHEN_KEY) || "";
-  resultWhen.textContent = when ? `Completed: ${when}` : "";
-
-  const name = (localStorage.getItem(PROFILE_NAME_KEY) || "Player").trim() || "Player";
-  const avatar = localStorage.getItem(PROFILE_AVATAR_KEY) || "";
-
-  resultName.textContent = name;
-  if (avatar) {
-    resultAvatar.src = avatar;
-    resultAvatar.style.display = "block";
-  } else {
-    resultAvatar.style.display = "none";
-  }
+  nextBtn.onclick = () => {
+    if (selected === null) return;
+    if (selected === q.answer) correct++;
+    idx++;
+    if (idx >= QUESTIONS.length) finish();
+    else renderQuestion();
+  };
 }
 
 function finish(){
-  localStorage.setItem(DONE_KEY, "1");
-  localStorage.setItem(SCORE_KEY, String(correct));
-  localStorage.setItem(TOTAL_KEY, String(questions.length));
-  localStorage.setItem(WHEN_KEY, nowText());
-  showResult();
+  const total = QUESTIONS.length;
+  const wrong = total - correct;
+  const accuracy = Math.round((correct / total) * 100);
+
+  const result = {
+    quizId: "magicblock",
+    total,
+    correct,
+    wrong,
+    accuracy,
+    completedAt: new Date().toISOString()
+  };
+
+  saveResult(result);
+  showResultScreen(result);
 }
 
-function boot(){
-  if (localStorage.getItem(DONE_KEY) === "1"){
-    lockedMsg.style.display = "block";
-    lockedMsg.textContent = "You already completed this quiz.";
-    showResult();
-  } else {
-    nextBtn.addEventListener("click", next);
-    render();
-  }
-
-  if (genCardBtn) {
-    genCardBtn.addEventListener("click", async () => {
-      const total = Number(localStorage.getItem(TOTAL_KEY) || questions.length);
-      const c = Number(localStorage.getItem(SCORE_KEY) || correct);
-      const scoreText = `Score: ${c} / ${total}`;
-
-      if (typeof window.MB_generateQuizCard === "function") {
-        await window.MB_generateQuizCard({ quizTitle: "MagicBlock Quiz", scoreText });
-      }
-    });
-  }
+function roundRect(ctx, x, y, w, h, r){
+  const rr = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr, y);
+  ctx.arcTo(x+w, y, x+w, y+h, rr);
+  ctx.arcTo(x+w, y+h, x, y+h, rr);
+  ctx.arcTo(x, y+h, x, y, rr);
+  ctx.arcTo(x, y, x+w, y, rr);
+  ctx.closePath();
 }
 
-boot();
+function generateCard(result, subtitle){
+  const wrap = document.getElementById("cardPreviewWrap");
+  const canvas = document.getElementById("cardCanvas");
+  const link = document.getElementById("downloadLink");
+  if (!wrap || !canvas || !link) return;
+
+  wrap.style.display = "block";
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+
+  ctx.clearRect(0,0,W,H);
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0, "#0b0b0f");
+  g.addColorStop(1, "#111118");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 6;
+  roundRect(ctx, 48, 48, W-96, H-96, 48);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "700 72px system-ui, -apple-system, Segoe UI, Roboto";
+  ctx.fillText("MagicBlock Quiz", 90, 150);
+  ctx.font = "700 58px system-ui, -apple-system, Segoe UI, Roboto";
+  ctx.fillText(subtitle, 90, 230);
+
+  const prof = getProfile();
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "700 52px system-ui, -apple-system, Segoe UI, Roboto";
+  ctx.fillText(prof.name, 90, 360);
+
+  ctx.fillStyle = "rgba(255,255,255,0.75)";
+  ctx.font = "500 38px system-ui, -apple-system, Segoe UI, Roboto";
+  ctx.fillText(`Correct: ${result.correct} / ${result.total}`, 90, 470);
+  ctx.fillText(`Accuracy: ${result.accuracy}%`, 90, 530);
+
+  const url = canvas.toDataURL("image/png");
+  link.href = url;
+  link.style.display = "inline-flex";
+  link.textContent = "Download PNG";
+}
+
+(function init(){
+  resetIfAsked();
+  forcePlayAll(".bg__video");
+  forcePlayAll(".brand__logo");
+  renderProfilePill();
+
+  const done = localStorage.getItem(DONE_KEY) === "1";
+  if (done){
+    showResultScreen(loadResult());
+    return;
+  }
+
+  renderQuestion();
+})();
