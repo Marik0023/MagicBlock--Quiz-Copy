@@ -3,80 +3,72 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MagicBlock • Quizzes</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
+  <title>MagicBlock Quiz</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-
 <body>
-  <div class="bg" aria-hidden="true">
-    <video class="bg__video" autoplay muted loop playsinline preload="auto">
-      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4">
-    </video>
+
+  <!-- Background -->
+  <div class="bg">
+    <video class="bg__video" autoplay muted loop playsinline
+      src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4"></video>
     <div class="bg__vignette"></div>
   </div>
 
+  <!-- Header -->
   <header class="topbar">
-    <a class="brand" href="./index.html" aria-label="Go to Home">
-      <video class="brand__logo" autoplay muted loop playsinline preload="auto">
-        <source src="./assets/logo.webm" type="video/webm">
-        <source src="./assets/logo.mp4" type="video/mp4">
-      </video>
+    <a class="brand" href="./index.html" aria-label="MagicBlock home">
+      <video class="brand__logo" autoplay muted loop playsinline src="./assets/logo.webm"></video>
     </a>
+
+    <div class="topbar__right">
+      <button id="profileSlot" class="profile" type="button" aria-label="Profile" style="display:none">
+        <div class="profile__avatar">
+          <img id="profileAvatarImg" alt="Avatar" />
+          <div id="profileAvatarFallback" class="profile__fallback">MB</div>
+        </div>
+        <div id="profileName" class="profile__name"></div>
+      </button>
+    </div>
   </header>
 
   <main class="container">
-    <section class="hero">
-      <h1 class="hero__title">Pick a quiz.</h1>
-      <p class="hero__subtitle">Each quiz can be completed once.</p>
-    </section>
+    <h1 class="hero__title">Pick a quiz.</h1>
+    <p class="hero__subtitle">Each quiz can be completed once.</p>
 
-    <section class="grid" aria-label="Quiz selection">
-      <article class="card" id="card-song">
-        <h2 class="card__title">Quiz 1</h2>
-        <div class="badge" data-badge="song">✓ Completed</div>
-        <p class="card__headline">Guess the Song by the Melody</p>
-        <p class="card__text">10 questions • A/B/C/D</p>
-        <a class="btn" data-start="song" href="./quizzes/song.html">Start</a>
+    <div class="grid">
+      <article id="cardSong" class="card">
+        <div class="card__title">Quiz 1</div>
+        <div class="card__headline">Guess the Song by the Melody</div>
+        <p class="card__text">10 questions • A/B/C/D • Press Next after each answer.</p>
+        <a class="btn" href="./quizzes/song.html">Open</a>
+        <div id="badgeSong" class="badge">✓ Completed</div>
       </article>
 
-      <article class="card" id="card-movie">
-        <h2 class="card__title">Quiz 2</h2>
-        <div class="badge" data-badge="movie">✓ Completed</div>
-        <p class="card__headline">Guess the Movie by the Frame</p>
-        <p class="card__text">10 questions • A/B/C/D</p>
-        <a class="btn" data-start="movie" href="./quizzes/movie.html">Start</a>
+      <article id="cardMovie" class="card">
+        <div class="card__title">Quiz 2</div>
+        <div class="card__headline">Guess the Movie by the Frame</div>
+        <p class="card__text">10 questions • A/B/C/D • Press Next after each answer.</p>
+        <a class="btn" href="./quizzes/movie.html">Open</a>
+        <div id="badgeMovie" class="badge">✓ Completed</div>
       </article>
 
-      <article class="card" id="card-magicblock">
-        <h2 class="card__title">Quiz 3</h2>
-        <div class="badge" data-badge="magicblock">✓ Completed</div>
-        <p class="card__headline">How Well Do You Know MagicBlock?</p>
-        <p class="card__text">10 questions • A/B/C/D</p>
-        <a class="btn" data-start="magicblock" href="./quizzes/magicblock.html">Start</a>
+      <article id="cardMagic" class="card">
+        <div class="card__title">Quiz 3</div>
+        <div class="card__headline">How well do you know MagicBlock?</div>
+        <p class="card__text">10 questions • A/B/C/D • Press Next after each answer.</p>
+        <a class="btn" href="./quizzes/magicblock.html">Open</a>
+        <div id="badgeMagic" class="badge">✓ Completed</div>
       </article>
-    </section>
+    </div>
 
-    <section id="championWrap" style="display:none; margin-top:16px;">
-      <div class="card">
-        <h2 class="card__title">Bonus</h2>
-        <div class="badge" style="display:inline-flex;">✓ Unlocked</div>
-        <p class="card__headline">Champion Card</p>
-        <p class="card__text">You completed all 3 quizzes. Claim your champion card.</p>
-        <a class="btn" href="./champion.html">Get Champion Card</a>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <p class="footer__text">Built for GitHub Pages • <span id="year"></span></p>
-    </footer>
+    <div class="footer">
+      <button id="championBtn" class="btn btn--next" type="button" style="display:none">Generate Champion Card</button>
+      <p id="championHint" class="footer__text">Complete all three quizzes to unlock the Champion Card.</p>
+    </div>
   </main>
 
-  <script src="./app.js"></script>
+  <script src="./app.js" defer></script>
+  <script src="./main.js" defer></script>
 </body>
 </html>
-   
