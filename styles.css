@@ -750,3 +750,154 @@ img{max-width:100%; display:block}
   40%{ transform: translateX(-170%); } /* пауза */
   100%{ transform: translateX(170%); }
 }
+
+/* =========================================================
+   CHAMPION CARD UI (preview) — flip + animated shine (slower x3)
+   вставити в КІНЕЦЬ styles.css
+========================================================= */
+
+/* cardZone залишаємо як було, але робимо preview більшим */
+.cardZone{
+  margin-top: 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.22);
+  padding: 14px;
+  display:none;
+}
+.cardZone.isOpen{ display:block; }
+
+/* preview wrapper */
+.cardPreview{
+  width: min(980px, 100%);
+  margin: 0 auto;
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.35);
+  perspective: 1200px;
+}
+
+/* ===== Animated shine overlays (UI-only) ===== */
+.cardPreview::before,
+.cardPreview::after{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  pointer-events:none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+/* pulse glow */
+.cardZone.isOpen .cardPreview::before{
+  opacity: 1;
+  background:
+    radial-gradient(900px 420px at 20% 15%, rgba(255,255,255,.14), transparent 60%),
+    radial-gradient(900px 420px at 85% 25%, rgba(255,255,255,.10), transparent 62%),
+    radial-gradient(800px 520px at 55% 120%, rgba(255,255,255,.08), transparent 65%);
+  mix-blend-mode: screen;
+
+  /* було ~2.6s → зробили ~7.8s (повільніше ~в 3 рази) */
+  animation: mbGlowPulse 7.8s ease-in-out infinite;
+}
+
+/* diagonal sweep shine */
+.cardZone.isOpen .cardPreview::after{
+  opacity: 1;
+
+  /* більший/яскравіший блиск */
+  background: linear-gradient(
+    120deg,
+    rgba(255,255,255,0.00) 35%,
+    rgba(255,255,255,0.00) 45%,
+    rgba(255,255,255,0.20) 50%,
+    rgba(255,255,255,0.08) 56%,
+    rgba(255,255,255,0.00) 66%,
+    rgba(255,255,255,0.00) 100%
+  );
+  transform: translateX(-40%) translateY(-10%) rotate(0deg);
+  mix-blend-mode: screen;
+
+  /* було ~3.1s → зробили ~9.3s (повільніше ~в 3 рази) */
+  animation: mbShineSweep 9.3s ease-in-out infinite;
+}
+
+@keyframes mbGlowPulse{
+  0%, 100% { filter: blur(0px); opacity: .85; }
+  50%      { filter: blur(1px); opacity: 1; }
+}
+
+@keyframes mbShineSweep{
+  0%   { transform: translateX(-55%) translateY(-12%); opacity: .05; }
+  20%  { opacity: .18; }
+  50%  { transform: translateX(35%) translateY(6%); opacity: .22; }
+  75%  { opacity: .12; }
+  100% { transform: translateX(75%) translateY(12%); opacity: .06; }
+}
+
+/* ===== 3D FLIP ===== */
+.cardFlip{
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(.2,.8,.2,1);
+}
+.cardFlip.isFlipping{
+  transform: rotateY(360deg);
+}
+
+.cardFace{
+  position: relative;
+  width: 100%;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.cardFace--front{
+  z-index: 2;
+}
+.cardFace--front canvas{
+  width: 100%;
+  height: auto;
+  display:block;
+  border: none;
+  background: transparent;
+}
+
+.cardFace--back{
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  z-index: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: rgba(0,0,0,.20);
+}
+
+/* back side = logo on full card */
+.cardBackLogo{
+  position:absolute;
+  inset: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cardBackLogo__vid{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.06);
+  filter: saturate(1.05) contrast(1.06) brightness(1.05);
+  opacity: .95;
+}
+
+/* download button */
+.cardActions{
+  margin-top: 12px;
+  display:flex;
+  justify-content:center;
+}
