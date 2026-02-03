@@ -1,4 +1,4 @@
-// champion.js (UPDATED)
+// champion.js (UPDATED - landscape card only + top-right logo)
 
 const MB_KEYS = {
   profile: "mb_profile",
@@ -80,7 +80,6 @@ const TIER_THEME = {
   bronze: { label: "Bronze", base: "#9b561e", dark: "#7a3f13" },
 };
 
-// ===== Summary =====
 function computeSummary() {
   const p = getProfile();
   if (sumName) sumName.textContent = p?.name || "Player";
@@ -113,7 +112,6 @@ function computeSummary() {
   return { unlocked, total, correct, acc, profile: p, tier };
 }
 
-// ===== Actions =====
 genBtn?.addEventListener("click", async () => {
   const s = computeSummary();
   if (!s.unlocked) return;
@@ -132,71 +130,43 @@ dlBtn?.addEventListener("click", () => {
   a.click();
 });
 
-// ===== Canvas drawing =====
+// ====== Canvas assets cache ======
 let _noisePattern = null;
+let _logoFrame = null;
 
+// ====== DRAW (LANDSCAPE ONLY) ======
 async function drawChampionCard(summary) {
   if (!cardCanvas) return;
+
+  // landscape size => canvas = card (ніякого заднього фону)
+  const W = 1400;
+  const H = 800;
+
+  if (cardCanvas.width !== W) cardCanvas.width = W;
+  if (cardCanvas.height !== H) cardCanvas.height = H;
+
   const ctx = cardCanvas.getContext("2d");
-  const W = cardCanvas.width;
-  const H = cardCanvas.height;
+  ctx.clearRect(0, 0, W, H);
 
   const theme = TIER_THEME[summary.tier] || TIER_THEME.bronze;
 
-  // --- background (dark) ---
-  ctx.clearRect(0, 0, W, H);
-  const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#070812");
-  bg.addColorStop(1, "#05060a");
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  // --- card background (tier gradient) ---
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, theme.base);
+  g.addColorStop(1, theme.dark);
+  ctx.fillStyle = g;
+  roundRect(ctx, 0, 0, W, H, 80, true, false);
 
-  // subtle mesh waves on whole canvas
-  drawMesh(ctx, W, H, 0.10);
+  // soft highlight
+  const hi = ctx.createRadialGradient(W * 0.48, H * 0.35, 120, W * 0.55, H * 0.55, H * 0.95);
+  hi.addColorStop(0, "rgba(255,255,255,0.18)");
+  hi.addColorStop(1, "rgba(0,0,0,0.10)");
+  ctx.fillStyle = hi;
+  roundRect(ctx, 0, 0, W, H, 80, true, false);
 
-  // light vignette
-  const vign = ctx.createRadialGradient(W * 0.5, H * 0.45, 120, W * 0.5, H * 0.55, H * 0.95);
-  vign.addColorStop(0, "rgba(255,255,255,0.04)");
-  vign.addColorStop(1, "rgba(0,0,0,0.55)");
-  ctx.fillStyle = vign;
-  ctx.fillRect(0, 0, W, H);
-
-  // --- main card area (LANDSCAPE card inside portrait canvas) ---
-  const card = {
-    x: 70,
-    y: 250,
-    w: W - 140,
-    h: 700,
-    r: 90,
-  };
-
-  // card gradient (tier color)
-  const cg = ctx.createLinearGradient(card.x, card.y, card.x + card.w, card.y + card.h);
-  cg.addColorStop(0, theme.base);
-  cg.addColorStop(1, theme.dark);
-
-  ctx.fillStyle = cg;
-  roundRect(ctx, card.x, card.y, card.w, card.h, card.r, true, false);
-
-  // inner soft glow
-  const inner = ctx.createRadialGradient(
-    card.x + card.w * 0.45, card.y + card.h * 0.35, 80,
-    card.x + card.w * 0.55, card.y + card.h * 0.50, card.h * 0.95
-  );
-  inner.addColorStop(0, "rgba(255,255,255,0.18)");
-  inner.addColorStop(1, "rgba(0,0,0,0.10)");
-  ctx.fillStyle = inner;
-  roundRect(ctx, card.x, card.y, card.w, card.h, card.r, true, false);
-
-  // border
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "rgba(0,0,0,0.35)";
-  roundRect(ctx, card.x, card.y, card.w, card.h, card.r, false, true);
-
-  // mesh on card
+  // mesh waves on card
   ctx.save();
-  ctx.beginPath();
-  roundedRectPath(ctx, card.x, card.y, card.w, card.h, card.r);
+  roundedRectPath(ctx, 0, 0, W, H, 80);
   ctx.clip();
   drawMesh(ctx, W, H, 0.16);
   ctx.restore();
@@ -206,84 +176,146 @@ async function drawChampionCard(summary) {
   ctx.save();
   ctx.globalAlpha = 0.08;
   ctx.fillStyle = _noisePattern;
-  roundRect(ctx, card.x, card.y, card.w, card.h, card.r, true, false);
+  roundRect(ctx, 0, 0, W, H, 80, true, false);
   ctx.restore();
 
-  // --- top-left brand inside card ---
-  const brandX = card.x + 64;
-  const brandY = card.y + 82;
+  // border
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  roundRect(ctx, 0, 0, W, H, 80, false, true);
 
-  ctx.fillStyle = "rgba(255,255,255,0.95)";
-  ctx.font = "900 44px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  // ---- top row ----
+  const pad = 70;
+
+  // left brand
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "900 46px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillText("MagicBlock", brandX, brandY);
+  ctx.fillText("MagicBlock", pad, pad + 10);
 
-  // small "Quiz" pill
-  drawPill(ctx, brandX + 320, brandY - 34, 120, 48, "Quiz");
+  drawPill(ctx, pad + 310, pad - 26, 120, 48, "Quiz");
 
-  // --- center title ---
-  ctx.fillStyle = "rgba(255,255,255,0.90)";
+  // center title
   ctx.font = "700 54px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.textAlign = "center";
-  ctx.fillText("Champion Card", card.x + card.w * 0.62, card.y + 120);
+  ctx.fillText("Champion Card", W / 2, pad + 10);
   ctx.textAlign = "left";
 
-  // --- avatar box ---
-  const ax = card.x + 90;
-  const ay = card.y + 210;
-  const as = 340;
+  // top-right logo (assets/logo.webm first frame)
+  await drawTopRightLogo(ctx, W - pad, pad - 15);
+
+  // ---- avatar block (left) ----
+  const ax = pad;
+  const ay = 210;
+  const as = 360;
   const ar = 78;
 
-  // outer outline (dark)
   ctx.lineWidth = 6;
   ctx.strokeStyle = "rgba(0,0,0,0.55)";
   roundRect(ctx, ax, ay, as, as, ar, false, true);
 
-  // inner fill
   ctx.fillStyle = "rgba(255,255,255,0.10)";
   roundRect(ctx, ax + 8, ay + 8, as - 16, as - 16, ar - 10, true, false);
 
-  // draw avatar (profile image dataURL), else fallback
   const avatarSrc = summary.profile?.avatar || "";
-  await drawAvatarRounded(ctx, avatarSrc, ax + 12, ay + 12, as - 24, as - 24, ar - 14);
+  await drawAvatarRounded(
+    ctx,
+    avatarSrc,
+    ax + 12,
+    ay + 12,
+    as - 24,
+    as - 24,
+    ar - 14
+  );
 
-  // --- right text blocks ---
-  const tx = card.x + 500;
-  let ty = card.y + 250;
+  // ---- text block (right) ----
+  const tx = 520;
+  let ty = 245;
 
   const name = (summary.profile?.name || "Player").trim();
   const scoreText = `${summary.correct} / ${summary.total}`;
   const tierLabel = theme.label;
 
-  // helper: label + value
-  function drawLabelValue(label, value, y) {
-    ctx.fillStyle = "rgba(255,255,255,0.82)";
-    ctx.font = "600 40px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(label, tx, y);
+  drawLabelValue(ctx, tx, ty, "Your Name:", name);
+  ty += 190;
+  drawLabelValue(ctx, tx, ty, "Total Score", scoreText);
+  ty += 190;
 
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.font = "900 54px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(value, tx, y + 70);
-  }
-
-  drawLabelValue("Your Name:", name, ty);
-  ty += 180;
-
-  drawLabelValue("Total Score", scoreText, ty);
-  ty += 180;
-
-  ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.font = "600 40px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  // Card status line
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.font = "600 42px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("Card status:", tx, ty);
 
   ctx.fillStyle = "rgba(255,255,255,0.96)";
-  ctx.font = "950 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(tierLabel, tx + 250, ty);
+  ctx.font = "950 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(tierLabel, tx + 280, ty);
 
-  // small footer (optional)
-  ctx.fillStyle = "rgba(0,0,0,0.35)";
-  ctx.font = "700 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(`Accuracy: ${summary.acc}%`, card.x + 64, card.y + card.h - 56);
+  // Accuracy small
+  ctx.fillStyle = "rgba(0,0,0,0.40)";
+  ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(`Accuracy: ${summary.acc}%`, pad, H - 60);
+}
+
+function drawLabelValue(ctx, x, y, label, value) {
+  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  ctx.font = "600 42px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(label, x, y);
+
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.font = "950 66px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText(value, x, y + 84);
+}
+
+// ===== Logo drawing (top-right) =====
+async function drawTopRightLogo(ctx, rightX, topY) {
+  // logo size
+  const targetW = 160;
+  const targetH = 80;
+
+  try {
+    if (!_logoFrame) {
+      _logoFrame = await loadVideoFrame("assets/logo.webm", 0.0);
+    }
+    // draw aligned to top-right
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.drawImage(_logoFrame, rightX - targetW, topY, targetW, targetH);
+    ctx.restore();
+  } catch {
+    // fallback: small MB text
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.font = "900 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.textAlign = "right";
+    ctx.fillText("MB", rightX, topY + 40);
+    ctx.textAlign = "left";
+  }
+}
+
+function loadVideoFrame(src, time = 0) {
+  return new Promise((resolve, reject) => {
+    const v = document.createElement("video");
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.src = src;
+
+    const clean = () => {
+      v.onloadeddata = null;
+      v.onseeked = null;
+      v.onerror = null;
+    };
+
+    v.onerror = () => { clean(); reject(new Error("video load failed")); };
+
+    v.onloadeddata = () => {
+      // seek to time (usually 0 is enough)
+      try { v.currentTime = time; } catch {}
+      v.onseeked = () => { clean(); resolve(v); };
+      // if seeked doesn't fire (some browsers at 0), resolve soon
+      setTimeout(() => { clean(); resolve(v); }, 150);
+    };
+  });
 }
 
 // ===== Drawing helpers =====
@@ -324,17 +356,17 @@ function drawMesh(ctx, W, H, alpha = 0.12) {
   ctx.globalAlpha = alpha;
   ctx.lineWidth = 1;
 
-  // horizontal waves
+  // horizontal
   ctx.strokeStyle = "rgba(255,255,255,0.75)";
   const rows = 22;
   for (let i = 0; i < rows; i++) {
-    const baseY = (H * 0.12) + i * (H * 0.035);
+    const baseY = (H * 0.18) + i * (H * 0.032);
     ctx.beginPath();
     for (let x = -30; x <= W + 30; x += 18) {
       const t = x / W;
       const wobble =
-        Math.sin(t * Math.PI * 2 + i * 0.22) * 16 +
-        Math.sin(t * Math.PI * 6 + i * 0.12) * 6;
+        Math.sin(t * Math.PI * 2 + i * 0.22) * 14 +
+        Math.sin(t * Math.PI * 6 + i * 0.12) * 5;
       const y = baseY + wobble;
       if (x <= -30) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -342,7 +374,7 @@ function drawMesh(ctx, W, H, alpha = 0.12) {
     ctx.stroke();
   }
 
-  // vertical waves (lighter)
+  // vertical lighter
   ctx.globalAlpha = alpha * 0.55;
   ctx.strokeStyle = "rgba(255,255,255,0.55)";
   const cols = 16;
@@ -352,8 +384,8 @@ function drawMesh(ctx, W, H, alpha = 0.12) {
     for (let y = -30; y <= H + 30; y += 18) {
       const t = y / H;
       const wobble =
-        Math.sin(t * Math.PI * 2 + i * 0.28) * 14 +
-        Math.sin(t * Math.PI * 5 + i * 0.14) * 5;
+        Math.sin(t * Math.PI * 2 + i * 0.28) * 12 +
+        Math.sin(t * Math.PI * 5 + i * 0.14) * 4;
       const x = baseX + wobble;
       if (y <= -30) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
@@ -390,10 +422,8 @@ async function drawAvatarRounded(ctx, src, x, y, w, h, r) {
   roundedRectPath(ctx, x, y, w, h, r);
   ctx.clip();
 
-  // fallback if no avatar
   if (!src || !src.startsWith("data:")) {
-    // if you have a placeholder file in assets:
-    // put it at: assets/uploadavatar.jpg
+    // fallback blurred placeholder (assets/uploadavatar.jpg)
     try {
       const fallback = await loadImage("assets/uploadavatar.jpg");
       ctx.filter = "blur(7px)";
@@ -450,5 +480,5 @@ function loadImage(src) {
   });
 }
 
-// initial summary render
+// initial render
 computeSummary();
