@@ -1,4 +1,3 @@
-// ====== Helpers (shared) ======
 const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
@@ -29,16 +28,20 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
-// ====== Autoplay (bg + logo) ======
+function getHomeHref(){
+  const brand = document.querySelector("a.brand");
+  return brand?.getAttribute("href") || "index.html";
+}
+
+// Autoplay (bg + logo)
 forcePlayAll(".bg__video");
 forcePlayAll(".brand__logo");
-forcePlayAll(".resultLogo");
 
-// ====== Year (optional) ======
+// Year
 const y = document.getElementById("year");
 if (y) y.textContent = new Date().getFullYear();
 
-// ====== Topbar profile pill render ======
+// Topbar profile pill render
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
   if (!pill) return;
@@ -60,7 +63,7 @@ function renderTopProfile(){
   if (hintEl) hintEl.textContent = "Edit";
 }
 
-// ====== Profile modal logic (home) ======
+// Profile modal
 function openProfileModal(force = false){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
@@ -70,16 +73,18 @@ function openProfileModal(force = false){
   const nameInput = document.getElementById("profileName");
   const fileInput = document.getElementById("profileFile");
   const preview = document.getElementById("profilePreview");
+  const startBtn = document.getElementById("profileSaveBtn");
 
   if (nameInput) nameInput.value = p?.name || "";
   if (preview) preview.src = p?.avatar || "";
   if (fileInput) fileInput.value = "";
 
-  // when forced and no profile, we disable close X
   const closeBtn = document.getElementById("profileCloseBtn");
   if (closeBtn){
     closeBtn.style.display = (force && !p) ? "none" : "flex";
   }
+
+  if (startBtn) startBtn.disabled = false;
 }
 
 function closeProfileModal(){
@@ -110,16 +115,14 @@ function initProfileModal(){
   saveBtn?.addEventListener("click", () => {
     const pOld = getProfile() || {};
     const name = (nameInput?.value || "").trim() || "Player";
-    const avatar = (preview?.src || "").startsWith("data:")
-      ? preview.src
-      : (pOld.avatar || "");
+    const avatar = (preview?.src || "").startsWith("data:") ? preview.src : (pOld.avatar || "");
 
     setProfile({ name, avatar });
     renderTopProfile();
     closeProfileModal();
   });
 
-  async function fileToDataURL(file){
+  function fileToDataURL(file){
     return new Promise((resolve, reject) => {
       const r = new FileReader();
       r.onload = () => resolve(r.result);
@@ -129,7 +132,7 @@ function initProfileModal(){
   }
 }
 
-// ====== Quiz cards (home) ======
+// Home badges
 function isDone(key){ return localStorage.getItem(key) === "1"; }
 
 function updateBadges(){
@@ -156,10 +159,19 @@ function updateBadges(){
   if (champ) champ.style.display = allDone ? "block" : "none";
 }
 
-function initHomeButtons(){
+function initGlobalProfilePill(){
   const pill = document.getElementById("profilePill");
-  if (pill) pill.addEventListener("click", () => openProfileModal(false));
+  if (!pill) return;
 
+  pill.addEventListener("click", () => {
+    // якщо є модалка — редагуємо тут, якщо нема — перекидаємо на home
+    const modal = document.getElementById("profileModal");
+    if (modal) openProfileModal(false);
+    else location.href = getHomeHref();
+  });
+}
+
+function initHomeButtons(){
   document.querySelectorAll("[data-start]").forEach(btn => {
     btn.addEventListener("click", () => {
       const k = btn.getAttribute("data-start");
@@ -173,9 +185,10 @@ function initHomeButtons(){
   champBtn?.addEventListener("click", () => location.href = "champion.html");
 }
 
-// ====== Bootstrap (home only) ======
+// Bootstrap
 renderTopProfile();
 initProfileModal();
+initGlobalProfilePill();
 updateBadges();
 initHomeButtons();
 
@@ -184,9 +197,3 @@ const mustCreate = document.body.getAttribute("data-require-profile") === "1";
 if (mustCreate && !getProfile()){
   openProfileModal(true);
 }
-
-// Якщо ти відкрив 2 вкладки — хай бейджі оновляться
-window.addEventListener("storage", () => {
-  renderTopProfile();
-  updateBadges();
-});
