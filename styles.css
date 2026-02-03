@@ -31,7 +31,7 @@ img{max-width:100%; display:block}
 .container{
   width:min(1180px, 92vw);
   margin:0 auto;
-  padding: 24px 0 60px;
+  padding: 26px 0 60px;
 }
 
 /* ===== Background video ===== */
@@ -75,7 +75,7 @@ img{max-width:100%; display:block}
   position: sticky;
   top:0;
   z-index:50;
-  height: 62px;               /* менший прямокутник */
+  height: 70px; /* прямокутник БЕЗ змін */
   display:flex;
   align-items:center;
   backdrop-filter: blur(18px);
@@ -95,13 +95,15 @@ img{max-width:100%; display:block}
   align-items:center;
   gap:10px;
   overflow:hidden;
+  height: 70px;
 }
 .brand__logo{
-  height: 52px;               /* логотип більший чучуть */
+  height: 56px; /* логотип більший */
   width:auto;
   border-radius: 12px;
   display:block;
   filter: drop-shadow(0 10px 22px rgba(0,0,0,.45));
+  max-height: 56px; /* НЕ вилізе за прямокутник */
 }
 
 /* ===== Profile pill ===== */
@@ -117,11 +119,7 @@ img{max-width:100%; display:block}
   user-select:none;
   transition: transform .15s ease, background .15s ease, border-color .15s ease;
 }
-.profilePill:hover{
-  background: rgba(255,255,255,.14);
-  transform: translateY(-1px);
-  border-color: rgba(255,255,255,.22);
-}
+.profilePill:hover{ background: rgba(255,255,255,.14); transform: translateY(-1px); border-color: rgba(255,255,255,.22); }
 .profilePill__avatar{
   width:32px; height:32px;
   border-radius: 999px;
@@ -179,9 +177,9 @@ img{max-width:100%; display:block}
   transition: transform .18s ease, border-color .18s ease, background .18s ease;
 }
 .quizCard:hover{
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   border-color: rgba(255,255,255,.18);
-  background: linear-gradient(140deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+  background: linear-gradient(140deg, rgba(255,255,255,.10), rgba(255,255,255,.035));
 }
 .quizCard::before{
   content:"";
@@ -205,16 +203,17 @@ img{max-width:100%; display:block}
 }
 .quizCard:hover .quizCard__media{
   border-color: rgba(255,255,255,.18);
-  background: rgba(0,0,0,.30);
+  background: rgba(0,0,0,.18);
 }
 .quizCard__media img{
   height: 150px;
   width:auto;
   filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
-  transition: transform .18s ease;
+  transition: transform .18s ease, filter .18s ease;
 }
 .quizCard:hover .quizCard__media img{
-  transform: scale(1.03);
+  transform: translateY(-2px) scale(1.02);
+  filter: drop-shadow(0 18px 34px rgba(0,0,0,.62));
 }
 .quizCard__meta{
   margin-top:14px;
@@ -271,17 +270,22 @@ img{max-width:100%; display:block}
   padding: 12px 18px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.10);
+  background: var(--btn);
   color: rgba(255,255,255,.92);
   font-weight:800;
   cursor:pointer;
-  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
   user-select:none;
 }
-.btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.26); }
+.btn:hover{
+  transform: translateY(-1px);
+  background: var(--btn2);
+  border-color: rgba(255,255,255,.26);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset;
+}
 .btn:active{ transform: translateY(0px); }
 .btn--ghost{ background: rgba(0,0,0,.20); }
-.btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; }
+.btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
 .btnRow{ display:flex; gap:12px; flex-wrap:wrap; }
 
 /* ===== Champion section ===== */
@@ -343,9 +347,7 @@ img{max-width:100%; display:block}
 }
 .modalClose:hover{ background: rgba(255,255,255,.12); }
 
-.modalCard__body{
-  padding: 12px 18px 18px;
-}
+.modalCard__body{ padding: 12px 18px 18px; }
 .profileForm{
   border-radius: 28px;
   border: 1px solid rgba(255,255,255,.10);
@@ -386,12 +388,9 @@ img{max-width:100%; display:block}
   font-size:14px;
   text-align:center;
   cursor:pointer;
-  user-select:none;
 }
-.avatarBox__label:hover{
-  background: rgba(0,0,0,.45);
-  border-color: rgba(255,255,255,.22);
-}
+.avatarBox__label input{ display:none; }
+
 .field{
   display:flex;
   flex-direction:column;
@@ -411,7 +410,7 @@ img{max-width:100%; display:block}
 }
 .help{ color: var(--muted); font-size: 14px; }
 
-/* ===== Quiz pages (залишаю, щоб не ламало стилі на інших сторінках) ===== */
+/* ===== Quiz pages ===== */
 .quizHero{ padding-top: 14px; }
 .quizHero h1{
   font-size: clamp(40px, 5vw, 70px);
@@ -455,12 +454,8 @@ img{max-width:100%; display:block}
   font-weight:700;
 }
 
-/* ===== Options (важливо: без зеленого/червоного) ===== */
-.options{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
+/* ===== Options ===== */
+.options{ display:flex; flex-direction:column; gap:10px; }
 .optionBtn{
   text-align:left;
   width:100%;
@@ -476,24 +471,17 @@ img{max-width:100%; display:block}
 .optionBtn:hover{
   transform: translateY(-1px);
   background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.26);
+  border-color: rgba(255,255,255,.22);
 }
-.optionBtn:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+.optionBtn:disabled{ opacity:.65; cursor:not-allowed; transform:none; }
 
-/* selected stays */
+/* ВИБРАНИЙ варіант — яскравіше і тримається */
 .optionBtn.isSelected{
-  border-color: rgba(255,255,255,.32);
-  background: rgba(255,255,255,.10);
-  box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset;
-  opacity: 1;
-}
-.optionBtn.isSelected:disabled{ opacity: 1; }
-
-/* якщо десь у твоєму quiz.js додаються isCorrect/isWrong — нейтралізуємо */
-.optionBtn.isCorrect,
-.optionBtn.isWrong{
-  border-color: rgba(255,255,255,.26) !important;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.08) inset !important;
+  border-color: rgba(255,255,255,.46);
+  background: rgba(255,255,255,.14);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.14) inset,
+    0 0 22px rgba(255,255,255,.10);
 }
 
 /* ===== Next button glow animation ===== */
@@ -515,7 +503,90 @@ img{max-width:100%; display:block}
   to{ transform: translateY(0); opacity:1; box-shadow: 0 0 0 2px rgba(255,255,255,.14) inset, 0 0 24px rgba(255,255,255,.14); }
 }
 
-/* ===== Result card preview (canvas) ===== */
+/* ===== Custom audio player ===== */
+.mbPlayer{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.30);
+  overflow:hidden;
+}
+.mbPlayer__row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding: 10px 12px;
+}
+.mbPlayer__cover{
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  flex: 0 0 auto;
+}
+.mbPlayer__cover img{ width:100%; height:100%; object-fit:cover; }
+.mbPlayer__meta{ flex: 1 1 auto; min-width: 0; }
+.mbPlayer__title{
+  font-weight:900;
+  font-size:14px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.mbPlayer__time{ color: var(--muted); font-size: 12px; margin-top:2px; }
+.mbPlayer__btn{
+  width: 44px; height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  cursor:pointer;
+  flex: 0 0 auto;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.mbPlayer__btn:hover{
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.24);
+  transform: translateY(-1px);
+}
+.mbPlayer__bar{ padding: 0 12px 12px; }
+.range{
+  width:100%;
+  appearance:none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  outline:none;
+}
+.range::-webkit-slider-thumb{
+  appearance:none;
+  width: 16px; height: 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  border: 0;
+  box-shadow: 0 6px 18px rgba(0,0,0,.45);
+}
+
+/* ===== Result area ===== */
+.resultBox{ display:grid; gap: 10px; }
+.resultBox h2{
+  margin: 0 0 4px;
+  font-size: 40px;
+  letter-spacing:-.6px;
+  font-weight: 950;
+}
+.kv{
+  display:grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.kv:last-child{ border-bottom:none; }
+.kv .k{ color: var(--muted); font-weight:800; }
+.kv .v{ font-weight:900; }
+
+/* ===== Card preview (canvas) ===== */
 .cardZone{
   margin-top: 14px;
   border-radius: 24px;
@@ -532,17 +603,12 @@ img{max-width:100%; display:block}
 .cardPreview canvas{
   width: 100%;
   height: auto;
-  max-width: 420px;
   border-radius: 22px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.35);
   display:block;
 }
-.cardActions{
-  margin-top: 12px;
-  display:flex;
-  justify-content:center;
-}
+.cardActions{ margin-top: 12px; display:flex; justify-content:center; }
 
 /* ===== Footer small ===== */
 .footerSmall{
@@ -551,4 +617,3 @@ img{max-width:100%; display:block}
   font-weight:700;
   font-size: 13px;
 }
- 
