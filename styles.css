@@ -8,13 +8,11 @@
   --muted: rgba(255,255,255,.62);
   --muted2: rgba(255,255,255,.42);
   --shadow: 0 16px 60px rgba(0,0,0,.55);
-  --radius-xl: 26px; /* було 28 */
-  --radius-lg: 18px; /* було 20 */
+  --radius-xl: 28px;
+  --radius-lg: 20px;
   --radius-md: 14px;
   --btn: rgba(255,255,255,.10);
   --btn2: rgba(255,255,255,.14);
-  --good: rgba(72, 255, 179, .95);
-  --bad: rgba(255, 111, 111, .95);
 }
 
 *{box-sizing:border-box}
@@ -31,9 +29,9 @@ a{color:inherit; text-decoration:none}
 img{max-width:100%; display:block}
 
 .container{
-  width:min(1120px, 92vw); /* трішки менше */
+  width:min(1120px, 92vw);
   margin:0 auto;
-  padding: 22px 0 54px; /* трішки менше */
+  padding: 22px 0 54px;
 }
 
 /* ===== Background video ===== */
@@ -77,7 +75,7 @@ img{max-width:100%; display:block}
   position: sticky;
   top:0;
   z-index:50;
-  height: 66px; /* було 70 */
+  height: 70px;
   display:flex;
   align-items:center;
   backdrop-filter: blur(18px);
@@ -99,7 +97,7 @@ img{max-width:100%; display:block}
   overflow:hidden;
 }
 .brand__logo{
-  height: 52px; /* трішки більший логотип */
+  height: 52px; /* трошки більший */
   width:auto;
   border-radius: 12px;
   display:block;
@@ -117,9 +115,13 @@ img{max-width:100%; display:block}
   border: 1px solid rgba(255,255,255,.14);
   cursor:pointer;
   user-select:none;
-  transition: transform .15s ease, background .15s ease;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
 }
-.profilePill:hover{ background: rgba(255,255,255,.14); transform: translateY(-1px);}
+.profilePill:hover{
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.22);
+  transform: translateY(-1px);
+}
 .profilePill__avatar{
   width:32px; height:32px;
   border-radius: 999px;
@@ -128,6 +130,10 @@ img{max-width:100%; display:block}
   background: rgba(255,255,255,.06);
 }
 .profilePill__avatar img{width:100%; height:100%; object-fit:cover}
+.profilePill__avatar img.isPlaceholder{
+  filter: blur(1.6px) grayscale(1) brightness(.95);
+  opacity:.85;
+}
 .profilePill__name{
   max-width: 160px;
   overflow:hidden;
@@ -143,22 +149,22 @@ img{max-width:100%; display:block}
 
 /* ===== Headings ===== */
 .hero h1{
-  font-size: clamp(40px, 5vw, 64px); /* трішки менше */
+  font-size: clamp(42px, 5vw, 68px);
   line-height:1.02;
-  margin: 18px 0 8px;
+  margin: 20px 0 8px;
   letter-spacing:-.8px;
 }
 .hero p{
   margin:0 0 18px;
   color: var(--muted);
-  font-size: 17px;
+  font-size: 18px;
 }
 
 /* ===== Quiz cards grid ===== */
 .quizGrid{
   display:grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
-  gap:16px; /* було 18 */
+  gap:16px;
 }
 @media (max-width: 980px){
   .quizGrid{ grid-template-columns:1fr; }
@@ -171,14 +177,14 @@ img{max-width:100%; display:block}
   border: 1px solid rgba(255,255,255,.10);
   box-shadow: var(--shadow);
   overflow:hidden;
-  min-height: 402px; /* було 420 */
+  min-height: 398px; /* трохи менше */
   display:flex;
   flex-direction:column;
   transition: transform .16s ease, border-color .16s ease, background .16s ease;
 }
 .quizCard:hover{
   transform: translateY(-2px);
-  border-color: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.18);
   background: linear-gradient(140deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
 }
 .quizCard::before{
@@ -191,17 +197,17 @@ img{max-width:100%; display:block}
 }
 .quizCard__inner{ position:relative; padding:14px; display:flex; flex-direction:column; height:100%;}
 .quizCard__media{
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(0,0,0,.25);
   overflow:hidden;
-  height: 168px; /* було 180 */
+  height: 165px; /* менше */
   display:flex;
   align-items:center;
   justify-content:center;
 }
 .quizCard__media img{
-  height: 144px; /* було 150 */
+  height: 138px; /* менше */
   width:auto;
   filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
 }
@@ -214,7 +220,7 @@ img{max-width:100%; display:block}
 }
 .quizCard__title{
   margin:8px 0 8px;
-  font-size: 24px; /* було 26 */
+  font-size: 25px;
   line-height:1.1;
   letter-spacing:-.3px;
   font-weight: 800;
@@ -222,7 +228,7 @@ img{max-width:100%; display:block}
 .quizCard__desc{
   margin:0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
 }
 .quizCard__footer{
   margin-top:auto;
@@ -235,8 +241,8 @@ img{max-width:100%; display:block}
 
 .badgeDone{
   position:absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
   z-index:2;
   display:inline-flex;
   align-items:center;
@@ -257,7 +263,7 @@ img{max-width:100%; display:block}
   align-items:center;
   justify-content:center;
   gap:10px;
-  padding: 11px 16px; /* було 12 18 */
+  padding: 12px 18px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.18);
   background: var(--btn);
@@ -267,37 +273,16 @@ img{max-width:100%; display:block}
   transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
   user-select:none;
 }
-.btn:hover{ transform: translateY(-1px); background: var(--btn2); border-color: rgba(255,255,255,.26); }
+.btn:hover{
+  transform: translateY(-1px);
+  background: var(--btn2);
+  border-color: rgba(255,255,255,.26);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.08) inset;
+}
 .btn:active{ transform: translateY(0px); }
 .btn--ghost{ background: rgba(0,0,0,.20); }
 .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
 .btnRow{ display:flex; gap:12px; flex-wrap:wrap; }
-
-/* Upload Avatar — підсвітка */
-.btn--upload{
-  width: 100%;
-  justify-content:center;
-  background: rgba(255,255,255,.10);
-  border-color: rgba(255,255,255,.18);
-  box-shadow: 0 0 0 2px rgba(255,255,255,.06) inset;
-}
-.btn--upload:hover{
-  background: rgba(255,255,255,.14);
-  border-color: rgba(255,255,255,.30);
-  box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset, 0 0 18px rgba(255,255,255,.10);
-}
-.btn--upload:active{
-  background: rgba(255,255,255,.16);
-}
-.btn--upload:focus-visible{
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.14) inset, 0 0 0 4px rgba(255,255,255,.10);
-}
-
-/* прихований input всередині label */
-.btn--upload input{
-  display:none;
-}
 
 /* ===== Champion section ===== */
 .champion{
@@ -310,7 +295,7 @@ img{max-width:100%; display:block}
 }
 .champion__inner{ padding:16px; position:relative; }
 .champion__title{ font-size:22px; font-weight:900; margin:0 0 6px;}
-.champion__desc{ margin:0 0 14px; color: var(--muted); }
+.champion__desc{ margin:0 0 12px; color: var(--muted); }
 
 /* ===== Modal ===== */
 .modal{
@@ -320,13 +305,14 @@ img{max-width:100%; display:block}
   align-items:center;
   justify-content:center;
   z-index:200;
-  padding: 18px;
+  padding: 20px;
   background: rgba(0,0,0,.62);
   backdrop-filter: blur(10px);
 }
 .modal.isOpen{ display:flex; }
+
 .modalCard{
-  width: min(860px, 96vw); /* було 980 */
+  width: min(860px, 96vw); /* менше */
   border-radius: 30px;
   background: rgba(10,12,16,.78);
   border: 1px solid rgba(255,255,255,.14);
@@ -343,8 +329,9 @@ img{max-width:100%; display:block}
 }
 .modalCard__title{ margin:0; font-size: 28px; font-weight:900; letter-spacing:-.4px;}
 .modalCard__sub{ margin:6px 0 0; color: var(--muted); }
+
 .modalClose{
-  width: 42px; height: 42px;
+  width: 44px; height: 44px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,.18);
   background: rgba(255,255,255,.08);
@@ -361,14 +348,13 @@ img{max-width:100%; display:block}
 .modalCard__body{
   padding: 10px 16px 16px;
 }
-
 .profileForm{
   border-radius: 26px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(0,0,0,.22);
   padding: 14px;
   display:grid;
-  grid-template-columns: 200px 1fr; /* було 220 */
+  grid-template-columns: 210px 1fr; /* менше */
   gap: 16px;
   align-items:center;
 }
@@ -376,28 +362,51 @@ img{max-width:100%; display:block}
   .profileForm{ grid-template-columns:1fr; }
 }
 
+/* Avatar box */
 .avatarBox{
-  width: 200px;  /* було 220 */
-  height: 200px; /* було 220 */
-  border-radius: 22px;
+  width: 210px;
+  height: 210px;
+  border-radius: 24px;
   overflow:hidden;
   border: 1px solid rgba(255,255,255,.14);
   background: rgba(255,255,255,.06);
   display:flex;
-  flex-direction:column;
-  align-items:stretch;
-  justify-content:stretch;
+  align-items:center;
+  justify-content:center;
   position:relative;
-  gap:10px;
-  padding: 10px;
 }
 .avatarBox img{
   width:100%;
-  height: 132px; /* місце під кнопку */
+  height:100%;
   object-fit:cover;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)); /* "сіра" підложка */
+}
+.avatarBox.isPlaceholder img{
+  filter: blur(2.2px) grayscale(1) brightness(.92) contrast(1.05);
+  opacity:.88;
+}
+.avatarUploadBtn{
+  position:absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(0,0,0,.28);
+  color: rgba(255,255,255,.92);
+  font-weight:900;
+  cursor:pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.avatarUploadBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.28);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset, 0 10px 24px rgba(0,0,0,.28);
+}
+.avatarUploadBtn:active{
+  transform: translateY(0);
+  background: rgba(255,255,255,.10);
 }
 
 .field{
@@ -407,7 +416,7 @@ img{max-width:100%; display:block}
 }
 .input{
   width:100%;
-  height: 56px; /* було 60 */
+  height: 56px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.14);
   background: rgba(0,0,0,.30);
