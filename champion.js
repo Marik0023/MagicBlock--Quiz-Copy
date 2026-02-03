@@ -61,11 +61,7 @@ function computeSummary(){
   const p = getProfile();
   sumName.textContent = p?.name || "Player";
 
-  const doneFlags = [
-    isDone(MB_KEYS.doneSong),
-    isDone(MB_KEYS.doneMovie),
-    isDone(MB_KEYS.doneMagic),
-  ];
+  const doneFlags = [isDone(MB_KEYS.doneSong), isDone(MB_KEYS.doneMovie), isDone(MB_KEYS.doneMagic)];
   const doneCount = doneFlags.filter(Boolean).length;
   sumDone.textContent = `${doneCount} / 3`;
 
@@ -90,7 +86,6 @@ function computeSummary(){
 genBtn.addEventListener("click", async () => {
   const s = computeSummary();
   if (!s.unlocked) return;
-
   await drawChampionCard(s);
   cardZone.classList.add("isOpen");
   cardZone.scrollIntoView({ behavior:"smooth", block:"start" });
@@ -108,7 +103,6 @@ async function drawChampionCard(summary){
   const W = cardCanvas.width, H = cardCanvas.height;
 
   ctx.clearRect(0,0,W,H);
-
   const g = ctx.createLinearGradient(0,0,W,H);
   g.addColorStop(0, "#0b0d12");
   g.addColorStop(1, "#05060a");
@@ -134,13 +128,11 @@ async function drawChampionCard(summary){
   ctx.font = "800 46px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillStyle = "rgba(255,255,255,0.86)";
   ctx.fillText(`Correct: ${summary.correct} / ${summary.total}`, 160, 650);
-
   ctx.fillStyle = "rgba(255,255,255,0.70)";
   ctx.fillText(`Accuracy: ${summary.acc}%`, 160, 725);
 
   ctx.fillStyle = "rgba(255,255,255,0.10)";
   roundRect(ctx, 160, H-220, W-320, 96, 48, true, false);
-
   ctx.fillStyle = "rgba(255,255,255,0.88)";
   ctx.font = "900 40px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("champion card", 210, H-155);
@@ -158,7 +150,6 @@ function roundRect(ctx, x, y, w, h, r, fill, stroke){
   if (fill) ctx.fill();
   if (stroke) ctx.stroke();
 }
-
 async function drawAvatarCircle(ctx, dataUrl, cx, cy, r){
   ctx.save();
   ctx.beginPath();
@@ -182,7 +173,6 @@ async function drawAvatarCircle(ctx, dataUrl, cx, cy, r){
   ctx.lineWidth = 3;
   ctx.stroke();
 }
-
 function loadImage(src){
   return new Promise((resolve, reject) => {
     const img = new Image();
