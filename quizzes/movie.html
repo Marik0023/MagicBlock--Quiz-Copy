@@ -3,78 +3,91 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Guess the Movie</title>
+  <title>MagicBlock Quiz — Movie</title>
   <link rel="stylesheet" href="../styles.css" />
+
+  <style>
+    #choices{display:flex;flex-direction:column;gap:12px;margin-top:14px;}
+    .choiceBtn{width:100%;text-align:left;padding:16px;border-radius:18px;border:1px solid rgba(255,255,255,.16);background:rgba(0,0,0,.35);color:#fff;font-weight:800;cursor:pointer;transition:.12s;}
+    .choiceBtn:hover{border-color:rgba(255,255,255,.85); background:rgba(255,255,255,.06);}
+    .choiceBtn.is-selected{border-color:#fff; box-shadow:0 0 0 1px rgba(255,255,255,.55), 0 0 26px rgba(255,255,255,.14); background:rgba(255,255,255,.08);}
+
+    .btn--next[disabled]{opacity:.45;cursor:not-allowed;}
+    .btn--next.is-visible{opacity:1 !important;transform:translateY(0)!important;animation:nextGlow 1.25s ease-in-out infinite;}
+    @keyframes nextGlow{0%,100%{box-shadow:0 0 0 rgba(255,255,255,0)}50%{box-shadow:0 0 26px rgba(255,255,255,.18)}}
+
+    .mediaBox{margin-top:12px;border-radius:22px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);padding:14px;overflow:hidden;}
+    .frameImg{width:100%;max-height:620px;object-fit:cover;border-radius:18px;border:1px solid rgba(255,255,255,.10);display:block;}
+    .missing{display:none;margin-top:10px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:rgba(255,255,255,.85);font-size:14px;}
+    canvas{width:100%;height:auto;border-radius:18px;border:1px solid rgba(255,255,255,.14);}
+  </style>
 </head>
-<body data-require-profile="1">
+<body>
 
   <div class="bg">
-    <video class="bg__video" autoplay muted loop playsinline
-      src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4"></video>
+    <video class="bg__video" autoplay muted loop playsinline>
+      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
+    </video>
+    <div class="bg__pixels"></div>
     <div class="bg__vignette"></div>
   </div>
 
   <header class="topbar">
-    <a class="brand" href="../index.html" aria-label="MagicBlock home">
-      <video class="brand__logo" autoplay muted loop playsinline src="../assets/logo.webm"></video>
+    <a class="brand" href="../index.html" aria-label="Back to Home">
+      <video class="brand__logo" autoplay muted loop playsinline>
+        <source src="../assets/logo.webm" type="video/webm" />
+      </video>
     </a>
 
     <div class="topbar__right">
-      <button id="profileSlot" class="profile" type="button" aria-label="Profile" style="display:none">
-        <div class="profile__avatar">
-          <img id="profileAvatarImg" alt="Avatar" />
-          <div id="profileAvatarFallback" class="profile__fallback">MB</div>
-        </div>
-        <div id="profileName" class="profile__name"></div>
+      <button id="profileSlot" class="profile" type="button" style="display:none;">
+        <span class="profile__avatar">
+          <img id="profileAvatarImg" alt="" style="display:none;" />
+          <span id="profileAvatarFallback" class="profile__fallback">MB</span>
+        </span>
+        <span id="profileName" class="profile__name">Player</span>
       </button>
     </div>
   </header>
 
-  <main class="container">
-    <h1 class="hero__title">Guess the Movie by the Frame</h1>
-    <p class="hero__subtitle">10 questions • A/B/C/D • Press Next after each answer.</p>
+  <main class="page">
+    <h1 class="h1">Guess the Movie by the Frame</h1>
+    <div class="small">10 questions • A/B/C/D • Press Next after each answer.</div>
 
-    <section class="card quizWrap" id="quizUI">
-      <div class="qCounter" id="qCounter">Question 1 of 10</div>
+    <section class="panel" id="quizPanel" style="margin-top:14px;">
+      <div class="small" id="qMeta">Question 1 of 10</div>
 
-      <img id="frame" class="frame" alt="Movie frame" />
-
-      <div id="choices" class="quizWrap"></div>
-
-      <div class="actions">
-        <button id="next" class="btn btn--next" type="button" style="display:none">Next →</button>
+      <div class="mediaBox">
+        <img id="frameImg" class="frameImg" alt="Movie frame" />
+        <div id="missingMedia" class="missing"></div>
       </div>
 
-      <div class="small" id="status">Progress: 0 / 10</div>
-      <div class="small" id="lockedMsg" style="display:none"></div>
+      <div id="choices"></div>
+
+      <div class="row" style="justify-content:space-between;align-items:center;margin-top:14px;">
+        <div class="small" id="progress">Progress: 0 / 10</div>
+        <button id="nextBtn" class="btn btn--next" type="button" disabled style="opacity:0;transform:translateY(6px);">
+          Next →
+        </button>
+      </div>
     </section>
 
-    <section class="resultCard" id="resultUI" style="display:none">
-      <div class="resultHeader">
-        <div class="resultProfile">
-          <img id="resultAvatar" class="resultAvatar" alt="Avatar" />
-          <div>
-            <div id="resultName" class="resultName">Player</div>
-            <div id="resultWhen" class="resultMeta"></div>
-          </div>
-        </div>
+    <section class="panel" id="resultPanel" style="display:none;margin-top:16px;">
+      <h2 class="h1" style="font-size:28px;">Result</h2>
+      <div class="p" id="resultText"></div>
+
+      <div class="row" style="margin-top:14px;gap:10px;">
+        <button id="genCardBtn" class="btn" type="button">Generate Card</button>
+        <a class="btn" href="../index.html">Back to Home</a>
       </div>
 
-      <table class="resultTable">
-        <tr><th>Total</th><td id="rTotal">10</td></tr>
-        <tr><th>Correct</th><td id="rCorrect">0</td></tr>
-        <tr><th>Wrong</th><td id="rWrong">0</td></tr>
-        <tr><th>Accuracy</th><td id="rPercent">0%</td></tr>
-      </table>
-
-      <div class="resultActions">
-        <button id="genCard" class="btn btn--next" type="button">Generate Card</button>
-        <a class="btn" href="../index.html">Back to Home</a>
+      <div class="mediaBox" id="cardPreviewWrap" style="display:none;margin-top:14px;">
+        <canvas id="cardCanvas" width="1080" height="1920"></canvas>
+        <a id="downloadLink" class="btn" style="display:none;margin-top:10px;" download="magicblock-card.png">Download PNG</a>
       </div>
     </section>
   </main>
 
-  <script src="../app.js" defer></script>
   <script src="./movie.js" defer></script>
 </body>
 </html>
