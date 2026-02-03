@@ -58,6 +58,12 @@ function setNextText(){
   nextBtn.textContent = (idx === questions.length - 1) ? "Finish →" : "Next →";
 }
 
+function popNext(){
+  nextBtn.classList.remove("is-pop");
+  void nextBtn.offsetWidth;
+  nextBtn.classList.add("is-pop");
+}
+
 function clearSelectionUI(){
   [...choicesEl.querySelectorAll("button")].forEach(b => b.classList.remove("selected"));
 }
@@ -68,7 +74,9 @@ function render(){
 
   qCounter.textContent = `Question ${idx + 1} of ${questions.length}`;
   statusEl.textContent = `Progress: ${idx} / ${questions.length}`;
+
   nextBtn.style.display = "none";
+  nextBtn.classList.remove("is-pop");
 
   qtext.textContent = q.text;
 
@@ -91,6 +99,7 @@ function pick(i){
 
   setNextText();
   nextBtn.style.display = "inline-flex";
+  popNext();
 }
 
 function next(){
