@@ -12,6 +12,18 @@ function safeJSONParse(v, fallback = null){
   try { return JSON.parse(v); } catch { return fallback; }
 }
 
+function inQuizzesFolder(){
+  return location.pathname.includes("/quizzes/");
+}
+function homeHref(){
+  return inQuizzesFolder() ? "../index.html" : "index.html";
+}
+function assetPath(p){
+  return inQuizzesFolder() ? `../${p}` : p;
+}
+
+const PLACEHOLDER_AVATAR = assetPath("assets/uploadavatar.jpg");
+
 function getProfile(){
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
@@ -30,16 +42,11 @@ function forcePlayAll(selector){
 
 forcePlayAll(".bg__video");
 forcePlayAll(".brand__logo");
+forcePlayAll(".resultLogo");
 
-// --- assets prefix (root vs /quizzes/*) ---
-const MB_ASSET_PREFIX = location.pathname.includes("/quizzes/") ? "../assets/" : "assets/";
-const MB_AVATAR_PLACEHOLDER = MB_ASSET_PREFIX + "avatar-placeholder.jpg";
-
-// ====== Year ======
 const y = document.getElementById("year");
 if (y) y.textContent = new Date().getFullYear();
 
-// ====== Topbar profile pill render ======
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
   if (!pill) return;
@@ -49,52 +56,45 @@ function renderTopProfile(){
   const hintEl = pill.querySelector("[data-profile-hint]");
 
   const p = getProfile();
-
-  const hasAvatar = !!(p?.avatar && p.avatar.startsWith("data:"));
-
-  if (avatarImg){
-    avatarImg.src = hasAvatar ? p.avatar : MB_AVATAR_PLACEHOLDER;
-    avatarImg.classList.toggle("isPlaceholder", !hasAvatar);
-  }
-
   if (!p){
+    if (avatarImg) avatarImg.src = PLACEHOLDER_AVATAR;
     if (nameEl) nameEl.textContent = "Create profile";
     if (hintEl) hintEl.textContent = "Click to set";
     return;
   }
 
+  if (avatarImg) avatarImg.src = p.avatar || PLACEHOLDER_AVATAR;
   if (nameEl) nameEl.textContent = p.name || "Player";
-  if (hintEl) hintEl.textContent = "Edit";
+  if (hintEl) hintEl.textContent = inQuizzesFolder() ? "Home" : "Edit";
 }
 
-// ====== Profile modal logic ======
+/* ===== Profile modal logic (home) ===== */
 function openProfileModal(force = false){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
   modal.classList.add("isOpen");
 
   const p = getProfile();
-
   const nameInput = document.getElementById("profileName");
   const fileInput = document.getElementById("profileFile");
   const preview = document.getElementById("profilePreview");
-  const avatarBox = document.getElementById("avatarBox");
   const startBtn = document.getElementById("profileSaveBtn");
+  const avatarBox = document.getElementById("avatarBox");
 
   if (nameInput) nameInput.value = p?.name || "";
+
+  if (preview){
+    if (p?.avatar && p.avatar.startsWith("data:")){
+      preview.src = p.avatar;
+      avatarBox?.classList.remove("isPlaceholder");
+    } else {
+      preview.src = PLACEHOLDER_AVATAR;
+      avatarBox?.classList.add("isPlaceholder");
+    }
+  }
+
   if (fileInput) fileInput.value = "";
 
-  // Preview avatar: profile avatar або placeholder
-  const hasAvatar = !!(p?.avatar && p.avatar.startsWith("data:"));
-  if (preview){
-    preview.src = hasAvatar ? p.avatar : MB_AVATAR_PLACEHOLDER;
-    preview.dataset.isPlaceholder = hasAvatar ? "0" : "1";
-  }
-  if (avatarBox){
-    avatarBox.classList.toggle("isPlaceholder", !hasAvatar);
-  }
-
-  // when forced and no profile, disable close X
   const closeBtn = document.getElementById("profileCloseBtn");
   if (closeBtn){
     closeBtn.style.display = (force && !p) ? "none" : "flex";
@@ -117,14 +117,13 @@ function initProfileModal(){
   const saveBtn = document.getElementById("profileSaveBtn");
   const nameInput = document.getElementById("profileName");
   const fileInput = document.getElementById("profileFile");
-  const uploadBtn = document.getElementById("profileUploadBtn");
   const preview = document.getElementById("profilePreview");
+  const avatarPickBtn = document.getElementById("avatarPickBtn");
   const avatarBox = document.getElementById("avatarBox");
 
   closeBtn?.addEventListener("click", closeProfileModal);
 
-  // важливо: тільки ОДНЕ відкриття file picker
-  uploadBtn?.addEventListener("click", () => {
+  avatarPickBtn?.addEventListener("click", () => {
     fileInput?.click();
   });
 
@@ -132,21 +131,18 @@ function initProfileModal(){
     const f = fileInput.files?.[0];
     if (!f) return;
     const dataUrl = await fileToDataURL(f);
-
-    if (preview){
-      preview.src = dataUrl;
-      preview.dataset.isPlaceholder = "0";
-    }
+    if (preview) preview.src = dataUrl;
     avatarBox?.classList.remove("isPlaceholder");
   });
 
   saveBtn?.addEventListener("click", () => {
-    const pOld = getProfile() || {};
+    const old = getProfile() || {};
     const name = (nameInput?.value || "").trim() || "Player";
 
-    // якщо preview = placeholder -> не зберігаємо як аватар, беремо старий (або пусто)
-    const isPlaceholder = preview?.dataset?.isPlaceholder === "1";
-    const avatar = isPlaceholder ? (pOld.avatar || "") : (preview?.src || (pOld.avatar || ""));
+    let avatar = old.avatar || "";
+    if ((preview?.src || "").startsWith("data:")) {
+      avatar = preview.src;
+    }
 
     setProfile({ name, avatar });
     renderTopProfile();
@@ -163,7 +159,7 @@ function initProfileModal(){
   }
 }
 
-// ====== Quiz cards (home) ======
+/* ===== Home badges/buttons ===== */
 function isDone(key){ return localStorage.getItem(key) === "1"; }
 
 function updateBadges(){
@@ -192,7 +188,14 @@ function updateBadges(){
 
 function initHomeButtons(){
   const pill = document.getElementById("profilePill");
-  if (pill) pill.addEventListener("click", () => openProfileModal(false));
+
+  const hasModal = !!document.getElementById("profileModal");
+  if (pill){
+    pill.addEventListener("click", () => {
+      if (hasModal) openProfileModal(false);
+      else location.href = homeHref();
+    });
+  }
 
   document.querySelectorAll("[data-start]").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -207,7 +210,7 @@ function initHomeButtons(){
   champBtn?.addEventListener("click", () => location.href = "champion.html");
 }
 
-// ====== Bootstrap (home only) ======
+/* ===== Bootstrap ===== */
 renderTopProfile();
 initProfileModal();
 updateBadges();
