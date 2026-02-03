@@ -1,8 +1,3 @@
-// champion.js (UPDATED)
-// - Status pill stays top-right
-// - ID table moved into body instead of "Card status: Silver"
-// - Stronger shine + CSS animation support (see styles.css)
-
 const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
