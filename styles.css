@@ -47,7 +47,7 @@ body{
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
 
-/* ✅ Brand is a link now */
+/* Brand is a link */
 .brand{
   display:flex;
   align-items:center;
@@ -61,7 +61,7 @@ body{
   border-radius: 12px;
 }
 
-/* ✅ BIG LOGO, NO RECTANGLE */
+/* BIG LOGO, NO RECTANGLE */
 .brand__logo{
   width: 320px;
   height: 80px;
@@ -72,7 +72,7 @@ body{
   object-fit: contain;
   object-position: left center;
   display:block;
-  pointer-events: none; /* ✅ click goes to <a> */
+  pointer-events: none;
 }
 
 /* Layout */
@@ -126,6 +126,7 @@ body{
 .card__headline{ margin:10px 0 0; font-weight:800; font-size:18px; }
 .card__text{ margin:10px 0 14px; color: rgba(255,255,255,.74); line-height:1.5; font-size:14px; }
 
+/* Buttons */
 .btn{
   display:inline-flex;
   align-items:center;
@@ -138,31 +139,43 @@ body{
   font-weight:800;
   background: rgba(0,0,0,.26);
   cursor:pointer;
-  transition: background .14s ease, border-color .14s ease, transform .14s ease;
+  transition: background .14s ease, border-color .14s ease, transform .14s ease, box-shadow .14s ease;
 }
-.btn:hover{ background: rgba(0,0,0,.36); }
-.btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+.btn:hover{
+  background: rgba(0,0,0,.36);
+  transform: translateY(-1px);
+}
+.btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
 
-/* ✅ Answer buttons */
+/* Next button more interesting */
+.btn--next{
+  border-color: rgba(255,255,255,.34);
+  background: linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.04));
+  box-shadow: 0 12px 28px rgba(0,0,0,.45);
+}
+.btn--next:hover{
+  border-color: rgba(255,255,255,.55);
+  background: linear-gradient(135deg, rgba(255,255,255,.26), rgba(255,255,255,.06));
+  box-shadow: 0 0 18px rgba(255,255,255,.10), 0 18px 45px rgba(0,0,0,.55);
+}
+
+/* Answer buttons: hover white, selected stays */
 .choiceBtn{
   width: 100%;
   justify-content: flex-start;
 }
 .choiceBtn:hover{
-  border-color: rgba(255,255,255,.34);
-  background: rgba(255,255,255,.06);
-  transform: translateY(-1px);
+  border-color: rgba(255,255,255,.62);
+  background: rgba(255,255,255,.08);
 }
 .choiceBtn.selected{
-  border-color: rgba(255,255,255,.40);
-}
-.choiceBtn.correct{
-  background: rgba(0,255,160,.10);
-  border-color: rgba(0,255,160,.25);
-}
-.choiceBtn.wrong{
-  background: rgba(255,60,120,.10);
-  border-color: rgba(255,60,120,.25);
+  border-color: rgba(255,255,255,.78);
+  background: rgba(255,255,255,.10);
 }
 
 .badge{
@@ -212,207 +225,3 @@ body{
 .resultHeader{
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-/* ✅ result logo also without rectangle */
-.resultLogo{
-  width: 260px;
-  height: 70px;
-  border-radius: 0;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  object-fit: contain;
-  object-position: left center;
-  display:block;
-  pointer-events: none;
-}
-
-.resultTitle{
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-}
-.resultSubtitle{
-  margin: 6px 0 0;
-  color: rgba(255,255,255,.70);
-  font-size: 13px;
-}
-
-.resultGrid{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.avatarRow{
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.avatar{
-  width: 72px;
-  height: 72px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.08);
-  object-fit: cover;
-}
-
-.resultTable{
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  border-radius: 14px;
-  overflow: hidden;
-}
-.resultTable th, .resultTable td{
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,.10);
-  text-align: left;
-}
-.resultTable th{
-  color: rgba(255,255,255,.70);
-  font-size: 13px;
-  font-weight: 700;
-  width: 40%;
-}
-.resultTable td{
-  color: rgba(255,255,255,.92);
-  font-weight: 800;
-}
-
-@media (max-width: 920px){
-  .grid{ grid-template-columns: 1fr; }
-  .resultGrid{ grid-template-columns: 1fr; }
-  .brand__logo{ width: 260px; height: 70px; }
-  .resultLogo{ width: 240px; height: 64px; }
-}
-
-
-/* =========================
-   Custom dark audio player
-   ========================= */
-
-.player{
-  display:flex;
-  gap:14px;
-  align-items:center;
-  padding: 12px;
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,.14);
-  background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.28));
-  box-shadow: 0 18px 50px rgba(0,0,0,.45);
-  backdrop-filter: blur(10px);
-  margin-top: 10px;
-}
-
-.player__cover{
-  width: 84px;
-  height: 84px;
-  border-radius: 14px;
-  overflow:hidden;
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.06);
-  flex: 0 0 auto;
-}
-.player__cover img{
-  width:100%;
-  height:100%;
-  object-fit: cover;
-  display:block;
-}
-
-.player__main{ flex: 1; min-width: 0; }
-
-.player__top{
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.player__title{
-  font-weight: 800;
-  font-size: 14px;
-  color: rgba(255,255,255,.92);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.player__time{
-  font-weight: 700;
-  font-size: 12px;
-  color: rgba(255,255,255,.70);
-  white-space: nowrap;
-}
-
-.player__controls{
-  display:flex;
-  align-items:center;
-  gap: 12px;
-}
-
-.pbtn{
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.20);
-  background: rgba(255,255,255,.06);
-  color: rgba(255,255,255,.92);
-  font-weight: 900;
-  cursor: pointer;
-  transition: transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease;
-}
-.pbtn:hover{
-  border-color: rgba(255,255,255,.45);
-  background: rgba(255,255,255,.10);
-  transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(0,0,0,.45);
-}
-
-.bar{
-  position: relative;
-  height: 12px;
-  flex: 1;
-  border-radius: 999px;
-  background: rgba(255,255,255,.10);
-  border: 1px solid rgba(255,255,255,.14);
-  cursor: pointer;
-  overflow: hidden;
-}
-.bar__fill{
-  position:absolute;
-  inset:0;
-  width:0%;
-  background: linear-gradient(90deg, rgba(255,255,255,.75), rgba(255,255,255,.20));
-}
-.bar__knob{
-  position:absolute;
-  top: 50%;
-  transform: translate(-50%,-50%);
-  left: 0%;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 10px 20px rgba(0,0,0,.45);
-  pointer-events:none;
-}
-
-.vol{
-  width: 110px;
-  accent-color: rgba(255,255,255,.85);
-  opacity: .9;
-}
-
-@media (max-width: 700px){
-  .player{ gap: 10px; }
-  .player__cover{ width: 72px; height: 72px; }
-  .vol{ width: 90px; }
-}
