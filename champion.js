@@ -1,4 +1,4 @@
-// champion.js — animated metallic shimmer on canvas (Gold/Silver/Bronze)
+// champion.js — premium title + tier badge + serial id + stronger animated metallic shine
 
 const MB_KEYS = {
   profile: "mb_profile",
@@ -9,6 +9,8 @@ const MB_KEYS = {
   resMovie: "mb_result_movie",
   resMagic: "mb_result_magicblock",
 };
+
+const MB_SERIAL_KEY = "mb_champion_serial";
 
 function safeJSONParse(v, fallback = null) {
   try { return JSON.parse(v); } catch { return fallback; }
@@ -68,6 +70,7 @@ const dlBtn = document.getElementById("dlBtn");
 function isDone(k) { return localStorage.getItem(k) === "1"; }
 function loadResult(key) { return safeJSONParse(localStorage.getItem(key), null); }
 
+// GOLD >= 25, SILVER 15–24, BRONZE < 15
 function getTierByCorrect(correct) {
   if (correct >= 25) return "gold";
   if (correct >= 15) return "silver";
@@ -75,10 +78,29 @@ function getTierByCorrect(correct) {
 }
 
 const TIER_THEME = {
-  gold:   { label: "Gold",   base: "#d2a24d", dark: "#7f5619" },
-  silver: { label: "Silver", base: "#bdbdbd", dark: "#5f5f5f" },
-  bronze: { label: "Bronze", base: "#9b561e", dark: "#4f2710" },
+  gold:   { label: "GOLD",   base: "#d2a24d", dark: "#7f5619" },
+  silver: { label: "SILVER", base: "#bdbdbd", dark: "#5f5f5f" },
+  bronze: { label: "BRONZE", base: "#9b561e", dark: "#4f2710" },
 };
+
+function getOrCreateSerial() {
+  const existing = localStorage.getItem(MB_SERIAL_KEY);
+  if (existing) return existing;
+
+  // 6 chars base36 from crypto if possible
+  let n = 0;
+  try {
+    const u = new Uint32Array(1);
+    crypto.getRandomValues(u);
+    n = u[0];
+  } catch {
+    n = Math.floor(Math.random() * 0xffffffff);
+  }
+  const code = n.toString(36).toUpperCase().padStart(6, "0").slice(0, 6);
+  const serial = `MB-CHAMP-${code}`;
+  localStorage.setItem(MB_SERIAL_KEY, serial);
+  return serial;
+}
 
 function computeSummary() {
   const p = getProfile();
@@ -109,7 +131,8 @@ function computeSummary() {
   if (genBtn) genBtn.disabled = !unlocked;
 
   const tier = getTierByCorrect(correct);
-  return { unlocked, total, correct, acc, profile: p, tier };
+  const serial = getOrCreateSerial();
+  return { unlocked, total, correct, acc, profile: p, tier, serial };
 }
 
 // ===== download =====
@@ -121,7 +144,7 @@ dlBtn?.addEventListener("click", () => {
   a.click();
 });
 
-// ====== canvas animation state ======
+// ====== animation state ======
 let _noisePattern = null;
 let _logoFrame = null;
 
@@ -137,7 +160,6 @@ genBtn?.addEventListener("click", async () => {
   const s = computeSummary();
   if (!s.unlocked) return;
 
-  // restart animation every time
   if (cardZone) {
     cardZone.classList.remove("isOpen");
     void cardZone.offsetWidth;
@@ -145,7 +167,6 @@ genBtn?.addEventListener("click", async () => {
   }
 
   await drawChampionCardAnimated(s);
-
   cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
@@ -159,7 +180,6 @@ async function drawChampionCardAnimated(summary) {
   if (cardCanvas.width !== W) cardCanvas.width = W;
   if (cardCanvas.height !== H) cardCanvas.height = H;
 
-  // build base once (offscreen)
   const key = makeSummaryKey(summary);
   if (key !== _lastSummaryKey) {
     _lastSummaryKey = key;
@@ -167,24 +187,21 @@ async function drawChampionCardAnimated(summary) {
     await renderBaseCard(_baseCtx, W, H, summary);
   }
 
-  // stop previous loop
   if (_raf) cancelAnimationFrame(_raf);
   _startT = performance.now();
 
   const ctx = cardCanvas.getContext("2d");
 
   const loop = (t) => {
-    // stop if card is not visible/open
     if (cardZone && !cardZone.classList.contains("isOpen")) {
       _raf = 0;
       return;
     }
 
-    // draw base
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(_baseCanvas, 0, 0);
 
-    // animated sheen (subtle)
+    // stronger multi-layer sheen
     drawAnimatedSheen(ctx, W, H, summary, t - _startT);
 
     _raf = requestAnimationFrame(loop);
@@ -199,6 +216,7 @@ function makeSummaryKey(s) {
     s.correct,
     s.total,
     s.acc,
+    s.serial,
     (s.profile?.name || ""),
     (s.profile?.avatar || "").slice(0, 32)
   ].join("|");
@@ -226,8 +244,8 @@ async function renderBaseCard(ctx, W, H, summary) {
   roundRect(ctx, 0, 0, W, H, 80, true, false);
 
   // soft highlight
-  const hi = ctx.createRadialGradient(W * 0.45, H * 0.25, 120, W * 0.55, H * 0.55, H * 0.95);
-  hi.addColorStop(0, "rgba(255,255,255,0.14)");
+  const hi = ctx.createRadialGradient(W * 0.45, H * 0.22, 120, W * 0.55, H * 0.55, H * 0.95);
+  hi.addColorStop(0, "rgba(255,255,255,0.16)");
   hi.addColorStop(1, "rgba(0,0,0,0.14)");
   ctx.fillStyle = hi;
   roundRect(ctx, 0, 0, W, H, 80, true, false);
@@ -242,7 +260,7 @@ async function renderBaseCard(ctx, W, H, summary) {
   // grain
   ensureNoisePattern(ctx);
   ctx.save();
-  ctx.globalAlpha = 0.08;
+  ctx.globalAlpha = 0.085;
   ctx.fillStyle = _noisePattern;
   roundRect(ctx, 0, 0, W, H, 80, true, false);
   ctx.restore();
@@ -259,17 +277,48 @@ async function renderBaseCard(ctx, W, H, summary) {
   const pad = 70;
 
   // LEFT logo (bigger)
-  await drawLogo(ctx, pad, pad - 36, 300, 118, 0.95);
+  await drawLogo(ctx, pad, pad - 40, 300, 118, 0.95);
 
-  // title
+  // ===== premium title (center) =====
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "900 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.textAlign = "center";
-  applyTextShadow(ctx, 0.35, 10, 0, 3);
-  ctx.fillText("Champion Card", W / 2, pad + 8);
+  ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = "rgba(255,255,255,0.70)";
+  ctx.font = "800 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.20, 6, 0, 2);
+  ctx.fillText("MAGICBLOCK • ACHIEVEMENT", W / 2, pad - 2);
+
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  ctx.font = "950 64px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.35, 12, 0, 3);
+  ctx.fillText("CHAMPION", W / 2, pad + 56);
+
+  ctx.fillStyle = "rgba(255,255,255,0.86)";
+  ctx.font = "900 40px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.28, 10, 0, 3);
+  ctx.fillText("CARD", W / 2, pad + 98);
+
   clearTextShadow(ctx);
   ctx.restore();
+
+  // underline
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.20)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 140, pad + 118);
+  ctx.lineTo(W / 2 + 140, pad + 118);
+  ctx.stroke();
+  ctx.restore();
+
+  // tier badge (top-right)
+  const badgeX = W - pad - 260;
+  const badgeY = pad - 18;
+  drawTierBadge(ctx, badgeX, badgeY, 240, 74, theme.label);
+
+  // Serial under badge
+  drawSerial(ctx, badgeX + 6, badgeY + 92, summary.serial);
 
   // avatar block
   const ax = pad;
@@ -292,7 +341,6 @@ async function renderBaseCard(ctx, W, H, summary) {
 
   const name = (summary.profile?.name || "Player").trim();
   const scoreText = `${summary.correct} / ${summary.total}`;
-  const tierLabel = (TIER_THEME[summary.tier] || TIER_THEME.bronze).label;
 
   let y = 260;
   drawLabelValue(ctx, tx, y, "Your Name", name);
@@ -313,7 +361,8 @@ async function renderBaseCard(ctx, W, H, summary) {
   ctx.fillStyle = "rgba(255,255,255,0.96)";
   ctx.font = "950 62px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   applyTextShadow(ctx, 0.35, 10, 0, 3);
-  ctx.fillText(tierLabel, tx + 300, y);
+  ctx.fillText(theme.label, tx + 300, y);
+
   clearTextShadow(ctx);
   ctx.restore();
 
@@ -325,7 +374,52 @@ async function renderBaseCard(ctx, W, H, summary) {
   ctx.restore();
 }
 
-// ====== animated sheen (metal shimmer) ======
+function drawTierBadge(ctx, x, y, w, h, label) {
+  ctx.save();
+
+  ctx.fillStyle = "rgba(0,0,0,0.32)";
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, w, h, 999, true, true);
+
+  ctx.globalAlpha = 0.70;
+  const gloss = ctx.createLinearGradient(x, y, x, y + h);
+  gloss.addColorStop(0, "rgba(255,255,255,0.22)");
+  gloss.addColorStop(0.45, "rgba(255,255,255,0.08)");
+  gloss.addColorStop(1, "rgba(255,255,255,0.00)");
+  ctx.fillStyle = gloss;
+  roundRect(ctx, x + 4, y + 4, w - 8, h - 8, 999, true, false);
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.font = "950 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  applyTextShadow(ctx, 0.35, 10, 0, 2);
+  ctx.fillText(label, x + w / 2, y + h / 2 + 1);
+  clearTextShadow(ctx);
+
+  ctx.restore();
+}
+
+function drawSerial(ctx, x, y, serial) {
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.26)";
+  ctx.strokeStyle = "rgba(255,255,255,0.16)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, 228, 44, 999, true, true);
+
+  ctx.fillStyle = "rgba(255,255,255,0.80)";
+  ctx.font = "800 18px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  applyTextShadow(ctx, 0.30, 8, 0, 2);
+  ctx.fillText(`ID: ${serial}`, x + 16, y + 22);
+  clearTextShadow(ctx);
+  ctx.restore();
+}
+
+// ====== STRONGER animated sheen (3 layers) ======
 function drawAnimatedSheen(ctx, W, H, summary, dt) {
   const theme = TIER_THEME[summary.tier] || TIER_THEME.bronze;
 
@@ -333,45 +427,82 @@ function drawAnimatedSheen(ctx, W, H, summary, dt) {
   roundedRectPath(ctx, 0, 0, W, H, 80);
   ctx.clip();
 
-  // very soft pulse
-  const pulse = 0.10 + 0.05 * Math.sin(dt / 1100);
+  // stronger pulsing
+  const pulse = 0.14 + 0.08 * Math.sin(dt / 900);
 
-  // moving diagonal band
-  const speed = 4200; // ms per sweep
-  const p = (dt % speed) / speed; // 0..1
-  const cx = -W * 0.6 + p * (W * 2.2);
+  // 1) wide slow band
+  {
+    const speed = 5200;
+    const p = (dt % speed) / speed;
+    const cx = -W * 0.7 + p * (W * 2.4);
 
-  ctx.globalCompositeOperation = "screen";
-  ctx.globalAlpha = 0.28 * pulse;
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.55 * pulse;
 
-  const band = ctx.createLinearGradient(cx - 320, H * 0.15, cx + 320, H * 0.85);
-  band.addColorStop(0.00, "rgba(255,255,255,0.00)");
-  band.addColorStop(0.40, "rgba(255,255,255,0.00)");
-  band.addColorStop(0.50, "rgba(255,255,255,0.20)");
-  band.addColorStop(0.56, "rgba(255,255,255,0.06)");
-  band.addColorStop(0.68, "rgba(255,255,255,0.00)");
-  band.addColorStop(1.00, "rgba(255,255,255,0.00)");
+    const band = ctx.createLinearGradient(cx - 420, H * 0.12, cx + 420, H * 0.88);
+    band.addColorStop(0.00, "rgba(255,255,255,0.00)");
+    band.addColorStop(0.40, "rgba(255,255,255,0.00)");
+    band.addColorStop(0.50, "rgba(255,255,255,0.22)");
+    band.addColorStop(0.58, "rgba(255,255,255,0.08)");
+    band.addColorStop(0.72, "rgba(255,255,255,0.00)");
+    band.addColorStop(1.00, "rgba(255,255,255,0.00)");
+    ctx.fillStyle = band;
+    ctx.fillRect(0, 0, W, H);
+  }
 
-  ctx.fillStyle = band;
-  ctx.fillRect(0, 0, W, H);
+  // 2) narrow fast glint (sharper)
+  {
+    const speed = 2800;
+    const p = (dt % speed) / speed;
+    const cx = -W * 0.5 + p * (W * 2.0);
 
-  // tiny metallic sparkle (very subtle)
-  ctx.globalAlpha = 0.08 * pulse;
-  const sx = W * (0.10 + 0.80 * (0.5 + 0.5 * Math.sin(dt / 900)));
-  const sy = H * (0.18 + 0.20 * (0.5 + 0.5 * Math.cos(dt / 1200)));
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.45 * pulse;
 
-  const bloom = ctx.createRadialGradient(sx, sy, 10, sx, sy, H * 0.55);
-  bloom.addColorStop(0, "rgba(255,255,255,0.18)");
-  bloom.addColorStop(1, "rgba(255,255,255,0.00)");
-  ctx.fillStyle = bloom;
-  ctx.fillRect(0, 0, W, H);
+    const glint = ctx.createLinearGradient(cx - 140, H * 0.22, cx + 140, H * 0.78);
+    glint.addColorStop(0.00, "rgba(255,255,255,0.00)");
+    glint.addColorStop(0.44, "rgba(255,255,255,0.00)");
+    glint.addColorStop(0.50, "rgba(255,255,255,0.34)");
+    glint.addColorStop(0.54, "rgba(255,255,255,0.10)");
+    glint.addColorStop(0.66, "rgba(255,255,255,0.00)");
+    glint.addColorStop(1.00, "rgba(255,255,255,0.00)");
+    ctx.fillStyle = glint;
+    ctx.fillRect(0, 0, W, H);
+  }
 
-  // slight tint per tier (barely)
+  // 3) soft corner bloom + tiny sparkles
+  {
+    ctx.globalCompositeOperation = "screen";
+    ctx.globalAlpha = 0.22 * pulse;
+
+    const sx = W * (0.10 + 0.80 * (0.5 + 0.5 * Math.sin(dt / 820)));
+    const sy = H * (0.14 + 0.24 * (0.5 + 0.5 * Math.cos(dt / 1100)));
+
+    const bloom = ctx.createRadialGradient(sx, sy, 10, sx, sy, H * 0.65);
+    bloom.addColorStop(0, "rgba(255,255,255,0.22)");
+    bloom.addColorStop(1, "rgba(255,255,255,0.00)");
+    ctx.fillStyle = bloom;
+    ctx.fillRect(0, 0, W, H);
+
+    // sparkles
+    ctx.globalAlpha = 0.10 * pulse;
+    for (let i = 0; i < 5; i++) {
+      const t = dt / 1000 + i * 1.7;
+      const px = W * (0.22 + 0.62 * (0.5 + 0.5 * Math.sin(t * 1.3)));
+      const py = H * (0.20 + 0.55 * (0.5 + 0.5 * Math.cos(t * 1.1)));
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.beginPath();
+      ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // tier tint overlay (very subtle)
   ctx.globalCompositeOperation = "overlay";
   ctx.globalAlpha = 0.08;
   const tint = ctx.createLinearGradient(0, 0, W, H);
-  tint.addColorStop(0, hexToRgba(theme.base, 0.14));
-  tint.addColorStop(1, hexToRgba(theme.dark, 0.14));
+  tint.addColorStop(0, hexToRgba(theme.base, 0.18));
+  tint.addColorStop(1, hexToRgba(theme.dark, 0.18));
   ctx.fillStyle = tint;
   ctx.fillRect(0, 0, W, H);
 
@@ -382,9 +513,7 @@ function drawAnimatedSheen(ctx, W, H, summary, dt) {
 
 function hexToRgba(hex, a = 1) {
   const h = hex.replace("#", "").trim();
-  const full = h.length === 3
-    ? h.split("").map(ch => ch + ch).join("")
-    : h;
+  const full = h.length === 3 ? h.split("").map(ch => ch + ch).join("") : h;
   const n = parseInt(full, 16);
   const r = (n >> 16) & 255;
   const g = (n >> 8) & 255;
@@ -468,7 +597,6 @@ function loadVideoFrame(src, time = 0) {
     v.onloadeddata = () => {
       try { v.currentTime = time; } catch {}
       v.onseeked = () => { clean(); resolve(v); };
-      // fallback if seek is weird
       setTimeout(() => { clean(); resolve(v); }, 160);
     };
   });
