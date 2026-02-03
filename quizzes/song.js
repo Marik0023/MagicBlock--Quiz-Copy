@@ -1,264 +1,128 @@
-const DONE_KEY  = "mb_done_song";
-const SCORE_KEY = "mb_score_song";
-const TOTAL_KEY = "mb_total_song";
-const WHEN_KEY  = "mb_when_song";
-
+const DONE_KEY = "mb_done_song";
+const RESULT_KEY = "mb_result_song";
 const PROFILE_NAME_KEY = "mb_profile_name";
 const PROFILE_AVATAR_KEY = "mb_profile_avatar";
 
-const letters = ["A", "B", "C", "D"];
+function forcePlayAll(selector){
+  const vids = document.querySelectorAll(selector);
+  const tryPlay = () => vids.forEach(v => v.play().catch(()=>{}));
+  tryPlay();
+  window.addEventListener("click", tryPlay, { once:true });
+  window.addEventListener("touchstart", tryPlay, { once:true });
+}
 
-const questions = [
-  { src: "../assets/songs/01.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
-  { src: "../assets/songs/02.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
-  { src: "../assets/songs/03.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], correctIndex: 2 },
-  { src: "../assets/songs/04.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], correctIndex: 3 },
-  { src: "../assets/songs/05.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
-  { src: "../assets/songs/06.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
-  { src: "../assets/songs/07.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], correctIndex: 2 },
-  { src: "../assets/songs/08.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], correctIndex: 3 },
-  { src: "../assets/songs/09.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], correctIndex: 0 },
-  { src: "../assets/songs/10.mp3", title: "Guess the song", cover: "../assets/covers/placeholder.jpg", choices: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], correctIndex: 1 },
-];
+function getProfile(){
+  return {
+    name: localStorage.getItem(PROFILE_NAME_KEY) || "Player",
+    avatar: localStorage.getItem(PROFILE_AVATAR_KEY) || ""
+  };
+}
 
-let idx = 0;
-let correct = 0;
-let selectedIndex = null;
-let dragging = false;
+function renderProfilePill(){
+  const slot = document.getElementById("profileSlot");
+  const nameEl = document.getElementById("profileName");
+  const img = document.getElementById("profileAvatarImg");
+  const fallback = document.getElementById("profileAvatarFallback");
+  if (!slot || !nameEl || !img || !fallback) return;
 
-const audio = document.getElementById("audio");
-const choicesEl = document.getElementById("choices");
-const statusEl = document.getElementById("status");
-const nextBtn = document.getElementById("next");
-const qCounter = document.getElementById("qCounter");
-const lockedMsg = document.getElementById("lockedMsg");
+  const { name, avatar } = getProfile();
+  slot.style.display = "inline-flex";
+  nameEl.textContent = name;
 
-const quizUI = document.getElementById("quizUI");
-const resultUI = document.getElementById("resultUI");
+  if (avatar){
+    img.src = avatar;
+    img.style.display = "block";
+    fallback.style.display = "none";
+  } else {
+    img.style.display = "flex";
+    fallback.style.display = "flex";
+    fallback.textContent = (name.slice(0,2) || "MB").toUpperCase();
+  }
 
-const rTotal = document.getElementById("rTotal");
-const rCorrect = document.getElementById("rCorrect");
-const rWrong = document.getElementById("rWrong");
-const rPercent = document.getElementById("rPercent");
-const resultWhen = document.getElementById("resultWhen");
-const resultName = document.getElementById("resultName");
-const resultAvatar = document.getElementById("resultAvatar");
+  slot.addEventListener("click", () => location.href = "../index.html");
+}
 
-const genCardBtn = document.getElementById("genCard");
+function qs(name){ return new URLSearchParams(location.search).get(name); }
 
-// Player UI
-const cover = document.getElementById("cover");
-const trackTitle = document.getElementById("trackTitle");
-const playBtn = document.getElementById("playBtn");
-const bar = document.getElementById("bar");
-const fill = document.getElementById("fill");
-const knob = document.getElementById("knob");
-const cur = document.getElementById("cur");
-const dur = document.getElementById("dur");
-const vol = document.getElementById("vol");
+function resetIfAsked(){
+  if (qs("reset") === "1"){
+    localStorage.removeItem(DONE_KEY);
+    localStorage.removeItem(RESULT_KEY);
+    location.replace(location.pathname);
+  }
+}
 
-function nowText(){ return new Date().toLocaleString(); }
+function loadResult(){
+  try{
+    const raw = localStorage.getItem(RESULT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch{
+    return null;
+  }
+}
+
+function saveResult(result){
+  localStorage.setItem(DONE_KEY, "1");
+  localStorage.setItem(RESULT_KEY, JSON.stringify(result));
+}
+
+function showResultScreen(result){
+  const quizPanel = document.getElementById("quizPanel");
+  const resultPanel = document.getElementById("resultPanel");
+  const resultText = document.getElementById("resultText");
+  if (!quizPanel || !resultPanel || !resultText) return;
+
+  quizPanel.style.display = "none";
+  resultPanel.style.display = "block";
+
+  const prof = getProfile();
+  if (!result){
+    resultText.innerHTML = `
+      <div class="small">Saved result not found. You can reset and retake:</div>
+      <div class="small"><b>Open:</b> song.html?reset=1</div>
+    `;
+    return;
+  }
+
+  const date = new Date(result.completedAt);
+  const when = isNaN(date.getTime()) ? "" : date.toLocaleString();
+
+  resultText.innerHTML = `
+    <div class="small"><b>${prof.name}</b></div>
+    <div class="small">Completed: ${when}</div>
+    <div style="height:10px;"></div>
+    <div class="small"><b>Total</b> ${result.total}</div>
+    <div class="small"><b>Correct</b> ${result.correct}</div>
+    <div class="small"><b>Wrong</b> ${result.wrong}</div>
+    <div class="small"><b>Accuracy</b> ${result.accuracy}%</div>
+  `;
+
+  const genBtn = document.getElementById("genCardBtn");
+  if (genBtn){
+    genBtn.onclick = () => generateCard(result);
+  }
+}
 
 function formatTime(sec){
-  sec = Math.max(0, Math.floor(sec || 0));
+  if (!isFinite(sec)) return "0:00";
   const m = Math.floor(sec / 60);
-  const s = sec % 60;
+  const s = Math.floor(sec % 60);
   return `${m}:${String(s).padStart(2,"0")}`;
 }
 
-function setProgress(p){
-  const pct = Math.max(0, Math.min(1, p));
-  fill.style.width = `${pct * 100}%`;
-  knob.style.left = `${pct * 100}%`;
-}
-
-function syncTimeUI(){
-  cur.textContent = formatTime(audio.currentTime);
-  dur.textContent = formatTime(audio.duration || 0);
-  const p = audio.duration ? (audio.currentTime / audio.duration) : 0;
-  setProgress(p);
-}
-
-function setPlayIcon(){
-  playBtn.textContent = audio.paused ? "▶" : "⏸";
-}
-
-function tryPlay(){
-  audio.play().catch(()=>{});
-}
-
-function stopAudio(){
-  try { audio.pause(); audio.currentTime = 0; } catch {}
-  setPlayIcon();
-  syncTimeUI();
-}
-
-function seekToClientX(clientX){
-  const rect = bar.getBoundingClientRect();
-  const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
-  const pct = rect.width ? (x / rect.width) : 0;
-  if (audio.duration) audio.currentTime = pct * audio.duration;
-  syncTimeUI();
-}
-
-function setNextText(){
-  nextBtn.textContent = (idx === questions.length - 1) ? "Finish →" : "Next →";
-}
-
-function popNext(){
-  nextBtn.classList.remove("is-pop");
-  void nextBtn.offsetWidth;
-  nextBtn.classList.add("is-pop");
-}
-
-function clearSelectionUI(){
-  [...choicesEl.querySelectorAll("button")].forEach(b => b.classList.remove("selected"));
-}
-
-function render(){
-  selectedIndex = null;
-  const q = questions[idx];
-
-  qCounter.textContent = `Question ${idx + 1} of ${questions.length}`;
-  statusEl.textContent = `Progress: ${idx} / ${questions.length}`;
-
-  nextBtn.style.display = "none";
-  nextBtn.classList.remove("is-pop");
-
-  trackTitle.textContent = q.title || "Guess the song";
-  cover.src = q.cover || "../assets/covers/placeholder.jpg";
-
-  audio.src = q.src;
-  audio.load();
-
-  setPlayIcon();
-  cur.textContent = "0:00";
-  dur.textContent = "0:00";
-  setProgress(0);
-
-  choicesEl.innerHTML = "";
-  q.choices.forEach((text, i) => {
-    const btn = document.createElement("button");
-    btn.className = "btn choiceBtn";
-    btn.type = "button";
-    btn.textContent = `${letters[i]}) ${text}`;
-    btn.addEventListener("click", () => pick(i));
-    choicesEl.appendChild(btn);
-  });
-}
-
-function pick(i){
-  selectedIndex = i;
-  clearSelectionUI();
-  const btn = choicesEl.querySelectorAll("button")[i];
-  if (btn) btn.classList.add("selected");
-
-  setNextText();
-  nextBtn.style.display = "inline-flex";
-  popNext();
-}
-
-function next(){
-  if (selectedIndex === null) return;
-
-  const q = questions[idx];
-  if (selectedIndex === q.correctIndex) correct += 1;
-
-  stopAudio();
-
-  if (idx < questions.length - 1){
-    idx += 1;
-    render();
-  } else {
-    finish();
-  }
-}
-
-function showResult(){
-  quizUI.style.display = "none";
-  resultUI.style.display = "block";
-
-  const total = Number(localStorage.getItem(TOTAL_KEY) || questions.length);
-  const c = Number(localStorage.getItem(SCORE_KEY) || correct);
-  const wrong = total - c;
-  const percent = total ? Math.round((c / total) * 100) : 0;
-
-  rTotal.textContent = String(total);
-  rCorrect.textContent = String(c);
-  rWrong.textContent = String(wrong);
-  rPercent.textContent = `${percent}%`;
-
-  const when = localStorage.getItem(WHEN_KEY) || "";
-  resultWhen.textContent = when ? `Completed: ${when}` : "";
-
-  const name = (localStorage.getItem(PROFILE_NAME_KEY) || "Player").trim() || "Player";
-  const avatar = localStorage.getItem(PROFILE_AVATAR_KEY) || "";
-
-  resultName.textContent = name;
-  if (avatar) {
-    resultAvatar.src = avatar;
-    resultAvatar.style.display = "block";
-  } else {
-    resultAvatar.style.display = "none";
-  }
-}
-
-function finish(){
-  localStorage.setItem(DONE_KEY, "1");
-  localStorage.setItem(SCORE_KEY, String(correct));
-  localStorage.setItem(TOTAL_KEY, String(questions.length));
-  localStorage.setItem(WHEN_KEY, nowText());
-  showResult();
-}
-
-function boot(){
-  // Player events
-  playBtn.addEventListener("click", () => {
-    if (audio.paused) tryPlay(); else audio.pause();
-  });
-
-  audio.addEventListener("play", setPlayIcon);
-  audio.addEventListener("pause", setPlayIcon);
-  audio.addEventListener("timeupdate", () => { if (!dragging) syncTimeUI(); });
-  audio.addEventListener("loadedmetadata", syncTimeUI);
-  audio.addEventListener("ended", () => { setPlayIcon(); });
-
-  vol.addEventListener("input", () => { audio.volume = Number(vol.value); });
-  audio.volume = Number(vol.value);
-
-  bar.addEventListener("click", (e) => seekToClientX(e.clientX));
-  bar.addEventListener("pointerdown", (e) => {
-    dragging = true;
-    bar.setPointerCapture(e.pointerId);
-    seekToClientX(e.clientX);
-  });
-  bar.addEventListener("pointermove", (e) => {
-    if (!dragging) return;
-    seekToClientX(e.clientX);
-  });
-  bar.addEventListener("pointerup", () => { dragging = false; });
-  bar.addEventListener("pointercancel", () => { dragging = false; });
-
-  if (localStorage.getItem(DONE_KEY) === "1"){
-    lockedMsg.style.display = "block";
-    lockedMsg.textContent = "You already completed this quiz.";
-    showResult();
-  } else {
-    nextBtn.addEventListener("click", next);
-    render();
-  }
-
-  if (genCardBtn) {
-    genCardBtn.addEventListener("click", async () => {
-      const total = Number(localStorage.getItem(TOTAL_KEY) || questions.length);
-      const c = Number(localStorage.getItem(SCORE_KEY) || correct);
-      const scoreText = `Score: ${c} / ${total}`;
-
-      if (typeof window.MB_generateQuizCard === "function") {
-        await window.MB_generateQuizCard({ quizTitle: "Guess the Song", scoreText });
-      }
-    });
-  }
-}
-
-boot();
+/**
+ * EDIT HERE: add your real audio + (optional) cover.
+ * Put files into:
+ *  - assets/songs/*.mp3
+ *  - assets/covers/*.jpg (optional)
+ */
+const QUESTIONS = [
+  { audio: "../assets/songs/01.mp3", cover: "../assets/covers/01.jpg", options: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], answer: 1 },
+  { audio: "../assets/songs/02.mp3", cover: "", options: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], answer: 2 },
+  { audio: "../assets/songs/03.mp3", cover: "", options: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], answer: 0 },
+  { audio: "../assets/songs/04.mp3", cover: "", options: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], answer: 3 },
+  { audio: "../assets/songs/05.mp3", cover: "", options: ["Wrong", "Correct (edit me)", "Wrong", "Wrong"], answer: 1 },
+  { audio: "../assets/songs/06.mp3", cover: "", options: ["Wrong", "Wrong", "Correct (edit me)", "Wrong"], answer: 2 },
+  { audio: "../assets/songs/07.mp3", cover: "", options: ["Correct (edit me)", "Wrong", "Wrong", "Wrong"], answer: 0 },
+  { audio: "../assets/songs/08.mp3", cover: "", options: ["Wrong", "Wrong", "Wrong", "Correct (edit me)"], answer: 3 },
+  { audio: "../assets/songs/09.mp3", cov
