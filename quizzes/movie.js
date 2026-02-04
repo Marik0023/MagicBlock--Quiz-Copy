@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const QUESTIONS = [
     { frame: "../assets/movies/1.mp4", options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
-    { frame: "../assets/movies/f2.jpg", options: ["A", "B", "C", "D"], correctIndex: 2 },
+    { frame: "../assets/movies/2.mp4", options: ["A", "B", "C", "D"], correctIndex: 2 },
     { frame: "../assets/movies/f3.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
     { frame: "../assets/movies/f4.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
     { frame: "../assets/movies/f5.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
