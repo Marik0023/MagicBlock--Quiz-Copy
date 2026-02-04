@@ -27,11 +27,15 @@
         </video>
       </a>
 
-      <div id="profilePill" class="profilePill" title="Profile">
-        <div class="profilePill__avatar"><img alt="" /></div>
-        <div>
-          <div class="profilePill__name" data-profile-name>Player</div>
-          <div class="profilePill__hint" data-profile-hint>Click to set</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="rewardsBtn" class="btn btn--ghost">Achievements</button>
+      
+        <div id="profilePill" class="profilePill" title="Profile">
+          <div class="profilePill__avatar"><img alt="" /></div>
+          <div>
+            <div class="profilePill__name" data-profile-name>Player</div>
+            <div class="profilePill__hint" data-profile-hint>Click to set</div>
+          </div>
         </div>
       </div>
     </div>
@@ -154,6 +158,22 @@
         </div>
       </div>
 
+    </div>
+  </div>
+  <!-- Rewards Modal -->
+  <div id="rewardsModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalCard__head">
+        <div>
+          <h2 class="modalCard__title">Your Achievements</h2>
+          <p class="modalCard__sub">Quiz cards + Champion card.</p>
+        </div>
+        <button id="rewardsCloseBtn" class="modalClose" aria-label="Close">×</button>
+      </div>
+  
+      <div class="modalCard__body">
+        <div class="rewardsGrid" id="rewardsGrid"></div>
+      </div>
     </div>
   </div>
 </body>
