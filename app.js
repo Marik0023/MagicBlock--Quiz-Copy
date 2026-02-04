@@ -41,7 +41,12 @@ function setProfile(profile){
     return true;
   } catch (e){
     console.error("setProfile failed:", e);
-    alert("Storage is full. Need to reduce avatar size or clear saved cards.");
+
+    // ✅ FIX 2: free space (champ PNG is huge)
+    localStorage.removeItem(MB_KEYS.champPng);
+    localStorage.removeItem(MB_KEYS.champReady);
+
+    alert("Storage was full. I cleared Champion preview. Try saving avatar again.");
     return false;
   }
 }
