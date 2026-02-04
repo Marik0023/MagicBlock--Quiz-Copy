@@ -234,8 +234,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ts: Date.now()
     };
 
-    localStorage.setItem(MB_KEYS.doneSong, "1");
-    localStorage.setItem(MB_KEYS.resSong, JSON.stringify(result));
+    safeSetItem(MB_KEYS.doneSong, "1");
+    safeSetItem(MB_KEYS.resSong, JSON.stringify(result));
     showResult(result);
   });
 
