@@ -35,6 +35,11 @@ const PLACEHOLDER_AVATAR = assetPath("assets/uploadavatar.jpg");
 function getProfile(){
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
+
+/**
+ * ✅ FIX 2: if storage full -> clear champion PNG and retry later
+ * returns true/false
+ */
 function setProfile(profile){
   try{
     localStorage.setItem(MB_KEYS.profile, JSON.stringify(profile));
@@ -42,7 +47,7 @@ function setProfile(profile){
   } catch (e){
     console.error("setProfile failed:", e);
 
-    // ✅ FIX 2: free space (champ PNG is huge)
+    // free space: champion PNG is huge
     localStorage.removeItem(MB_KEYS.champPng);
     localStorage.removeItem(MB_KEYS.champReady);
 
@@ -148,14 +153,14 @@ function initProfileModal(){
   });
 
   fileInput?.addEventListener("change", async () => {
-  const f = fileInput.files?.[0];
-  if (!f) return;
+    const f = fileInput.files?.[0];
+    if (!f) return;
 
-  // ✅ compress avatar to avoid localStorage quota
-  const dataUrl = await fileToCompressedDataURL(f, 512, 0.85); // 512px max, 0.85 quality
+    // ✅ compress avatar to avoid localStorage quota
+    const dataUrl = await fileToCompressedDataURL(f, 512, 0.85);
 
-  if (preview) preview.src = dataUrl;
-  avatarBox?.classList.remove("isPlaceholder");
+    if (preview) preview.src = dataUrl;
+    avatarBox?.classList.remove("isPlaceholder");
   });
 
   saveBtn?.addEventListener("click", () => {
@@ -168,40 +173,42 @@ function initProfileModal(){
     }
 
     const ok = setProfile({ name, avatar });
-if (!ok) return;
+    if (!ok) return;
 
-renderTopProfile();
-closeProfileModal();
+    renderTopProfile();
+    closeProfileModal();
+  });
 
   function fileToCompressedDataURL(file, maxSize = 512, quality = 0.85){
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const r = new FileReader();
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const r = new FileReader();
 
-    r.onload = () => { img.src = r.result; };
-    r.onerror = reject;
-    r.readAsDataURL(file);
+      r.onload = () => { img.src = r.result; };
+      r.onerror = reject;
+      r.readAsDataURL(file);
 
-    img.onload = () => {
-      const w = img.naturalWidth || img.width;
-      const h = img.naturalHeight || img.height;
+      img.onload = () => {
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
 
-      const scale = Math.min(1, maxSize / Math.max(w, h));
-      const nw = Math.round(w * scale);
-      const nh = Math.round(h * scale);
+        const scale = Math.min(1, maxSize / Math.max(w, h));
+        const nw = Math.round(w * scale);
+        const nh = Math.round(h * scale);
 
-      const c = document.createElement("canvas");
-      c.width = nw; c.height = nh;
+        const c = document.createElement("canvas");
+        c.width = nw; c.height = nh;
 
-      const ctx = c.getContext("2d");
-      ctx.drawImage(img, 0, 0, nw, nh);
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, nw, nh);
 
-      // ✅ JPEG is much smaller for photos
-      resolve(c.toDataURL("image/jpeg", quality));
-    };
+        // JPEG is much smaller for photos
+        resolve(c.toDataURL("image/jpeg", quality));
+      };
 
-    img.onerror = reject;
-  });
+      img.onerror = reject;
+    });
+  }
 }
 
 /* ===== Home badges/buttons ===== */
@@ -262,7 +269,7 @@ function updateBadges(){
   const champ = document.getElementById("championWrap");
   if (champ) champ.style.display = allDone ? "block" : "none";
 
-  // ✅ Glow Champion card on Home if generated
+  // Glow Champion card on Home if generated
   updateChampionGlowUI(allDone);
 }
 
