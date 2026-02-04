@@ -791,7 +791,7 @@ body.mbQuiz #cardZone .cardPreview canvas{
 
 /* ===== QUIZZES: bigger logo in topbar ===== */
 body.mbQuiz .topbar{
-  height: 52px; /* даємо місце логотипу */
+  height: 70px; /* даємо місце логотипу */
 }
 
 body.mbQuiz .brand__logo{
