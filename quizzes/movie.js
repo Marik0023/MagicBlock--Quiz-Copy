@@ -23,15 +23,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const QUESTIONS = [
     { frame: "../assets/movies/1.mp4", options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
-    { frame: "../assets/movies/2.mp4", options: ["A", "B", "C", "D"], correctIndex: 2 },
-    { frame: "../assets/movies/f3.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
-    { frame: "../assets/movies/f4.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { frame: "../assets/movies/f5.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { frame: "../assets/movies/f6.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
-    { frame: "../assets/movies/f7.jpg", options: ["A", "B", "C", "D"], correctIndex: 3 },
-    { frame: "../assets/movies/f8.jpg", options: ["A", "B", "C", "D"], correctIndex: 3 },
-    { frame: "../assets/movies/f9.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { frame: "../assets/movies/f10.jpg", options: ["A", "B", "C", "D"], correctIndex: 2 },
+    { frame: "../assets/movies/2.mp4", options: ["The Internship", "We’re the Millers", "Grown Ups", "Daddy’s Home"], correctIndex: 2 },
+    { frame: "../assets/movies/3.mp4", options: ["The Lord of the Rings", "Harry Potter", "Percy Jackson & the Olympians", "The Chronicles of Narnia"], correctIndex: 1 },
+    { frame: "../assets/movies/4.mp4", options: ["The Gentlemen", "Layer Cake", "RocknRolla", "Snatch"], correctIndex: 0 },
+    { frame: "../assets/movies/5.mp4", options: ["Wednesday", "The Umbrella Academy", "Riverdale", "Chilling Adventures of Sabrina"], correctIndex: 0 },
+    { frame: "../assets/movies/6.mp4", options: ["Gravity", "Interstellar", "The Martian", "Arrival"], correctIndex: 1 },
+    { frame: "../assets/movies/7.mp4", options: ["The OA", "The X-Files", "Dark", "Stranger Things"], correctIndex: 3 },
+    { frame: "../assets/movies/8.mp4", options: ["Need for Speed", "Baby Driver", "Gone in 60 Seconds", "The Fast and the Furious"], correctIndex: 3 },
+    { frame: "../assets/movies/9.mp4", options: ["The Hangover", "Superbad", "21 Jump Street", "Project X"], correctIndex: 0 },
+    { frame: "../assets/movies/10.mp4", options: ["1917", "Saving Private Ryan", "Hacksaw Ridge", "Fury"], correctIndex: 2 },
   ];
 
   const quizPanel = document.getElementById("quizPanel");
