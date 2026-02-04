@@ -147,6 +147,7 @@ genBtn?.addEventListener("click", async () => {
   if (!s.unlocked) return;
 
   await drawChampionCard(s);
+  localStorage.setItem("mb_champ_ready", "1");
 
   // ✅ зберігаємо готову PNG-картинку в localStorage
   try{
