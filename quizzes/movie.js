@@ -21,10 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
   forcePlayAll(".brand__logo");
   renderTopProfile();
 
-  /**
-   * TODO: підстав свої фрейми.
-   * frame: шлях відносно quizzes/ (тобто ../assets/....)
-   */
   const QUESTIONS = [
     { frame: "../assets/movies/f1.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
     { frame: "../assets/movies/f2.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
@@ -138,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
     if (!r || !cardCanvas) return;
 
-    const id = buildId("MagicViewer"); // movie -> MagicViewer
+    const id = buildId("MagicViewer");
     await drawQuizResultCard(cardCanvas, {
       title: "Guess the Movie by the Frame",
       name: p?.name || "Player",
@@ -162,9 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-/* =========================
-   TOP PROFILE (same as before)
-========================= */
+/* ===== Top profile ===== */
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
   if (!pill) return;
@@ -188,138 +182,97 @@ function renderTopProfile(){
   pill.addEventListener("click", () => location.href = "../index.html");
 }
 
-function getProfile(){ try{ return JSON.parse(localStorage.getItem(MB_KEYS.profile)) }catch{ return null } }
-
-/* =========================
-   ID builder
-========================= */
+/* ===== ID ===== */
 function buildId(prefix){
   const serial = Math.random().toString(36).slice(2, 7).toUpperCase();
   return `MB-${prefix}-${serial}`;
 }
 
 /* =========================
-   CANVAS DRAW (FIXED LOGO + NO OVERLAP)
+   CANVAS DRAW (NO BORDERS + BIGGER LOGO/AVATAR)
 ========================= */
 async function drawQuizResultCard(canvas, d){
   const ctx = canvas.getContext("2d");
 
-  // Wide card like champion (no background outside the card)
   canvas.width = 1600;
   canvas.height = 900;
 
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0,0,W,H);
 
-  // Card box
-  const card = {
-    x: 80,
-    y: 70,
-    w: W - 160,
-    h: H - 140,
-    r: 90
-  };
+  const card = { x: 80, y: 70, w: W-160, h: H-140, r: 90 };
 
-  // Background card fill (silver)
-  // subtle grain look
+  // Card base (no outer border)
   drawRoundedRect(ctx, card.x, card.y, card.w, card.h, card.r);
   ctx.fillStyle = "#BFC0C2";
   ctx.fill();
 
-  // inner soft vignette
+  // soft vignette inside
   const vg = ctx.createRadialGradient(
-    card.x + card.w*0.45, card.y + card.h*0.45, 80,
-    card.x + card.w*0.45, card.y + card.h*0.45, card.w*0.8
+    card.x + card.w*0.52, card.y + card.h*0.38, 120,
+    card.x + card.w*0.52, card.y + card.h*0.38, card.w*0.9
   );
-  vg.addColorStop(0, "rgba(255,255,255,.25)");
+  vg.addColorStop(0, "rgba(255,255,255,.22)");
   vg.addColorStop(1, "rgba(0,0,0,.12)");
   ctx.fillStyle = vg;
   ctx.fillRect(card.x, card.y, card.w, card.h);
 
-  // border
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = "rgba(255,255,255,.35)";
-  drawRoundedRect(ctx, card.x+10, card.y+10, card.w-20, card.h-20, card.r-18);
-  ctx.stroke();
-
-  // safe padding
   const padX = 110;
   const padY = 95;
 
-  // ===== LOGO (WEBM) - fixed (no squish) =====
-  // draw it inside a pill area
+  // ===== LOGO (bigger, no plate around it) =====
   const logoBox = {
     x: card.x + padX,
-    y: card.y + padY - 18,
-    w: 240,
-    h: 70,
-    r: 20
+    y: card.y + padY - 22,
+    w: 310,   // було 240
+    h: 90     // було 70
   };
 
-  // light plate under logo (like in your mock)
-  ctx.fillStyle = "rgba(255,255,255,.35)";
-  drawRoundedRect(ctx, logoBox.x - 10, logoBox.y - 10, logoBox.w + 20, logoBox.h + 20, 18);
-  ctx.fill();
-
-  // load webm frame reliably
   const logoBitmap = await loadWebmFrameAsBitmap("../assets/logo.webm", 0.05);
   if (logoBitmap){
     drawContainBitmap(ctx, logoBitmap, logoBox.x, logoBox.y, logoBox.w, logoBox.h);
   }
 
-  // ===== TITLE (NO OVERLAP) =====
-  // Reserve left area for logo + spacing
-  const titleAreaLeft = logoBox.x + logoBox.w + 70;
+  // ===== TITLE safe area (start after logo) =====
+  const titleAreaLeft = logoBox.x + logoBox.w + 60;
   const titleAreaRight = card.x + card.w - padX;
   const titleMaxW = Math.max(200, titleAreaRight - titleAreaLeft);
 
   const titleY = card.y + padY + 40;
-
   ctx.fillStyle = "rgba(255,255,255,.92)";
-  // fit title size to available width
-  const titleFont = fitText(ctx, d.title, 64, 44, titleMaxW, "900");
-  ctx.font = titleFont;
-  // left-align to avoid crossing into logo
+  ctx.font = fitText(ctx, d.title, 66, 46, titleMaxW, "900");
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(d.title, titleAreaLeft, titleY);
 
-  // ===== AVATAR (NO SQUISH) =====
+  // ===== AVATAR (bigger + no border ring) =====
   const avatarBox = {
-    x: card.x + padX + 25,
-    y: card.y + padY + 140,
-    w: 190,
-    h: 190,
-    r: 55
+    x: card.x + padX + 15,
+    y: card.y + padY + 135,
+    w: 220,  // було 190
+    h: 220,  // було 190
+    r: 60
   };
-
-  // frame
-  ctx.fillStyle = "rgba(0,0,0,.18)";
-  drawRoundedRect(ctx, avatarBox.x - 10, avatarBox.y - 10, avatarBox.w + 20, avatarBox.h + 20, avatarBox.r + 18);
-  ctx.fill();
 
   await drawAvatarRounded(ctx, d.avatar, avatarBox.x, avatarBox.y, avatarBox.w, avatarBox.h, avatarBox.r);
 
-  // ===== TEXT BLOCK =====
-  const leftColX = avatarBox.x + avatarBox.w + 90;
-  let y = avatarBox.y + 38;
+  // ===== TEXT =====
+  const leftColX = avatarBox.x + avatarBox.w + 95;
+  let y = avatarBox.y + 40;
 
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 
-  // Name label
   ctx.fillStyle = "rgba(255,255,255,.75)";
   ctx.font = "700 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("Your Name:", leftColX, y);
   y += 52;
 
-  // Name
   ctx.fillStyle = "rgba(255,255,255,.92)";
-  ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.font = "900 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText(d.name, leftColX, y);
   y += 70;
 
-  // Divider line
   ctx.strokeStyle = "rgba(255,255,255,.25)";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -328,17 +281,14 @@ async function drawQuizResultCard(canvas, d){
   ctx.stroke();
   y += 58;
 
-  // Score label
   ctx.fillStyle = "rgba(255,255,255,.75)";
   ctx.font = "700 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("Score", leftColX, y);
   y += 60;
 
-  // Score big
   ctx.fillStyle = "rgba(255,255,255,.92)";
-  ctx.font = "950 72px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.font = "950 74px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText(`${d.correct} / ${d.total}`, leftColX, y);
-  y += 80;
 
   // bottom line
   ctx.strokeStyle = "rgba(255,255,255,.18)";
@@ -355,7 +305,7 @@ async function drawQuizResultCard(canvas, d){
   // ID pill
   const pillX = leftColX;
   const pillY = card.y + card.h - padY - 55;
-  const pillW = Math.min(760, card.x + card.w - padX - pillX);
+  const pillW = Math.min(820, card.x + card.w - padX - pillX);
   const pillH = 62;
 
   ctx.fillStyle = "rgba(0,0,0,.32)";
@@ -367,13 +317,12 @@ async function drawQuizResultCard(canvas, d){
   ctx.textBaseline = "middle";
   ctx.fillText(d.idText, pillX + 26, pillY + pillH/2);
 
-  // Accuracy bottom-left
+  // accuracy
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "rgba(0,0,0,.35)";
   ctx.font = "800 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(`Accuracy: ${d.acc}%`, avatarBox.x - 5, card.y + card.h - padY + 12);
+  ctx.fillText(`Accuracy: ${d.acc}%`, avatarBox.x - 2, card.y + card.h - padY + 12);
 
-  // Grain
   addNoise(ctx, card.x, card.y, card.w, card.h, 0.06);
 }
 
@@ -401,25 +350,18 @@ function fitText(ctx, text, maxPx, minPx, maxW, weight="900"){
 }
 
 async function drawAvatarRounded(ctx, dataUrl, x, y, w, h, r){
-  // placeholder
   ctx.save();
   drawRoundedRect(ctx, x, y, w, h, r);
   ctx.clip();
-  ctx.fillStyle = "rgba(255,255,255,.20)";
+
+  ctx.fillStyle = "rgba(255,255,255,.18)";
   ctx.fillRect(x,y,w,h);
 
   if (dataUrl && dataUrl.startsWith("data:")){
     const img = await loadImage(dataUrl);
     drawCoverImage(ctx, img, x, y, w, h);
   }
-
   ctx.restore();
-
-  // border
-  ctx.strokeStyle = "rgba(255,255,255,.28)";
-  ctx.lineWidth = 6;
-  drawRoundedRect(ctx, x, y, w, h, r);
-  ctx.stroke();
 }
 
 function drawCoverImage(ctx, img, x, y, w, h){
@@ -432,7 +374,6 @@ function drawCoverImage(ctx, img, x, y, w, h){
   const dh = sh*s;
   const dx = x + (w - dw)/2;
   const dy = y + (h - dh)/2;
-
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
@@ -445,7 +386,6 @@ function drawContainBitmap(ctx, bmp, x, y, w, h){
   const dh = sh*s;
   const dx = x + (w - dw)/2;
   const dy = y + (h - dh)/2;
-
   ctx.drawImage(bmp, dx, dy, dw, dh);
 }
 
@@ -458,10 +398,6 @@ function loadImage(src){
   });
 }
 
-/**
- * ✅ WEBM -> ImageBitmap (reliable sizes)
- * waits metadata + seeks safely
- */
 async function loadWebmFrameAsBitmap(src, t=0.05){
   return new Promise((resolve) => {
     const v = document.createElement("video");
@@ -480,7 +416,6 @@ async function loadWebmFrameAsBitmap(src, t=0.05){
 
     v.addEventListener("loadedmetadata", async () => {
       try{
-        // ensure valid time
         const tt = Math.min(Math.max(t, 0), Math.max(0.01, (v.duration || 1) - 0.01));
         v.currentTime = tt;
 
@@ -490,12 +425,9 @@ async function loadWebmFrameAsBitmap(src, t=0.05){
             if (!vw || !vh){ cleanup(); resolve(null); return; }
 
             const c = document.createElement("canvas");
-            c.width = vw;
-            c.height = vh;
-            const cctx = c.getContext("2d");
-            cctx.drawImage(v, 0, 0, vw, vh);
+            c.width = vw; c.height = vh;
+            c.getContext("2d").drawImage(v, 0, 0, vw, vh);
 
-            // ImageBitmap keeps correct aspect (no squish)
             const bmp = await createImageBitmap(c);
             cleanup();
             resolve(bmp);
