@@ -79,12 +79,12 @@
 
   function drawWaves(ctx, x, y, w, h){
     ctx.save();
-    ctx.globalAlpha = 0.16;
+    ctx.globalAlpha = 0.18;
     ctx.strokeStyle = "rgba(255,255,255,0.28)";
     ctx.lineWidth = 1;
 
-    const rows = 12;
-    const amp = 7;
+    const rows = 10;
+    const amp = 6;
     const step = 14;
 
     for (let r=0; r<rows; r++){
@@ -134,23 +134,27 @@
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
-    // main rounded card (outside stays transparent)
-    const pad = Math.round(W * 0.04);
-    const R = Math.round(H * 0.09);
+    // card rect
+    const pad = 56;
+    const cardX = pad, cardY = pad;
+    const cardW = W - pad*2;
+    const cardH = H - pad*2;
+    const R = 92;
 
-    const bg = ctx.createLinearGradient(pad, pad, W-pad, H-pad);
-    bg.addColorStop(0, "rgba(210,210,210,0.92)");
-    bg.addColorStop(1, "rgba(165,165,165,0.92)");
-    fillRoundRect(ctx, pad, pad, W-pad*2, H-pad*2, R, bg);
+    // main card background (outside is transparent)
+    const bg = ctx.createLinearGradient(cardX, cardY, cardX+cardW, cardY+cardH);
+    bg.addColorStop(0, "rgba(210,210,210,0.94)");
+    bg.addColorStop(1, "rgba(170,170,170,0.94)");
+    fillRoundRect(ctx, cardX, cardY, cardW, cardH, R, bg);
 
-    strokeRoundRect(ctx, pad+6, pad+6, W-(pad+6)*2, H-(pad+6)*2, R-6, "rgba(255,255,255,0.20)", 2);
-    strokeRoundRect(ctx, pad+10, pad+10, W-(pad+10)*2, H-(pad+10)*2, R-10, "rgba(0,0,0,0.10)", 2);
+    strokeRoundRect(ctx, cardX+6, cardY+6, cardW-12, cardH-12, R-6, "rgba(255,255,255,0.22)", 2);
+    strokeRoundRect(ctx, cardX+12, cardY+12, cardW-24, cardH-24, R-12, "rgba(0,0,0,0.10)", 2);
 
-    // LOGO on card (BIGGER)
-    const logoX = pad + 42;
-    const logoY = pad + 32;
-    const logoH = 78;              // <-- ОЦЕ РОЗМІР ЛОГО НА КАРТІ
+    // LOGO on card (це ЛОГО НА КАРТІ)
+    const logoH = 78;               // <-- збільш/зменш тут
     const logoW = Math.round(logoH * 3.2);
+    const logoX = cardX + 46;
+    const logoY = cardY + 34;
 
     try{
       const v = await loadVideoFrame(d.logoWebmSrc);
@@ -163,74 +167,77 @@
       ctx.fillText("MagicBlock Quiz", logoX, logoY + 48);
     }
 
-    // title center
+    // title
     ctx.fillStyle = "rgba(255,255,255,0.92)";
     ctx.textAlign = "center";
-    ctx.font = "900 54px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(d.quizTitle, W/2, pad + 95);
+    ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(d.quizTitle, cardX + cardW/2, cardY + 105);
     ctx.textAlign = "left";
 
-    // avatar
-    const avSize = 220;
-    const avX = pad + 110;
-    const avY = pad + 190;
-    await drawAvatarRounded(ctx, d.avatar || "", avX, avY, avSize, 54);
+    // layout
+    const avatarSize = 200;
+    const avX = cardX + 110;
+    const avY = cardY + 190;
+    await drawAvatarRounded(ctx, d.avatar || "", avX, avY, avatarSize, 54);
 
-    // text block
-    const left = avX + avSize + 120;
-    const line1 = avY + 80;
+    const left = avX + avatarSize + 100;
+    let y = avY + 70;
 
+    // name
     ctx.fillStyle = "rgba(255,255,255,0.70)";
     ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("Your Name:", left, line1);
+    ctx.fillText("Your Name:", left, y);
 
+    y += 68;
     ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.font = "900 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(d.name || "Player", left, line1 + 70);
+    ctx.fillText(d.name || "Player", left, y);
 
     // separator
+    y += 34;
     ctx.strokeStyle = "rgba(255,255,255,0.18)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(left, line1 + 100);
-    ctx.lineTo(W - pad - 120, line1 + 100);
+    ctx.moveTo(left, y);
+    ctx.lineTo(cardX + cardW - 120, y);
     ctx.stroke();
 
     // score
-    const scoreY = line1 + 170;
+    y += 64;
     ctx.fillStyle = "rgba(255,255,255,0.70)";
     ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("Score", left, scoreY);
+    ctx.fillText("Score", left, y);
 
+    y += 74;
     ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.font = "900 64px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(`${d.correct} / ${d.total}`, left, scoreY + 78);
+    ctx.font = "900 66px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(`${d.correct} / ${d.total}`, left, y);
 
-    // waves right
-    drawWaves(ctx, W - pad - 520, pad + 180, 420, 260);
+    // waves right (не заїжджає на текст)
+    drawWaves(ctx, cardX + cardW - 520, cardY + 200, 420, 240);
 
-    // ID
-    const idLabelY = H - pad - 150;
+    // ID block (тепер нижче і НЕ налазить)
+    y += 74;
     ctx.fillStyle = "rgba(255,255,255,0.70)";
     ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("ID Name:", left, idLabelY);
+    ctx.fillText("ID Name:", left, y);
 
     const pillX = left;
-    const pillY = idLabelY + 26;
-    const pillW = Math.min(760, W - pillX - pad - 90);
-    const pillH = 64;
+    const pillY = y + 22;
+    const pillW = Math.min(740, cardX + cardW - pillX - 80);
+    const pillH = 60;
 
     fillRoundRect(ctx, pillX, pillY, pillW, pillH, 28, "rgba(0,0,0,0.30)");
     strokeRoundRect(ctx, pillX, pillY, pillW, pillH, 28, "rgba(255,255,255,0.14)", 2);
 
     ctx.fillStyle = "rgba(255,255,255,0.92)";
     ctx.font = "900 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(d.idText || "MB-—", pillX + 24, pillY + 42);
+    ctx.fillText(d.idText || "MB-—", pillX + 22, pillY + 40);
 
     // accuracy bottom-left
-    ctx.fillStyle = "rgba(0,0,0,0.26)";
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
     ctx.font = "800 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(`Accuracy: ${d.acc}%`, pad + 68, H - pad - 48);
+    ctx.fillText(`Accuracy: ${d.acc}%`, cardX + 70, cardY + cardH - 44);
   }
 
   window.MBResultCard = { draw, getOrCreateId };
