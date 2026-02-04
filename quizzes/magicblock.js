@@ -2,6 +2,7 @@ const MB_KEYS = {
   profile: "mb_profile",
   doneMagic: "mb_done_magicblock",
   resMagic: "mb_result_magicblock",
+  prevMagic: "mb_prev_magicblock",
 };
 
 const QUIZ_CARD = {
@@ -159,35 +160,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   genBtn.addEventListener("click", async () => {
-    const p = getProfile();
-    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
-    if (!r || !cardCanvas) return;
+  const p = getProfile();
+  const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
+  if (!r || !cardCanvas) return;
 
-    await drawQuizResultCard(cardCanvas, {
-      title: QUIZ_CARD.title,
-      name: p?.name || "Player",
-      avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      acc: r.acc,
-      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
-      logoSrc: "../assets/logo.webm",
-    });
-
-      cardZone.classList.add("isOpen");
-
-      // ✅ SAVE preview PNG for Rewards modal (Home)
-      try{
-        const png = cardCanvas.toDataURL("image/png");
-        if (png && png.startsWith("data:image/")) {
-          localStorage.setItem("mb_png_magicblock", png);
-        }
-      }catch(e){}
-    
-      if (dlBtn) dlBtn.disabled = false;
-    
-      cardZone.scrollIntoView({ behavior:"smooth", block:"start" });
+  await drawQuizResultCard(cardCanvas, {
+    title: QUIZ_CARD.title,
+    name: p?.name || "Player",
+    avatar: p?.avatar || "",
+    correct: r.correct,
+    total: r.total,
+    acc: r.acc,
+    idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+    logoSrc: "../assets/logo.webm",
   });
+
+  cardZone.classList.add("isOpen");
+  if (dlBtn) dlBtn.disabled = false;
+
+  // ✅ SAVE SMALL preview (JPEG) for Rewards modal (Home)
+  try {
+    const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
+    localStorage.setItem("mb_prev_magicblock", prev);
+    // прибрати старий важкий PNG якщо був
+    localStorage.removeItem("mb_png_magicblock");
+  } catch (e) {
+    console.warn("MagicBlock preview save failed:", e);
+    try { localStorage.removeItem("mb_prev_magicblock"); } catch {}
+  }
+
+  cardZone.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
   dlBtn.addEventListener("click", () => {
     if (!cardCanvas) return;
@@ -318,6 +321,24 @@ async function drawQuizResultCard(canvas, d){
 /* =========================
    HELPERS
 ========================= */
+function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
+  const w = srcCanvas.width;
+  const h = srcCanvas.height;
+  const scale = Math.min(1, maxW / w);
+
+  const tw = Math.round(w * scale);
+  const th = Math.round(h * scale);
+
+  const t = document.createElement("canvas");
+  t.width = tw;
+  t.height = th;
+
+  const ctx = t.getContext("2d");
+  ctx.drawImage(srcCanvas, 0, 0, tw, th);
+
+  return t.toDataURL("image/jpeg", quality);
+}
+
 function drawRoundedRect(ctx, x, y, w, h, r){
   const rr = Math.min(r, w/2, h/2);
   ctx.beginPath();
