@@ -789,3 +789,13 @@ body.mbQuiz #cardZone .cardPreview canvas{
   border-radius: 28px;
 }
 
+/* ===== QUIZZES: bigger logo in topbar ===== */
+body.mbQuiz .topbar{
+  height: 52px; /* даємо місце логотипу */
+}
+
+body.mbQuiz .brand__logo{
+  height: 52px !important; /* збільшує webm */
+  width: auto !important;
+  border-radius: 12px;
+}
