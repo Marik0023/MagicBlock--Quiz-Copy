@@ -22,16 +22,16 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopProfile();
 
   const QUESTIONS = [
-    { frame: "../assets/movies/f1.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { frame: "../assets/movies/f2.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
-    { frame: "../assets/movies/f3.jpg", options: ["A", "B", "C", "D"], correctIndex: 2 },
-    { frame: "../assets/movies/f4.jpg", options: ["A", "B", "C", "D"], correctIndex: 3 },
+    { frame: "../assets/movies/1.mp4", options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
+    { frame: "../assets/movies/f2.jpg", options: ["A", "B", "C", "D"], correctIndex: 2 },
+    { frame: "../assets/movies/f3.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
+    { frame: "../assets/movies/f4.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
     { frame: "../assets/movies/f5.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
     { frame: "../assets/movies/f6.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
-    { frame: "../assets/movies/f7.jpg", options: ["A", "B", "C", "D"], correctIndex: 2 },
+    { frame: "../assets/movies/f7.jpg", options: ["A", "B", "C", "D"], correctIndex: 3 },
     { frame: "../assets/movies/f8.jpg", options: ["A", "B", "C", "D"], correctIndex: 3 },
     { frame: "../assets/movies/f9.jpg", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { frame: "../assets/movies/f10.jpg", options: ["A", "B", "C", "D"], correctIndex: 1 },
+    { frame: "../assets/movies/f10.jpg", options: ["A", "B", "C", "D"], correctIndex: 2 },
   ];
 
   const quizPanel = document.getElementById("quizPanel");
