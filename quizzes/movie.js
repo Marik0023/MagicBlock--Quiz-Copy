@@ -188,9 +188,6 @@ function buildId(prefix){
   return `MB-${prefix}-${serial}`;
 }
 
-/* =========================
-   CANVAS DRAW (Movie) — prettier, still safe
-========================= */
 async function drawQuizResultCard(canvas, d){
   const ctx = canvas.getContext("2d");
 
@@ -201,44 +198,38 @@ async function drawQuizResultCard(canvas, d){
   ctx.clearRect(0,0,W,H);
 
   const card = { x: 90, y: 80, w: W-180, h: H-160, r: 95 };
+  const cardBottom = card.y + card.h;
 
-  // base
+  // Base card
   drawRoundedRect(ctx, card.x, card.y, card.w, card.h, card.r);
   ctx.fillStyle = "#BFC0C2";
   ctx.fill();
 
-  // inner vignette
+  // Inner vignette (beauty, safe)
+  ctx.save();
+  drawRoundedRect(ctx, card.x, card.y, card.w, card.h, card.r);
+  ctx.clip();
+
   const vg = ctx.createRadialGradient(
-    card.x + card.w*0.52, card.y + card.h*0.40, 120,
+    card.x + card.w*0.52, card.y + card.h*0.40, 140,
     card.x + card.w*0.52, card.y + card.h*0.40, card.w*0.95
   );
-  vg.addColorStop(0, "rgba(255,255,255,.22)");
+  vg.addColorStop(0, "rgba(255,255,255,.20)");
   vg.addColorStop(1, "rgba(0,0,0,.12)");
   ctx.fillStyle = vg;
   ctx.fillRect(card.x, card.y, card.w, card.h);
 
-  // ✅ soft top gloss
-  ctx.save();
-  drawRoundedRect(ctx, card.x, card.y, card.w, card.h, card.r);
-  ctx.clip();
+  // Soft top gloss (safe)
   const gloss = ctx.createLinearGradient(card.x, card.y, card.x, card.y + card.h*0.55);
-  gloss.addColorStop(0, "rgba(255,255,255,.22)");
-  gloss.addColorStop(0.35, "rgba(255,255,255,.08)");
+  gloss.addColorStop(0, "rgba(255,255,255,.18)");
+  gloss.addColorStop(0.35, "rgba(255,255,255,.06)");
   gloss.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = gloss;
   ctx.fillRect(card.x, card.y, card.w, card.h*0.6);
+
   ctx.restore();
 
-  // ✅ subtle waves on right
-  drawWaves(ctx,
-    card.x + card.w*0.62,   // startX
-    card.y + card.h*0.22,   // startY
-    card.x + card.w - 130,  // endX
-    card.y + card.h*0.58,   // endY
-    11                      // lines
-  );
-
-  // grain (last so it unifies look)
+  // Grain last
   addNoise(ctx, card.x, card.y, card.w, card.h, 0.055);
 
   const padX = 130;
@@ -249,7 +240,7 @@ async function drawQuizResultCard(canvas, d){
   const logoBitmap = await loadWebmFrameAsBitmap("../assets/logo.webm", 0.05);
   if (logoBitmap) drawContainBitmap(ctx, logoBitmap, logoBox.x, logoBox.y, logoBox.w, logoBox.h);
 
-  // TITLE safe area
+  // TITLE safe area (won't collide with logo)
   const title = d.title || "Guess the Movie by the Frame";
   const titleLeft  = logoBox.x + logoBox.w + 70;
   const titleRight = card.x + card.w - padX;
@@ -262,7 +253,7 @@ async function drawQuizResultCard(canvas, d){
   ctx.textBaseline = "middle";
   ctx.fillText(title, titleLeft, titleY);
 
-  // AVATAR (bigger + cover)
+  // AVATAR (cover, no squish)
   const avatarBox = { x: card.x + padX + 20, y: card.y + padY + 130, w: 240, h: 240, r: 70 };
   await drawAvatarRounded(ctx, d.avatar, avatarBox.x, avatarBox.y, avatarBox.w, avatarBox.h, avatarBox.r);
 
@@ -289,7 +280,7 @@ async function drawQuizResultCard(canvas, d){
   ctx.font = "950 62px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText(d.name || "Player", leftColX, avatarBox.y + 140);
 
-  // divider
+  // Divider
   softDivider(ctx, leftColX, avatarBox.y + 176, rightX);
 
   // Score label
@@ -297,42 +288,42 @@ async function drawQuizResultCard(canvas, d){
   ctx.font = "800 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText("Score", leftColX, avatarBox.y + 260);
 
-  // Score value
+  // Score value (slightly higher to guarantee no collision)
   ctx.fillStyle = "rgba(255,255,255,.92)";
   ctx.font = "980 78px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(`${d.correct} / ${d.total}`, leftColX, avatarBox.y + 340);
+  ctx.fillText(`${d.correct} / ${d.total}`, leftColX, avatarBox.y + 332);
 
-  // lower divider
-  softDivider(ctx, leftColX, avatarBox.y + 390, rightX);
+  // Divider
+  softDivider(ctx, leftColX, avatarBox.y + 388, rightX);
 
-  // ID label
+  // ======= ID AREA (HARD-FIXED AT BOTTOM) =======
+  const pillH = 70;
+  const pillY = cardBottom - 120;        // ✅ always bottom
+  const pillX = leftColX;
+  const pillW = Math.min(900, rightX - pillX);
+
+  // ID label (always above pill)
   ctx.fillStyle = "rgba(255,255,255,.70)";
   ctx.font = "800 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("ID Name:", leftColX, card.y + card.h - 150);
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("ID Name:", leftColX, pillY - 18);
 
-  // ID pill
-  const pillX = leftColX;
-  const pillY = card.y + card.h - 130;
-  const pillW = Math.min(900, rightX - pillX);
-  const pillH = 70;
-
-  // pill base
+  // Pill base
   ctx.save();
   drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 34);
   ctx.fillStyle = "rgba(0,0,0,.26)";
   ctx.fill();
-
-  // ✅ pill gloss
+  // micro gloss
   const pg = ctx.createLinearGradient(pillX, pillY, pillX, pillY + pillH);
-  pg.addColorStop(0, "rgba(255,255,255,.14)");
-  pg.addColorStop(0.45, "rgba(255,255,255,.06)");
+  pg.addColorStop(0, "rgba(255,255,255,.12)");
+  pg.addColorStop(0.45, "rgba(255,255,255,.05)");
   pg.addColorStop(1, "rgba(255,255,255,0)");
   ctx.clip();
   ctx.fillStyle = pg;
   ctx.fillRect(pillX, pillY, pillW, pillH);
   ctx.restore();
 
-  // pill text
+  // Pill text
   ctx.fillStyle = "rgba(255,255,255,.92)";
   ctx.font = "900 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.textBaseline = "middle";
@@ -342,7 +333,24 @@ async function drawQuizResultCard(canvas, d){
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "rgba(0,0,0,.34)";
   ctx.font = "900 24px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(`Accuracy: ${d.acc}%`, avatarBox.x, card.y + card.h - 56);
+  ctx.fillText(`Accuracy: ${d.acc}%`, avatarBox.x, cardBottom - 56);
+}
+
+/* safe divider (nice, doesn't move layout) */
+function softDivider(ctx, x1, y, x2){
+  ctx.save();
+  ctx.lineWidth = 2;
+  const g = ctx.createLinearGradient(x1, y, x2, y);
+  g.addColorStop(0, "rgba(255,255,255,0)");
+  g.addColorStop(0.12, "rgba(255,255,255,.18)");
+  g.addColorStop(0.88, "rgba(255,255,255,.14)");
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.strokeStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.lineTo(x2, y);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /* ===== Pretty helpers (safe) ===== */
