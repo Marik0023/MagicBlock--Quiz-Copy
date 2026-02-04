@@ -307,3 +307,152 @@ const mustCreate = document.body.getAttribute("data-require-profile") === "1";
 if (mustCreate && !getProfile()){
   openProfileModal(true);
 }
+
+/* ===== Rewards Modal (Home) ===== */
+(function initRewardsModal(){
+  const rewardsBtn = document.getElementById("rewardsBtn");
+  const modal = document.getElementById("rewardsModal");
+  const closeBtn = document.getElementById("rewardsCloseBtn");
+  const grid = document.getElementById("rewardsGrid");
+
+  if (!rewardsBtn || !modal || !closeBtn || !grid) return;
+
+  const REWARD_KEYS = {
+    songPng: "mb_png_song",
+    moviePng: "mb_png_movie",
+    magicPng: "mb_png_magicblock",
+  };
+
+  const items = [
+    {
+      key: "song",
+      title: "Quiz 1 — Song",
+      sub: "Guess the Song by the Melody",
+      doneKey: MB_KEYS.doneSong,
+      pngKey: REWARD_KEYS.songPng,
+      openHref: "quizzes/song.html"
+    },
+    {
+      key: "movie",
+      title: "Quiz 2 — Movie",
+      sub: "Guess the Movie by the Frame",
+      doneKey: MB_KEYS.doneMovie,
+      pngKey: REWARD_KEYS.moviePng,
+      openHref: "quizzes/movie.html"
+    },
+    {
+      key: "magicblock",
+      title: "Quiz 3 — MagicBlock",
+      sub: "How well do you know MagicBlock?",
+      doneKey: MB_KEYS.doneMagic,
+      pngKey: REWARD_KEYS.magicPng,
+      openHref: "quizzes/magicblock.html"
+    },
+    {
+      key: "champion",
+      title: "Champion Card",
+      sub: "Unlocked after all 3 quizzes",
+      doneKey: null,
+      pngKey: MB_KEYS.champPng,
+      openHref: "champion.html"
+    }
+  ];
+
+  function open(){
+    render();
+    modal.classList.add("isOpen");
+  }
+  function close(){
+    modal.classList.remove("isOpen");
+  }
+
+  rewardsBtn.addEventListener("click", open);
+  closeBtn.addEventListener("click", close);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+
+  function isDoneLocal(key){
+    return key ? localStorage.getItem(key) === "1" : false;
+  }
+
+  function render(){
+    grid.innerHTML = "";
+
+    items.forEach(it => {
+      const png = localStorage.getItem(it.pngKey || "");
+      const hasPng = !!(png && png.startsWith("data:image/"));
+      const done = it.doneKey ? isDoneLocal(it.doneKey) : null;
+
+      const card = document.createElement("div");
+      card.className = "rewardCard";
+
+      const thumb = document.createElement("div");
+      thumb.className = "rewardThumb";
+      if (hasPng){
+        const img = document.createElement("img");
+        img.alt = it.title;
+        img.src = png;
+        thumb.appendChild(img);
+      } else {
+        thumb.textContent = "Not generated";
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "rewardMeta";
+
+      const t = document.createElement("div");
+      t.className = "rewardTitle";
+      t.textContent = it.title;
+
+      const s = document.createElement("div");
+      s.className = "rewardSub";
+      if (it.key === "champion"){
+        const allDone = isDoneLocal(MB_KEYS.doneSong) && isDoneLocal(MB_KEYS.doneMovie) && isDoneLocal(MB_KEYS.doneMagic);
+        s.textContent = allDone ? (hasPng ? "Ready ✅" : "Unlocked ✅ (generate on Champion page)") : "Locked (complete all quizzes)";
+      } else {
+        s.textContent = done ? (hasPng ? "Ready ✅" : "Completed ✅ (generate card inside quiz)") : "Not completed";
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "rewardActions";
+
+      const openBtn = document.createElement("button");
+      openBtn.className = "btn";
+      openBtn.textContent = it.key === "champion" ? "Open Champion" : (done ? "Open quiz" : "Start");
+      openBtn.addEventListener("click", () => (location.href = it.openHref));
+      actions.appendChild(openBtn);
+
+      if (hasPng){
+        const dl = document.createElement("button");
+        dl.className = "btn btn--ghost";
+        dl.textContent = "Download PNG";
+        dl.addEventListener("click", () => downloadDataUrl(png, filenameFor(it.key)));
+        actions.appendChild(dl);
+      }
+
+      meta.appendChild(t);
+      meta.appendChild(s);
+      meta.appendChild(actions);
+
+      card.appendChild(thumb);
+      card.appendChild(meta);
+
+      grid.appendChild(card);
+    });
+  }
+
+  function filenameFor(key){
+    if (key === "song") return "magicblock-song-result.png";
+    if (key === "movie") return "magicblock-movie-result.png";
+    if (key === "magicblock") return "magicblock-knowledge-result.png";
+    return "magicblock-champion-card.png";
+  }
+
+  function downloadDataUrl(dataUrl, filename){
+    const a = document.createElement("a");
+    a.download = filename;
+    a.href = dataUrl;
+    a.click();
+  }
+})();
