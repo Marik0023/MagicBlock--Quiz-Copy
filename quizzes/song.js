@@ -2,7 +2,7 @@ const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
-  prevSong: "mb_prev_song", 
+  prevSong: "mb_prev_song",
 };
 
 const QUIZ_CARD = {
@@ -31,39 +31,6 @@ function makeSerial(len = 6){
 function ensureResultId(prefix, existing){
   if (existing && typeof existing === "string" && existing.startsWith("MB-")) return existing;
   return `MB-${prefix}-${makeSerial(6)}`;
-}
-
-function safeSetItem(key, value){
-  try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch (e) {
-    console.warn("localStorage full:", e);
-
-    // 1) чистимо найважчі штуки
-    const heavyKeys = [
-      "mb_champ_png",
-      "mb_prev_song",
-      "mb_prev_movie",
-      "mb_prev_magicblock",
-      "mb_png_song",
-      "mb_png_movie",
-      "mb_png_magicblock",
-    ];
-
-    heavyKeys.forEach(k => {
-      try { localStorage.removeItem(k); } catch {}
-    });
-
-    // 2) пробуємо ще раз
-    try {
-      localStorage.setItem(key, value);
-      return true;
-    } catch (e2) {
-      console.warn("localStorage still full:", e2);
-      return false;
-    }
-  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -230,12 +197,12 @@ document.addEventListener("DOMContentLoaded", () => {
       correct,
       acc,
       name: p?.name || "Player",
-      id: ensureResultId(QUIZ_CARD.idPrefix, null),
+      id: ensureResultId(QUIZ_CARD.idPrefix, saved?.id || null),
       ts: Date.now()
     };
 
-    safeSetItem(MB_KEYS.doneSong, "1");
-    safeSetItem(MB_KEYS.resSong, JSON.stringify(result));
+    localStorage.setItem(MB_KEYS.doneSong, "1");
+    localStorage.setItem(MB_KEYS.resSong, JSON.stringify(result));
     showResult(result);
   });
 
@@ -250,39 +217,38 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   genBtn?.addEventListener("click", async () => {
-  if (!cardCanvas) return;
+    if (!cardCanvas) return;
 
-  const p = getProfile();
-  const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
-  if (!r) return;
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
+    if (!r) return;
 
-  await drawQuizResultCard(cardCanvas, {
-    title: QUIZ_CARD.title,
-    name: p?.name || "Player",
-    avatar: p?.avatar || "",
-    correct: r.correct,
-    total: r.total,
-    acc: r.acc,
-    idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
-    logoSrc: "../assets/logo.webm",
-  });
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_CARD.title,
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+      logoSrc: "../assets/logo.webm",
+    });
 
-  // show preview
-  cardZone?.classList.add("isOpen");
-  if (dlBtn) dlBtn.disabled = false;
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
 
-  // ✅ SAVE SMALL preview (JPEG) for Rewards modal (Home)
-  try {
-    const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
-    localStorage.setItem("mb_prev_song", prev); // ✅ instead of PNG
-    // якщо раніше вже зберігав важкий png — прибери його
-    localStorage.removeItem("mb_png_song");
-  } catch (e) {
-    console.warn("Song preview save failed:", e);
-    try { localStorage.removeItem("mb_prev_song"); } catch {}
-  }
+    // ✅ save SMALL preview (JPEG) — persists like Champion
+    try{
+      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
+      localStorage.setItem(MB_KEYS.prevSong, prev);
+      localStorage.removeItem("mb_png_song"); // cleanup old key if existed
+    }catch(e){
+      console.warn("Song preview save failed:", e);
+      try{ localStorage.removeItem(MB_KEYS.prevSong); }catch{}
+    }
 
-  cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (genBtn) genBtn.textContent = "Regenerate Result Card";
+    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
 
   dlBtn?.addEventListener("click", () => {
@@ -293,10 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
     a.click();
   });
 
+  // ✅ auto-restore preview on load (like Champion)
+  restoreQuizPreview(MB_KEYS.prevSong, cardCanvas, cardZone, dlBtn, genBtn);
 });
 
 /* =========================
-   CANVAS DRAW (Song) — same stable layout as Movie
+   CANVAS DRAW (Song)
 ========================= */
 async function drawQuizResultCard(canvas, d){
   const ctx = canvas.getContext("2d");
@@ -307,7 +275,6 @@ async function drawQuizResultCard(canvas, d){
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0,0,W,H);
 
-  // ✅ card covers whole canvas → no “transparent frame”
   const card = { x: 0, y: 0, w: W, h: H, r: 96 };
 
   drawRoundedRect(ctx, card.x, card.y, card.w, card.h, card.r);
@@ -325,12 +292,10 @@ async function drawQuizResultCard(canvas, d){
   const padX = 130;
   const padTop = 120;
 
-  // ===== LOGO (contain, no squash) =====
   const logoBox = { x: padX, y: padTop - 55, w: 380, h: 120 };
   const logoBitmap = await loadWebmFrameAsBitmap(d.logoSrc || "../assets/logo.webm", 0.05);
   if (logoBitmap) drawContainBitmap(ctx, logoBitmap, logoBox.x, logoBox.y, logoBox.w, logoBox.h);
 
-  // ===== TITLE safe-area =====
   const title = d.title || "Guess the Song by the Melody";
   const titleLeft  = logoBox.x + logoBox.w + 70;
   const titleRight = W - padX;
@@ -343,7 +308,6 @@ async function drawQuizResultCard(canvas, d){
   ctx.textBaseline = "middle";
   ctx.fillText(title, titleLeft, titleY);
 
-  // ===== AVATAR (cover, no squash) =====
   const avatarBox = { x: padX + 10, y: 240, w: 260, h: 260, r: 80 };
   await drawAvatarRounded(ctx, d.avatar, avatarBox.x, avatarBox.y, avatarBox.w, avatarBox.h, avatarBox.r);
 
@@ -354,7 +318,6 @@ async function drawQuizResultCard(canvas, d){
   ctx.stroke();
   ctx.restore();
 
-  // ===== TEXT =====
   const leftColX = avatarBox.x + avatarBox.w + 120;
   const rightX   = W - padX;
 
@@ -384,7 +347,6 @@ async function drawQuizResultCard(canvas, d){
   ctx.font = "980 80px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText(`${d.correct} / ${d.total}`, leftColX, avatarBox.y + 360);
 
-  // ===== ID =====
   const idLabelY = 665;
   ctx.fillStyle = "rgba(255,255,255,.70)";
   ctx.font = "800 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
@@ -404,7 +366,6 @@ async function drawQuizResultCard(canvas, d){
   ctx.textBaseline = "middle";
   ctx.fillText(d.idText || "MB-MagicListener-XXXXX", pillX + 30, pillY + pillH/2);
 
-  // Accuracy
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "rgba(0,0,0,.34)";
   ctx.font = "900 24px system-ui, -apple-system, Segoe UI, Roboto, Arial";
@@ -412,15 +373,45 @@ async function drawQuizResultCard(canvas, d){
 }
 
 /* =========================
+   PERSIST PREVIEW (restore like Champion)
+========================= */
+async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
+  const prev = localStorage.getItem(previewKey);
+  if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
+
+  try{
+    const img = new Image();
+    await new Promise((res, rej) => {
+      img.onload = res;
+      img.onerror = rej;
+      img.src = prev;
+    });
+
+    const ctx = cardCanvas.getContext("2d");
+    cardCanvas.width = 1600;
+    cardCanvas.height = 900;
+
+    ctx.clearRect(0,0,cardCanvas.width,cardCanvas.height);
+    ctx.drawImage(img, 0, 0, cardCanvas.width, cardCanvas.height);
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+    if (genBtn) genBtn.textContent = "Regenerate Result Card";
+    return true;
+  }catch(e){
+    console.warn("restore song preview failed:", e);
+    return false;
+  }
+}
+
+/* =========================
    HELPERS
 ========================= */
 function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
   const w = srcCanvas.width;
-  const h = srcCanvas.height;
   const scale = Math.min(1, maxW / w);
-
   const tw = Math.round(w * scale);
-  const th = Math.round(h * scale);
+  const th = Math.round(srcCanvas.height * scale);
 
   const t = document.createElement("canvas");
   t.width = tw;
@@ -428,8 +419,6 @@ function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
 
   const ctx = t.getContext("2d");
   ctx.drawImage(srcCanvas, 0, 0, tw, th);
-
-  // JPEG preview (small, avoids quota)
   return t.toDataURL("image/jpeg", quality);
 }
 
