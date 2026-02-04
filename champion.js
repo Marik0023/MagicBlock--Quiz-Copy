@@ -85,18 +85,17 @@ const TIER_THEME = {
 // ===== ID (keeps same after first gen) =====
 function randomIdPart(len = 6) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  const rnd = (n) => Math.floor(Math.random() * n);
 
-  // try crypto if available
   if (window.crypto?.getRandomValues) {
     const buf = new Uint8Array(len);
     crypto.getRandomValues(buf);
+    let out = "";
     for (let i = 0; i < len; i++) out += chars[buf[i] % chars.length];
     return out;
   }
 
-  for (let i = 0; i < len; i++) out += chars[rnd(chars.length)];
+  let out = "";
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
 
@@ -134,7 +133,6 @@ function computeSummary() {
   if (sumAcc) sumAcc.textContent = `${acc}%`;
 
   const unlocked = doneCount === 3 && results.length === 3 && !!p;
-  if (genBtn) genBtn.disabled = !unlocked;
 
   const tier = getTierByCorrect(correct);
   const champId = getOrCreateChampionId();
@@ -142,35 +140,40 @@ function computeSummary() {
   return { unlocked, total, correct, acc, profile: p, tier, champId };
 }
 
-genBtn?.addEventListener("click", async () => {
-  const s = computeSummary();
-  if (!s.unlocked) return;
+// ===== Restore Champion PNG on page load (THE FIX) =====
+async function restoreChampionIfExists() {
+  const png = localStorage.getItem(MB_KEYS.champPng);
+  if (!png || !png.startsWith("data:image/")) return false;
 
-  await drawChampionCard(s);
-  localStorage.setItem("mb_champ_ready", "1");
+  // open preview zone
+  cardZone?.classList.add("isOpen");
 
-  // ✅ зберігаємо готову PNG-картинку в localStorage
-  try{
-    const png = cardCanvas?.toDataURL("image/png");
-    if (png && png.startsWith("data:image/")){
-      localStorage.setItem("mb_champ_png", png);
-      localStorage.setItem("mb_champ_ready", "1");
+  // draw PNG into canvas so Download works
+  if (cardCanvas) {
+    const ctx = cardCanvas.getContext("2d");
+    try {
+      const img = await loadImage(png);
+      // keep your canvas size
+      const W = cardCanvas.width || 1400;
+      const H = cardCanvas.height || 800;
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(img, 0, 0, W, H);
+    } catch (e) {
+      console.warn("restoreChampionIfExists: failed to draw png", e);
     }
-  } catch (e) {
-    console.warn("Champion PNG save failed", e);
   }
 
-  cardZone?.classList.add("isOpen");
-  cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
-});
+  // button state
+  if (genBtn) {
+    genBtn.disabled = false; // allow re-generate if they want
+    genBtn.textContent = "Regenerate Champion Card";
+  }
 
-dlBtn?.addEventListener("click", () => {
-  if (!cardCanvas) return;
-  const a = document.createElement("a");
-  a.download = "magicblock-champion-card.png";
-  a.href = cardCanvas.toDataURL("image/png");
-  a.click();
-});
+  // mark ready
+  localStorage.setItem(MB_KEYS.champReady, "1");
+
+  return true;
+}
 
 // ===== Canvas assets cache =====
 let _noisePattern = null;
@@ -230,7 +233,6 @@ async function drawChampionCard(summary) {
   ctx.globalCompositeOperation = "screen";
   ctx.globalAlpha = 0.55;
 
-  // wider diagonal sweep
   const shine = ctx.createLinearGradient(-W * 0.4, H * 0.15, W * 1.4, H * 0.85);
   shine.addColorStop(0.00, "rgba(255,255,255,0.00)");
   shine.addColorStop(0.40, "rgba(255,255,255,0.00)");
@@ -242,7 +244,6 @@ async function drawChampionCard(summary) {
   ctx.fillStyle = shine;
   ctx.fillRect(0, 0, W, H);
 
-  // extra top bloom
   ctx.globalAlpha = 0.26;
   const bloom = ctx.createRadialGradient(W * 0.20, H * 0.15, 40, W * 0.20, H * 0.15, H * 0.62);
   bloom.addColorStop(0, "rgba(255,255,255,0.28)");
@@ -263,10 +264,8 @@ async function drawChampionCard(summary) {
   roundRect(ctx, 6, 6, W - 12, H - 12, 76, false, true);
 
   // ===== HEADER =====
-  // left logo bigger
   await drawLogo(ctx, pad, pad - 38, 310, 122, 0.98);
 
-  // center title
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
@@ -276,7 +275,6 @@ async function drawChampionCard(summary) {
   clearTextShadow(ctx);
   ctx.restore();
 
-  // top-right STATUS pill only (ID removed from here)
   drawStatusPill(ctx, W - pad - 220, pad - 44, 220, 62, theme.label);
 
   // ===== AVATAR =====
@@ -311,10 +309,8 @@ async function drawChampionCard(summary) {
 
   drawDivider(ctx, tx, y - 40, W - pad - tx);
 
-  // ===== ID TABLE replaces "Card status" line =====
   drawIdTable(ctx, tx, y - 12, 520, 84, summary.champId);
 
-  // Accuracy bottom-left
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.40)";
   ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
@@ -322,6 +318,51 @@ async function drawChampionCard(summary) {
   ctx.restore();
 }
 
+// ===== Buttons =====
+genBtn?.addEventListener("click", async () => {
+  const s = computeSummary();
+  if (!s.unlocked) return;
+
+  await drawChampionCard(s);
+
+  // open preview
+  cardZone?.classList.add("isOpen");
+  cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  // save PNG to localStorage
+  try {
+    const png = cardCanvas?.toDataURL("image/png");
+    if (png && png.startsWith("data:image/")) {
+      localStorage.setItem(MB_KEYS.champPng, png);
+      localStorage.setItem(MB_KEYS.champReady, "1");
+    }
+  } catch (e) {
+    console.warn("Champion PNG save failed", e);
+  }
+
+  // button text after generation
+  if (genBtn) genBtn.textContent = "Regenerate Champion Card";
+});
+
+dlBtn?.addEventListener("click", () => {
+  // Prefer saved PNG (works even if canvas is empty)
+  const saved = localStorage.getItem(MB_KEYS.champPng);
+
+  const a = document.createElement("a");
+  a.download = "magicblock-champion-card.png";
+
+  if (saved && saved.startsWith("data:image/")) {
+    a.href = saved;
+    a.click();
+    return;
+  }
+
+  if (!cardCanvas) return;
+  a.href = cardCanvas.toDataURL("image/png");
+  a.click();
+});
+
+// ===== UI helpers =====
 function drawStatusPill(ctx, x, y, w, h, label) {
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.28)";
@@ -586,5 +627,22 @@ function loadImage(src) {
   });
 }
 
-// initial render
-computeSummary();
+// ===== INIT =====
+(async () => {
+  const s = computeSummary();
+
+  // 1) якщо вже є png — показуємо одразу (і НЕ просимо generate)
+  const restored = await restoreChampionIfExists();
+
+  // 2) якщо png нема — кнопка доступна тільки якщо unlocked
+  if (!restored && genBtn) {
+    genBtn.disabled = !s.unlocked;
+    genBtn.textContent = "Generate Champion Card";
+  }
+
+  // якщо unlocked і png є — кнопку лишаємо як "Regenerate"
+  if (restored && genBtn) {
+    genBtn.disabled = !s.unlocked; // якщо раптом ще не unlocked — не даємо генерити
+    if (!s.unlocked) genBtn.textContent = "Locked (complete all quizzes)";
+  }
+})();
