@@ -35,7 +35,6 @@ function ensureResultId(prefix, existing){
 document.addEventListener("DOMContentLoaded", () => {
   forcePlayAll(".bg__video");
   forcePlayAll(".brand__logo");
-
   renderTopProfile();
 
   const QUESTIONS = [
@@ -127,7 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const done = localStorage.getItem(MB_KEYS.doneSong) === "1";
 
   if (done && saved){
-    // гарантуємо ID навіть для старих результатів
     if (!saved.id){
       saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
       localStorage.setItem(MB_KEYS.resSong, JSON.stringify(saved));
@@ -252,178 +250,143 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================
-     RESULT CARD (PNG no background)
+     RESULT CARD (Song) — NO outer frame, NO squish, NO overlaps
   ========================== */
 
   async function drawQuizResultCard(canvas, d){
-    // фіксований розмір (як чемпіон по формату wide)
+    const ctx = canvas.getContext("2d");
+
     canvas.width = 1600;
     canvas.height = 900;
 
-    const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H); // прозорий фон PNG
+    ctx.clearRect(0,0,W,H);
 
-    const card = { x: 18, y: 18, w: W-36, h: H-36, r: 92 };
+    // ✅ fill entire canvas (no transparent border frame)
+    const card = { x: 0, y: 0, w: W, h: H, r: 96 };
 
-    // card background (silver)
-    roundRectPath(ctx, card.x, card.y, card.w, card.h, card.r);
-    const g = ctx.createLinearGradient(card.x, card.y, card.x + card.w, card.y + card.h);
-    g.addColorStop(0, "#BFC0C3");
-    g.addColorStop(.55, "#A7A8AB");
-    g.addColorStop(1, "#8F9093");
-    ctx.fillStyle = g;
+    // base
+    drawRoundedRect(ctx, card.x, card.y, card.w, card.h, card.r);
+    ctx.fillStyle = "#BFC0C2";
     ctx.fill();
 
-    // subtle vignette + highlights (inside clip)
-    ctx.save();
-    ctx.clip();
-    // top highlight
-    const hg = ctx.createRadialGradient(card.x + card.w*0.45, card.y + card.h*0.15, 10, card.x + card.w*0.45, card.y + card.h*0.15, card.w*0.7);
-    hg.addColorStop(0, "rgba(255,255,255,.40)");
-    hg.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = hg;
-    ctx.fillRect(card.x, card.y, card.w, card.h);
+    // soft vignette
+    const vg = ctx.createRadialGradient(
+      W*0.52, H*0.38, 140,
+      W*0.52, H*0.38, W*0.95
+    );
+    vg.addColorStop(0, "rgba(255,255,255,.22)");
+    vg.addColorStop(1, "rgba(0,0,0,.12)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0,0,W,H);
 
-    // center soft light
-    const cg = ctx.createRadialGradient(card.x + card.w*0.45, card.y + card.h*0.55, 20, card.x + card.w*0.45, card.y + card.h*0.55, card.w*0.55);
-    cg.addColorStop(0, "rgba(255,255,255,.18)");
-    cg.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = cg;
-    ctx.fillRect(card.x, card.y, card.w, card.h);
-
-    // waves decor (right + bottom-left)
-    drawWaves(ctx, card.x + card.w - 520, card.y + 210, 430, 250, 10, 9, 0.10);
-    drawWaves(ctx, card.x + 120, card.y + card.h - 250, 520, 170, 8, 10, 0.07);
+    // decor
+    drawWaves(ctx, W-560, 210, 430, 250, 10, 9, 0.10);
 
     // grain
-    drawGrain(ctx, card.x, card.y, card.w, card.h, 0.07);
+    addNoise(ctx, 0, 0, W, H, 0.055);
+
+    const padX = 130;
+    const padTop = 120;
+
+    // ===== LOGO (contain, no squash) =====
+    const logoBox = { x: padX, y: padTop - 55, w: 380, h: 120 };
+    const logoBmp = await loadWebmFrameAsBitmap(d.logoSrc || "../assets/logo.webm", 0.05);
+    if (logoBmp){
+      drawContainBitmap(ctx, logoBmp, logoBox.x, logoBox.y, logoBox.w, logoBox.h);
+    }
+
+    // ===== TITLE safe area (never overlaps logo) =====
+    const title = d.quizTitle || "Guess the Song by the Melody";
+    const titleLeft  = logoBox.x + logoBox.w + 70;
+    const titleRight = W - padX;
+    const titleMaxW  = Math.max(260, titleRight - titleLeft);
+
+    const titleY = padTop + 10;
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    ctx.font = fitText(ctx, title, 76, 52, titleMaxW, "950");
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(title, titleLeft, titleY);
+
+    // ===== AVATAR (cover crop, no squish) =====
+    const avatarBox = { x: padX + 10, y: 240, w: 260, h: 260, r: 80 };
+    await drawAvatarRoundedCover(ctx, d.avatar, avatarBox.x, avatarBox.y, avatarBox.w, avatarBox.h, avatarBox.r);
+
+    // thin rim
+    ctx.save();
+    drawRoundedRect(ctx, avatarBox.x, avatarBox.y, avatarBox.w, avatarBox.h, avatarBox.r);
+    ctx.strokeStyle = "rgba(255,255,255,.18)";
+    ctx.lineWidth = 5;
+    ctx.stroke();
     ctx.restore();
 
-    // strokes (clean)
-    roundRectPath(ctx, card.x, card.y, card.w, card.h, card.r);
-    ctx.strokeStyle = "rgba(255,255,255,.45)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
+    // ===== TEXT =====
+    const leftColX = avatarBox.x + avatarBox.w + 120;
+    const rightX   = W - padX;
 
-    roundRectPath(ctx, card.x+8, card.y+8, card.w-16, card.h-16, card.r-8);
-    ctx.strokeStyle = "rgba(0,0,0,.15)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
 
-    // layout
-    const pad = 92;
-    const left = card.x + pad;
-    const top = card.y + pad;
+    // Name label
+    ctx.fillStyle = "rgba(255,255,255,.72)";
+    ctx.font = "800 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("Your Name:", leftColX, avatarBox.y + 80);
 
-// ---- logo (NO squash) ----
-const logoBox = { w: 260, h: 74 };
-const logoX = left;
-const logoY = card.y + 54;
+    // Name
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    ctx.font = "950 64px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(d.name || "Player", leftColX, avatarBox.y + 150);
 
-const logoVideo = await loadVideoFrame(d.logoSrc);
-if (logoVideo){
-  ctx.save();
-  ctx.globalAlpha = 0.92;
-  drawContain(ctx, logoVideo, logoX, logoY, logoBox.w, logoBox.h); // <— пропорції збережені
-  ctx.restore();
-} else {
-  ctx.fillStyle = "rgba(255,255,255,.92)";
-  ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("MagicBlock", logoX, logoY + 46);
-  ctx.fillStyle = "rgba(255,255,255,.78)";
-  ctx.font = "800 20px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("Quiz", logoX + 200, logoY + 46);
-}
-
-// ---- title (NEVER overlaps logo) ----
-// малюємо заголовок тільки в зоні СПРАВА від лого
-const titleAreaLeft = logoX + logoBox.w + 44;
-const titleAreaRight = card.x + card.w - pad;
-const titleCx = (titleAreaLeft + titleAreaRight) / 2;
-const titleMaxW = (titleAreaRight - titleAreaLeft);
-
-// трохи нижче щоб виглядало як у чемпіона
-const titleY = card.y + 138;
-
-drawCenteredFitText(ctx, d.quizTitle, titleCx, titleY, titleMaxW, 66, 42, "800");
-
-    // avatar
-    const avSize = 250;
-    const avX = left + 40;
-    const avY = top + 160;
-    await drawAvatarRounded(ctx, d.avatar, avX, avY, avSize, 64);
-
-    // text column
-    const tx = avX + avSize + 100;
-    let y = avY + 42;
-
-    // Your Name
-    ctx.fillStyle = "rgba(255,255,255,.80)";
-    ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("Your Name:", tx, y);
-
-    y += 74;
-    ctx.fillStyle = "rgba(255,255,255,.96)";
-    drawLeftFitText(ctx, d.name, tx, y, card.x + card.w - pad - tx, 72, 52, "900");
-
-    // separator line
-    y += 34;
+    // divider
     ctx.strokeStyle = "rgba(255,255,255,.18)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(tx, y);
-    ctx.lineTo(card.x + card.w - pad, y);
+    ctx.moveTo(leftColX, avatarBox.y + 185);
+    ctx.lineTo(rightX, avatarBox.y + 185);
     ctx.stroke();
+
+    // Score label
+    ctx.fillStyle = "rgba(255,255,255,.72)";
+    ctx.font = "800 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("Score", leftColX, avatarBox.y + 275);
 
     // Score
-    y += 68;
-    ctx.fillStyle = "rgba(255,255,255,.78)";
-    ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("Score", tx, y);
+    ctx.fillStyle = "rgba(255,255,255,.92)";
+    ctx.font = "980 80px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(d.scoreText || "0 / 10", leftColX, avatarBox.y + 360);
 
-    y += 76;
-    ctx.fillStyle = "rgba(255,255,255,.96)";
-    ctx.font = "900 86px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(d.scoreText, tx, y);
+    // ===== ID AREA =====
+    const idLabelY = 665;
+    ctx.fillStyle = "rgba(255,255,255,.70)";
+    ctx.font = "800 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText("ID Name:", leftColX, idLabelY);
 
-    // bottom line
-    const lineY = card.y + card.h - 190;
-    ctx.strokeStyle = "rgba(255,255,255,.16)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(tx, lineY);
-    ctx.lineTo(card.x + card.w - pad, lineY);
-    ctx.stroke();
+    const pillX = leftColX;
+    const pillY = 685;
+    const pillW = Math.min(940, rightX - pillX);
+    const pillH = 74;
 
-    // ID label
-    ctx.fillStyle = "rgba(255,255,255,.78)";
-    ctx.font = "800 28px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText("ID Name:", tx, lineY + 78);
-
-    // ID pill
-    const pillX = tx;
-    const pillY = lineY + 98;
-    const pillW = (card.x + card.w - pad) - tx;
-    const pillH = 72;
-
-    ctx.fillStyle = "rgba(0,0,0,.22)";
-    roundRect(ctx, pillX, pillY, pillW, pillH, 36, true, false);
-
-    ctx.strokeStyle = "rgba(255,255,255,.18)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, pillX, pillY, pillW, pillH, 36, false, true);
+    ctx.fillStyle = "rgba(0,0,0,.28)";
+    drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 36);
+    ctx.fill();
 
     ctx.fillStyle = "rgba(255,255,255,.92)";
-    drawLeftFitText(ctx, d.idText, pillX + 28, pillY + 50, pillW - 56, 34, 24, "900");
+    ctx.font = "900 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.textBaseline = "middle";
+    ctx.fillText(d.idText || "MB-MagicListener-XXXXX", pillX + 30, pillY + pillH/2);
 
-    // Accuracy bottom-left
-    ctx.fillStyle = "rgba(0,0,0,.30)";
-    ctx.font = "800 26px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-    ctx.fillText(`Accuracy: ${d.accuracyText}`, card.x + 84, card.y + card.h - 74);
+    // Accuracy
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "rgba(0,0,0,.34)";
+    ctx.font = "900 24px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+    ctx.fillText(`Accuracy: ${d.accuracyText || "0%"}`, avatarBox.x, H - 56);
   }
 
-  function roundRectPath(ctx, x, y, w, h, r){
+  /* =========================
+     HELPERS (Song)
+  ========================== */
+  function drawRoundedRect(ctx, x, y, w, h, r){
     const rr = Math.min(r, w/2, h/2);
     ctx.beginPath();
     ctx.moveTo(x+rr, y);
@@ -434,64 +397,55 @@ drawCenteredFitText(ctx, d.quizTitle, titleCx, titleY, titleMaxW, 66, 42, "800")
     ctx.closePath();
   }
 
-  function roundRect(ctx, x, y, w, h, r, fill, stroke){
-    roundRectPath(ctx, x, y, w, h, r);
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
+  function fitText(ctx, text, maxPx, minPx, maxW, weight="900"){
+    for (let px=maxPx; px>=minPx; px--){
+      const f = `${weight} ${px}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+      ctx.font = f;
+      if (ctx.measureText(text).width <= maxW) return f;
+    }
+    return `${weight} ${minPx}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
   }
 
-  function drawCenteredFitText(ctx, text, cx, y, maxWidth, startSize, minSize, weight="800"){
-    let size = startSize;
-    while (size > minSize){
-      ctx.font = `${weight} ${size}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-      if (ctx.measureText(text).width <= maxWidth) break;
-      size -= 2;
-    }
-    let out = text;
-    while (ctx.measureText(out).width > maxWidth && out.length > 4){
-      out = out.slice(0, -2) + "…";
-    }
-    ctx.fillStyle = "rgba(255,255,255,.96)";
-    ctx.textAlign = "center";
-    ctx.fillText(out, cx, y);
-    ctx.textAlign = "left";
-  }
-
-  function drawLeftFitText(ctx, text, x, y, maxWidth, startSize, minSize, weight="900"){
-    let size = startSize;
-    while (size > minSize){
-      ctx.font = `${weight} ${size}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
-      if (ctx.measureText(text).width <= maxWidth) break;
-      size -= 2;
-    }
-    let out = text;
-    while (ctx.measureText(out).width > maxWidth && out.length > 4){
-      out = out.slice(0, -2) + "…";
-    }
-    ctx.fillText(out, x, y);
-  }
-
-  async function drawAvatarRounded(ctx, dataUrl, x, y, size, r){
-    // frame
+  async function drawAvatarRoundedCover(ctx, dataUrl, x, y, w, h, r){
     ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,.18)";
-    roundRect(ctx, x, y, size, size, r, true, false);
-
-    ctx.strokeStyle = "rgba(255,255,255,.20)";
-    ctx.lineWidth = 3;
-    roundRect(ctx, x, y, size, size, r, false, true);
-
-    // clip & draw
-    roundRectPath(ctx, x+6, y+6, size-12, size-12, r-8);
+    drawRoundedRect(ctx, x, y, w, h, r);
     ctx.clip();
+
+    ctx.fillStyle = "rgba(255,255,255,.18)";
+    ctx.fillRect(x,y,w,h);
 
     if (dataUrl && dataUrl.startsWith("data:")){
       try{
         const img = await loadImage(dataUrl);
-        ctx.drawImage(img, x, y, size, size);
+        drawCoverImage(ctx, img, x, y, w, h);
       } catch {}
     }
     ctx.restore();
+  }
+
+  function drawCoverImage(ctx, img, x, y, w, h){
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    if (!sw || !sh) return;
+
+    const s = Math.max(w/sw, h/sh);
+    const dw = sw*s;
+    const dh = sh*s;
+    const dx = x + (w - dw)/2;
+    const dy = y + (h - dh)/2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  function drawContainBitmap(ctx, bmp, x, y, w, h){
+    const sw = bmp.width, sh = bmp.height;
+    if (!sw || !sh) return;
+
+    const s = Math.min(w/sw, h/sh);
+    const dw = sw*s;
+    const dh = sh*s;
+    const dx = x + (w - dw)/2;
+    const dy = y + (h - dh)/2;
+    ctx.drawImage(bmp, dx, dy, dw, dh);
   }
 
   function loadImage(src){
@@ -503,29 +457,63 @@ drawCenteredFitText(ctx, d.quizTitle, titleCx, titleY, titleMaxW, 66, 42, "800")
     });
   }
 
-  function loadVideoFrame(src){
+  async function loadWebmFrameAsBitmap(src, t=0.05){
     return new Promise((resolve) => {
       const v = document.createElement("video");
       v.muted = true;
       v.playsInline = true;
+      v.crossOrigin = "anonymous";
       v.preload = "auto";
       v.src = src;
 
-      const done = () => {
-        try { resolve(v); } catch { resolve(null); }
+      const cleanup = () => {
+        try{ v.pause(); }catch{}
+        v.src = "";
       };
 
-      v.addEventListener("loadeddata", () => {
-        // перший кадр уже доступний
-        done();
-      }, { once:true });
+      v.addEventListener("error", () => { cleanup(); resolve(null); }, { once:true });
 
-      v.addEventListener("error", () => resolve(null), { once:true });
-      // safari sometimes needs a tick
-      setTimeout(() => {
-        if (v.readyState >= 2) done();
-      }, 250);
+      v.addEventListener("loadedmetadata", async () => {
+        try{
+          const tt = Math.min(Math.max(t, 0), Math.max(0.01, (v.duration || 1) - 0.01));
+          v.currentTime = tt;
+
+          v.addEventListener("seeked", async () => {
+            try{
+              const vw = v.videoWidth, vh = v.videoHeight;
+              if (!vw || !vh){ cleanup(); resolve(null); return; }
+
+              const c = document.createElement("canvas");
+              c.width = vw; c.height = vh;
+              c.getContext("2d").drawImage(v, 0, 0, vw, vh);
+
+              const bmp = await createImageBitmap(c);
+              cleanup();
+              resolve(bmp);
+            } catch {
+              cleanup();
+              resolve(null);
+            }
+          }, { once:true });
+
+        } catch {
+          cleanup();
+          resolve(null);
+        }
+      }, { once:true });
     });
+  }
+
+  function addNoise(ctx, x, y, w, h, alpha=0.055){
+    const img = ctx.getImageData(x,y,w,h);
+    const d = img.data;
+    for (let i=0; i<d.length; i+=4){
+      const n = (Math.random()*255)|0;
+      d[i]   = d[i]   + (n - 128)*alpha;
+      d[i+1] = d[i+1] + (n - 128)*alpha;
+      d[i+2] = d[i+2] + (n - 128)*alpha;
+    }
+    ctx.putImageData(img, x, y);
   }
 
   function drawWaves(ctx, x, y, w, h, lines=10, amp=10, alpha=0.10){
@@ -544,29 +532,6 @@ drawCenteredFitText(ctx, d.quizTitle, titleCx, titleY, titleMaxW, 66, 42, "800")
       }
       ctx.stroke();
     }
-    ctx.restore();
-  }
-
-  function drawGrain(ctx, x, y, w, h, alpha=0.07){
-    const g = 220;
-    const off = document.createElement("canvas");
-    off.width = g; off.height = g;
-    const octx = off.getContext("2d");
-    const img = octx.createImageData(g, g);
-    for (let i=0;i<img.data.length;i+=4){
-      const v = (Math.random()*255)|0;
-      img.data[i] = v;
-      img.data[i+1] = v;
-      img.data[i+2] = v;
-      img.data[i+3] = (Math.random()*255)|0;
-    }
-    octx.putImageData(img, 0, 0);
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    const pat = ctx.createPattern(off, "repeat");
-    ctx.fillStyle = pat;
-    ctx.fillRect(x, y, w, h);
     ctx.restore();
   }
 });
