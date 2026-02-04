@@ -767,3 +767,19 @@ body.mbQuiz #cardZone .cardPreview canvas{
   border: 0 !important;
   border-radius: 28px;
 }
+
+/* ===== FIX: remove extra translucent frame behind quiz cards ===== */
+body.mbQuiz #cardZone.cardZone{
+  margin-top: 16px;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* center Download button under canvas */
+body.mbQuiz #cardZone .cardActions{
+  margin-top: 14px;
+  display:flex;
+  justify-content:center;
+}
