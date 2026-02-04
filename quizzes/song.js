@@ -316,31 +316,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const left = card.x + pad;
     const top = card.y + pad;
 
-    // logo (bigger on card)
-    const logoW = 260;
-    const logoH = 74;
-    const logoX = left;
-    const logoY = card.y + 54;
+// ---- logo (NO squash) ----
+const logoBox = { w: 260, h: 74 };
+const logoX = left;
+const logoY = card.y + 54;
 
-    const logoVideo = await loadVideoFrame(d.logoSrc);
-    if (logoVideo){
-      ctx.save();
-      ctx.globalAlpha = 0.92;
-      ctx.drawImage(logoVideo, logoX, logoY, logoW, logoH);
-      ctx.restore();
-    } else {
-      // fallback text if video can't load
-      ctx.fillStyle = "rgba(255,255,255,.92)";
-      ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillText("MagicBlock", logoX, logoY + 46);
-      ctx.fillStyle = "rgba(255,255,255,.78)";
-      ctx.font = "800 20px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillText("Quiz", logoX + 200, logoY + 46);
-    }
+const logoVideo = await loadVideoFrame(d.logoSrc);
+if (logoVideo){
+  ctx.save();
+  ctx.globalAlpha = 0.92;
+  drawContain(ctx, logoVideo, logoX, logoY, logoBox.w, logoBox.h); // <— пропорції збережені
+  ctx.restore();
+} else {
+  ctx.fillStyle = "rgba(255,255,255,.92)";
+  ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("MagicBlock", logoX, logoY + 46);
+  ctx.fillStyle = "rgba(255,255,255,.78)";
+  ctx.font = "800 20px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("Quiz", logoX + 200, logoY + 46);
+}
 
-    // title centered (no overlap with logo)
-    const titleY = card.y + 126;
-    drawCenteredFitText(ctx, d.quizTitle, card.x + card.w/2, titleY, card.w - (pad*2), 68, 44, "800");
+// ---- title (NEVER overlaps logo) ----
+// малюємо заголовок тільки в зоні СПРАВА від лого
+const titleAreaLeft = logoX + logoBox.w + 44;
+const titleAreaRight = card.x + card.w - pad;
+const titleCx = (titleAreaLeft + titleAreaRight) / 2;
+const titleMaxW = (titleAreaRight - titleAreaLeft);
+
+// трохи нижче щоб виглядало як у чемпіона
+const titleY = card.y + 138;
+
+drawCenteredFitText(ctx, d.quizTitle, titleCx, titleY, titleMaxW, 66, 42, "800");
 
     // avatar
     const avSize = 250;
