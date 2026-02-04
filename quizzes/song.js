@@ -2,7 +2,7 @@ const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
-  prevSong: "mb_prev_song",
+  prevSong: "mb_prev_song", // now flag only
 };
 
 const QUIZ_CARD = {
@@ -20,6 +20,22 @@ function forcePlayAll(selector){
   reminder();
   window.addEventListener("click", reminder, { once:true });
   window.addEventListener("touchstart", reminder, { once:true });
+}
+
+// ===== HiDPI canvas helper =====
+function setupHiDPICanvas(canvas, cssW, cssH) {
+  if (!canvas) return null;
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.style.width = cssW + "px";
+  canvas.style.height = cssH + "px";
+  canvas.width = Math.round(cssW * dpr);
+  canvas.height = Math.round(cssH * dpr);
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  return { ctx, W: cssW, H: cssH, dpr };
 }
 
 function makeSerial(len = 6){
@@ -237,59 +253,77 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
 
-    // save SMALL preview (520px)
-    try{
-      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
-      localStorage.setItem(MB_KEYS.prevSong, prev);
-      localStorage.removeItem("mb_png_song");
-    }catch(e){
-      console.warn("Song preview save failed:", e);
-      try{ localStorage.removeItem(MB_KEYS.prevSong); }catch{}
-    }
+    // ✅ ONLY a flag (no image stored => no blur)
+    try { localStorage.setItem(MB_KEYS.prevSong, "1"); } catch {}
 
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
     cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
 
-  dlBtn?.addEventListener("click", async () => {
+  dlBtn?.addEventListener("click", () => {
     if (!cardCanvas) return;
-
-    const p = getProfile();
-    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
-    if (!r) return;
-
-    // ✅ always redraw full-res before download
-    await drawQuizResultCard(cardCanvas, {
-      title: QUIZ_CARD.title,
-      name: p?.name || "Player",
-      avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      acc: r.acc,
-      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
-      logoSrc: "../assets/logo.webm",
-    });
-
     const a = document.createElement("a");
     a.download = "magicblock-song-result.png";
     a.href = cardCanvas.toDataURL("image/png");
     a.click();
   });
 
-  // ✅ auto-restore preview on load (NO UPSCALE)
-  restoreQuizPreview(MB_KEYS.prevSong, cardCanvas, cardZone, dlBtn, genBtn);
+  // ✅ auto-restore by REDRAW (HD)
+  restoreQuizByRedraw(
+    MB_KEYS.prevSong,
+    cardCanvas, cardZone, dlBtn, genBtn,
+    async () => {
+      const p = getProfile();
+      const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
+      if (!r) return null;
+      return {
+        title: QUIZ_CARD.title,
+        name: p?.name || "Player",
+        avatar: p?.avatar || "",
+        correct: r.correct,
+        total: r.total,
+        acc: r.acc,
+        idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+        logoSrc: "../assets/logo.webm",
+      };
+    }
+  );
 });
 
 /* =========================
-   CANVAS DRAW (Song)
+   RESTORE BY REDRAW (HD)
+========================= */
+async function restoreQuizByRedraw(flagKey, cardCanvas, cardZone, dlBtn, genBtn, buildData){
+  const ready = localStorage.getItem(flagKey) === "1";
+  if (!ready || !cardCanvas) return false;
+
+  try{
+    const data = await buildData();
+    if (!data) return false;
+
+    await drawQuizResultCard(cardCanvas, data);
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+    if (genBtn) genBtn.textContent = "Regenerate Result Card";
+    return true;
+  }catch(e){
+    console.warn("restoreQuizByRedraw failed:", e);
+    return false;
+  }
+}
+
+/* =========================
+   CANVAS DRAW (Song)  HD
 ========================= */
 async function drawQuizResultCard(canvas, d){
-  const ctx = canvas.getContext("2d");
+  const CSS_W = 1600;
+  const CSS_H = 900;
 
-  canvas.width = 1600;
-  canvas.height = 900;
+  const s = setupHiDPICanvas(canvas, CSS_W, CSS_H);
+  const ctx = s.ctx;
+  const W = s.W, H = s.H;
 
-  const W = canvas.width, H = canvas.height;
   ctx.clearRect(0,0,W,H);
 
   const card = { x: 0, y: 0, w: W, h: H, r: 96 };
@@ -390,56 +424,8 @@ async function drawQuizResultCard(canvas, d){
 }
 
 /* =========================
-   ✅ RESTORE PREVIEW (NO UPSCALE)
-========================= */
-async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
-  const prev = localStorage.getItem(previewKey);
-  if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
-
-  try{
-    const img = new Image();
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = prev;
-    });
-
-    // ✅ canvas = preview size
-    cardCanvas.width = img.naturalWidth || img.width;
-    cardCanvas.height = img.naturalHeight || img.height;
-
-    const ctx = cardCanvas.getContext("2d");
-    ctx.clearRect(0,0,cardCanvas.width,cardCanvas.height);
-    ctx.drawImage(img, 0, 0);
-
-    cardZone?.classList.add("isOpen");
-    if (dlBtn) dlBtn.disabled = false;
-    if (genBtn) genBtn.textContent = "Regenerate Result Card";
-    return true;
-  }catch(e){
-    console.warn("restore song preview failed:", e);
-    return false;
-  }
-}
-
-/* =========================
    HELPERS
 ========================= */
-function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
-  const w = srcCanvas.width;
-  const scale = Math.min(1, maxW / w);
-  const tw = Math.round(w * scale);
-  const th = Math.round(srcCanvas.height * scale);
-
-  const t = document.createElement("canvas");
-  t.width = tw;
-  t.height = th;
-
-  const ctx = t.getContext("2d");
-  ctx.drawImage(srcCanvas, 0, 0, tw, th);
-  return t.toDataURL("image/jpeg", quality);
-}
-
 function drawRoundedRect(ctx, x, y, w, h, r){
   const rr = Math.min(r, w/2, h/2);
   ctx.beginPath();
