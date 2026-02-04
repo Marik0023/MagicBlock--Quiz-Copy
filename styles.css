@@ -616,9 +616,9 @@ img{max-width:100%; display:block}
 }
 
 /* =========================================================
-   CARD PREVIEW: Champion + Quiz (clean, no duplicates)
-   - Champion/home: default .cardPreview (420px)
-   - Quiz pages: body.mbQuiz #cardZone overrides (smaller + no black frame)
+   CARD PREVIEW: Champion + Quiz (final)
+   - Champion/home: default .cardPreview (420px) + shine
+   - Quiz pages: #cardZone preview has NO panel/frame behind
 ========================================================= */
 
 /* ===== Base preview (Champion / Home) ===== */
@@ -674,7 +674,7 @@ img{max-width:100%; display:block}
   to{ opacity:1; transform: translateY(0); }
 }
 
-/* subtle breathing glow */
+/* ===== Champion shine (only for non-quiz areas) ===== */
 .cardZone.isOpen .cardPreview::before{
   content:"";
   position:absolute;
@@ -691,13 +691,11 @@ img{max-width:100%; display:block}
 
   animation: mbGlowBreath 4s ease-in-out infinite;
 }
-
 @keyframes mbGlowBreath{
   0%,100%{ opacity:.10; transform: scale(1); }
   50%{ opacity:.20; transform: scale(1.015); }
 }
 
-/* MAIN shine sweep - every 2 seconds */
 .cardZone.isOpen .cardPreview::after{
   content:"";
   position:absolute;
@@ -722,7 +720,6 @@ img{max-width:100%; display:block}
 
   animation: mbShineEvery2s 2s ease-in-out infinite;
 }
-
 @keyframes mbShineEvery2s{
   0%{ transform: translateX(-110%) rotate(-8deg); opacity: 0; }
   10%{ transform: translateX(-110%) rotate(-8deg); opacity: 0; }
@@ -743,14 +740,26 @@ img{max-width:100%; display:block}
   }
 }
 
-/* ===== Quiz result card preview (NO black frame + smaller) ===== */
+/* =========================================================
+   QUIZ RESULT CARD PREVIEW (NO panel behind, NO shine halo)
+========================================================= */
+
+/* IMPORTANT: прибираємо панель/рамку позаду (це був .cardZone) */
+body.mbQuiz #cardZone.cardZone{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* сам preview — менший і без чорного фону/бордера */
 body.mbQuiz #cardZone .cardPreview{
-  width: min(520px, 100%); /* було велике — тепер в ~2 рази менше */
+  width: min(520px, 100%);
   margin: 0 auto;
 
   background: transparent !important;
   border: 0 !important;
 
+  /* тінь тільки для прев’ю на сторінці */
   box-shadow: 0 18px 60px rgba(0,0,0,.55);
 
   border-radius: 28px;
@@ -768,18 +777,11 @@ body.mbQuiz #cardZone .cardPreview canvas{
   border-radius: 28px;
 }
 
-/* ===== FIX: remove extra translucent frame behind quiz cards ===== */
-body.mbQuiz #cardZone.cardZone{
-  margin-top: 16px;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-/* center Download button under canvas */
-body.mbQuiz #cardZone .cardActions{
-  margin-top: 14px;
-  display:flex;
-  justify-content:center;
+/* вимикаємо champion-shine для quiz preview (бо він виглядав як “рамка/ореол”) */
+body.mbQuiz #cardZone.isOpen .cardPreview::before,
+body.mbQuiz #cardZone.isOpen .cardPreview::after{
+  animation: none !important;
+  opacity: 0 !important;
+  display: none !important;
+  content: none !important;
 }
