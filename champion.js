@@ -198,17 +198,17 @@ genBtn?.addEventListener("click", async () => {
   cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
   if (dlBtn) dlBtn.disabled = false;
 
-  // save PNG for Home preview
+  // save SMALL preview (JPEG) for Home/Rewards modal (NOT full PNG)
   try {
-    const png = cardCanvas?.toDataURL("image/png");
-    if (png && png.startsWith("data:image/")) {
-      const ok = trySaveChampionPNG(png);
-      if (ok) {
-        // ok
+    if (cardCanvas) {
+      const preview = exportPreviewDataURL(cardCanvas, 520, 0.85); // 520px ширина
+      if (preview && preview.startsWith("data:image/")) {
+        localStorage.setItem(MB_KEYS.champPng, preview);
+        localStorage.setItem(MB_KEYS.champReady, "1");
       }
     }
   } catch (e) {
-    console.warn("toDataURL failed:", e);
+    console.warn("preview save failed:", e);
   }
 
   if (genBtn) genBtn.textContent = "Regenerate Champion Card";
@@ -623,6 +623,24 @@ function loadImage(src) {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
+  const w = srcCanvas.width;
+  const h = srcCanvas.height;
+  const scale = Math.min(1, maxW / w);
+
+  const tw = Math.round(w * scale);
+  const th = Math.round(h * scale);
+
+  const t = document.createElement("canvas");
+  t.width = tw;
+  t.height = th;
+
+  const ctx = t.getContext("2d");
+  ctx.drawImage(srcCanvas, 0, 0, tw, th);
+
+  return t.toDataURL("image/jpeg", quality);
 }
 
 // ===== INIT =====
