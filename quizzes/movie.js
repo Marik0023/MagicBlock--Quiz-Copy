@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
-  const frameImg = document.getElementById("frameImg");
+  const frameVideo = document.getElementById("frameVideo");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
 
@@ -72,7 +72,19 @@ document.addEventListener("DOMContentLoaded", () => {
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
     progressText.textContent = `Progress: ${idx + 1} / ${QUESTIONS.length}`;
 
-    frameImg.src = q.frame || "../assets/covers/placeholder.jpg";
+    const src = q.frame; // тут має бути шлях на mp4
+
+      if (frameVideo){
+        frameVideo.pause();
+        frameVideo.src = src;
+        frameVideo.load();
+      
+        // старт з початку, щоб “кадр” завжди був правильний
+        frameVideo.currentTime = 0;
+      
+        // автоплей може блокнутись — тому safe
+        frameVideo.play().catch(()=>{});
+      }
 
     optionsEl.innerHTML = "";
     q.options.forEach((label, i) => {
