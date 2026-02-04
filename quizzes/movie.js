@@ -121,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const acc = Math.round((correct / total) * 100);
     const p = getProfile();
 
-    // stable id (keep old if exists)
     const old = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
     const id = old?.id || buildId("MagicViewer");
 
@@ -161,7 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
 
-    // ✅ persist small preview (JPEG)
     try{
       const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
       localStorage.setItem(MB_KEYS.prevMovie, prev);
@@ -175,15 +173,32 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
 
-  dlBtn?.addEventListener("click", () => {
+  dlBtn?.addEventListener("click", async () => {
     if (!cardCanvas) return;
+
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
+    if (!r) return;
+
+    // ✅ redraw full-res before export
+    await drawQuizResultCard(cardCanvas, {
+      title: "Guess the Movie by the Frame",
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || buildId("MagicViewer"),
+      logoSrc: "../assets/logo.webm",
+    });
+
     const a = document.createElement("a");
     a.download = "magicblock-movie-result.png";
     a.href = cardCanvas.toDataURL("image/png");
     a.click();
   });
 
-  // ✅ auto-restore preview
+  // ✅ auto-restore preview (NO UPSCALE)
   restoreQuizPreview(MB_KEYS.prevMovie, cardCanvas, cardZone, dlBtn, genBtn);
 });
 
@@ -327,7 +342,7 @@ async function drawQuizResultCard(canvas, d){
 }
 
 /* =========================
-   PERSIST PREVIEW
+   ✅ RESTORE PREVIEW (NO UPSCALE)
 ========================= */
 async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
   const prev = localStorage.getItem(previewKey);
@@ -341,12 +356,12 @@ async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBt
       img.src = prev;
     });
 
-    const ctx = cardCanvas.getContext("2d");
-    cardCanvas.width = 1600;
-    cardCanvas.height = 900;
+    cardCanvas.width = img.naturalWidth || img.width;
+    cardCanvas.height = img.naturalHeight || img.height;
 
+    const ctx = cardCanvas.getContext("2d");
     ctx.clearRect(0,0,cardCanvas.width,cardCanvas.height);
-    ctx.drawImage(img, 0, 0, cardCanvas.width, cardCanvas.height);
+    ctx.drawImage(img, 0, 0);
 
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
