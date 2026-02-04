@@ -23,6 +23,9 @@ function inQuizzesFolder(){
 function homeHref(){
   return inQuizzesFolder() ? "../index.html" : "index.html";
 }
+function championHref(){
+  return inQuizzesFolder() ? "../champion.html" : "champion.html";
+}
 function assetPath(p){
   return inQuizzesFolder() ? `../${p}` : p;
 }
@@ -195,7 +198,7 @@ function updateChampionGlowUI(allDone){
   // make preview clickable
   if (preview){
     preview.style.cursor = "pointer";
-    preview.onclick = () => (location.href = "champion.html");
+    preview.onclick = () => (location.href = championHref());
   }
 }
 
@@ -247,7 +250,7 @@ function initHomeButtons(){
   });
 
   const champBtn = document.getElementById("openChampionBtn");
-  champBtn?.addEventListener("click", () => location.href = "champion.html");
+  champBtn?.addEventListener("click", () => location.href = championHref());
 }
 
 /* ===== Bootstrap ===== */
