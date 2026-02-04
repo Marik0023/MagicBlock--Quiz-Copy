@@ -6,6 +6,11 @@ const MB_KEYS = {
   resSong: "mb_result_song",
   resMovie: "mb_result_movie",
   resMagic: "mb_result_magicblock",
+
+  // champion persistence
+  champId: "mb_champ_id",
+  champPng: "mb_champ_png",
+  champReady: "mb_champ_ready",
 };
 
 function safeJSONParse(v, fallback = null){
@@ -162,6 +167,38 @@ function initProfileModal(){
 /* ===== Home badges/buttons ===== */
 function isDone(key){ return localStorage.getItem(key) === "1"; }
 
+function updateChampionGlowUI(allDone){
+  const champWrap = document.getElementById("championWrap");
+  if (!champWrap || !allDone) return;
+
+  const png = localStorage.getItem(MB_KEYS.champPng);
+  const preview = document.getElementById("championPreview");
+  const img = document.getElementById("championPreviewImg");
+  const hint = document.getElementById("championHint");
+  const btn = document.getElementById("openChampionBtn");
+
+  if (png && png.startsWith("data:image/")){
+    champWrap.classList.add("champion--glow");
+
+    if (preview) preview.style.display = "block";
+    if (img) img.src = png;
+
+    if (hint) hint.style.display = "block";
+    if (btn) btn.textContent = "Open Champion Card";
+  } else {
+    champWrap.classList.remove("champion--glow");
+    if (preview) preview.style.display = "none";
+    if (hint) hint.style.display = "none";
+    if (btn) btn.textContent = "Generate Champion Card";
+  }
+
+  // make preview clickable
+  if (preview){
+    preview.style.cursor = "pointer";
+    preview.onclick = () => (location.href = "champion.html");
+  }
+}
+
 function updateBadges(){
   const map = {
     song: MB_KEYS.doneSong,
@@ -184,6 +221,9 @@ function updateBadges(){
 
   const champ = document.getElementById("championWrap");
   if (champ) champ.style.display = allDone ? "block" : "none";
+
+  // ✅ Glow Champion card on Home if generated
+  updateChampionGlowUI(allDone);
 }
 
 function initHomeButtons(){
