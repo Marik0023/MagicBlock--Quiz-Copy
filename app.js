@@ -143,11 +143,14 @@ function initProfileModal(){
   });
 
   fileInput?.addEventListener("change", async () => {
-    const f = fileInput.files?.[0];
-    if (!f) return;
-    const dataUrl = await fileToDataURL(f);
-    if (preview) preview.src = dataUrl;
-    avatarBox?.classList.remove("isPlaceholder");
+  const f = fileInput.files?.[0];
+  if (!f) return;
+
+  // ✅ compress avatar to avoid localStorage quota
+  const dataUrl = await fileToCompressedDataURL(f, 512, 0.85); // 512px max, 0.85 quality
+
+  if (preview) preview.src = dataUrl;
+  avatarBox?.classList.remove("isPlaceholder");
   });
 
   saveBtn?.addEventListener("click", () => {
@@ -159,19 +162,41 @@ function initProfileModal(){
       avatar = preview.src;
     }
 
-    setProfile({ name, avatar });
-    renderTopProfile();
-    closeProfileModal();
-  });
+    const ok = setProfile({ name, avatar });
+if (!ok) return;
 
-  function fileToDataURL(file){
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
+renderTopProfile();
+closeProfileModal();
+
+  function fileToCompressedDataURL(file, maxSize = 512, quality = 0.85){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const r = new FileReader();
+
+    r.onload = () => { img.src = r.result; };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+
+    img.onload = () => {
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+
+      const scale = Math.min(1, maxSize / Math.max(w, h));
+      const nw = Math.round(w * scale);
+      const nh = Math.round(h * scale);
+
+      const c = document.createElement("canvas");
+      c.width = nw; c.height = nh;
+
+      const ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0, nw, nh);
+
+      // ✅ JPEG is much smaller for photos
+      resolve(c.toDataURL("image/jpeg", quality));
+    };
+
+    img.onerror = reject;
+  });
 }
 
 /* ===== Home badges/buttons ===== */
