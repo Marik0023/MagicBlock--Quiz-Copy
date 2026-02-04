@@ -38,16 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopProfile();
 
   const QUESTIONS = [
-    { audio: "../assets/songs/q1.mp3", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { audio: "../assets/songs/q2.mp3", options: ["A", "B", "C", "D"], correctIndex: 1 },
-    { audio: "../assets/songs/q3.mp3", options: ["A", "B", "C", "D"], correctIndex: 2 },
-    { audio: "../assets/songs/q4.mp3", options: ["A", "B", "C", "D"], correctIndex: 3 },
-    { audio: "../assets/songs/q5.mp3", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { audio: "../assets/songs/q6.mp3", options: ["A", "B", "C", "D"], correctIndex: 1 },
-    { audio: "../assets/songs/q7.mp3", options: ["A", "B", "C", "D"], correctIndex: 2 },
-    { audio: "../assets/songs/q8.mp3", options: ["A", "B", "C", "D"], correctIndex: 3 },
-    { audio: "../assets/songs/q9.mp3", options: ["A", "B", "C", "D"], correctIndex: 0 },
-    { audio: "../assets/songs/q10.mp3", options: ["A", "B", "C", "D"], correctIndex: 1 },
+    { audio: "../assets/songs/1.mp3", options: ["A: Mark Ronson feat. Bruno Mars — Uptown Funk", "B: Pharrell Williams — Happy", "C: Justin Timberlake — Can’t Stop the Feeling", "D: Bruno Mars — 24K Magic"], correctIndex: 0 },
+    { audio: "../assets/songs/2.mp3", options: ["A", "B", "C", "D"], correctIndex: 1 },
+    { audio: "../assets/songs/3.mp3", options: ["A", "B", "C", "D"], correctIndex: 2 },
+    { audio: "../assets/songs/4.mp3", options: ["A", "B", "C", "D"], correctIndex: 3 },
+    { audio: "../assets/songs/5.mp3", options: ["A", "B", "C", "D"], correctIndex: 0 },
+    { audio: "../assets/songs/6.mp3", options: ["A", "B", "C", "D"], correctIndex: 1 },
+    { audio: "../assets/songs/7.mp3", options: ["A", "B", "C", "D"], correctIndex: 2 },
+    { audio: "../assets/songs/8.mp3", options: ["A", "B", "C", "D"], correctIndex: 3 },
+    { audio: "../assets/songs/9.mp3", options: ["A", "B", "C", "D"], correctIndex: 0 },
+    { audio: "../assets/songs/10.mp3", options: ["A", "B", "C", "D"], correctIndex: 1 },
   ];
 
   const quizPanel = document.getElementById("quizPanel");
