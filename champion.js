@@ -7,6 +7,8 @@ const MB_KEYS = {
   resMovie: "mb_result_movie",
   resMagic: "mb_result_magicblock",
   champId: "mb_champ_id",
+  champPng: "mb_champ_png",
+  champReady: "mb_champ_ready",
 };
 
 function safeJSONParse(v, fallback = null) {
@@ -145,6 +147,17 @@ genBtn?.addEventListener("click", async () => {
   if (!s.unlocked) return;
 
   await drawChampionCard(s);
+
+  // ✅ зберігаємо готову PNG-картинку в localStorage
+  try{
+    const png = cardCanvas?.toDataURL("image/png");
+    if (png && png.startsWith("data:image/")){
+      localStorage.setItem("mb_champ_png", png);
+      localStorage.setItem("mb_champ_ready", "1");
+    }
+  } catch (e) {
+    console.warn("Champion PNG save failed", e);
+  }
 
   cardZone?.classList.add("isOpen");
   cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
