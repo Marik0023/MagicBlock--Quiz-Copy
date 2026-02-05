@@ -1,5 +1,3 @@
-function safeParse(v){ try{ return JSON.parse(v);}catch(e){ return null; } }
-
 const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
@@ -249,90 +247,30 @@ function updateChampionGlowUI(allDone){
 }
 
 function updateBadges(){
-  const songDone = localStorage.getItem("mb_done_song") === "1";
-  const movieDone = localStorage.getItem("mb_done_movie") === "1";
-  const magicDone = localStorage.getItem("mb_done_magic") === "1";
+  const map = {
+    song: MB_KEYS.doneSong,
+    movie: MB_KEYS.doneMovie,
+    magicblock: MB_KEYS.doneMagic,
+  };
 
-  const songProg = safeParse(localStorage.getItem("mb_prog_song"));
-  const movieProg = safeParse(localStorage.getItem("mb_prog_movie"));
-  const magicProg = safeParse(localStorage.getItem("mb_prog_magic"));
+  let allDone = true;
 
-  function apply(btn, badge, done, prog){
-    if (!btn || !badge) return;
+  Object.entries(map).forEach(([k, storageKey]) => {
+    const done = isDone(storageKey);
+    if (!done) allDone = false;
 
-    // status badge
-    if (done){
-      badge.textContent = "✓ Completed";
-      badge.classList.remove("hidden");
-      btn.textContent = "Open";
-      btn.dataset.mode = "open";
-      clearMiniProgress(btn);
-      return;
-    }
+    const badge = document.querySelector(`[data-badge="${k}"]`);
+    if (badge) badge.style.display = done ? "inline-flex" : "none";
 
-    // in-progress
-    if (prog && typeof prog.currentIndex === "number" && prog.currentIndex > 0){
-      btn.textContent = "Continue";
-      btn.dataset.mode = "continue";
-      badge.textContent = "In progress";
-      badge.classList.remove("hidden");
-      setMiniProgress(btn, prog.currentIndex, 10);
-      return;
-    }
+    const btn = document.querySelector(`[data-start="${k}"]`);
+    if (btn) btn.textContent = done ? "Open" : "Start";
+  });
 
-    // fresh start
-    badge.classList.add("hidden");
-    btn.textContent = "Start";
-    btn.dataset.mode = "start";
-    clearMiniProgress(btn);
-  }
+  const champ = document.getElementById("championWrap");
+  if (champ) champ.style.display = allDone ? "block" : "none";
 
-  function ensureProgressEl(btn){
-    const footer = btn.closest(".quizCard__footer") || btn.parentElement;
-    if (!footer) return null;
-    let el = footer.querySelector(".miniProgress");
-    if (!el){
-      el = document.createElement("div");
-      el.className = "miniProgress";
-      el.innerHTML = '<div class="miniProgressFill"></div>';
-      footer.appendChild(el);
-    }
-    return el;
-  }
-
-  function setMiniProgress(btn, idx, total){
-    const el = ensureProgressEl(btn);
-    if (!el) return;
-    const fill = el.querySelector(".miniProgressFill");
-    const pct = Math.max(0, Math.min(100, (idx / total) * 100));
-    fill.style.width = pct + "%";
-    el.style.display = "block";
-  }
-
-  function clearMiniProgress(btn){
-    const footer = btn.closest(".quizCard__footer") || btn.parentElement;
-    const el = footer ? footer.querySelector(".miniProgress") : null;
-    if (el) el.style.display = "none";
-  }
-
-  apply(
-    document.querySelector('[data-start="song"]'),
-    document.querySelector('[data-badge="song"]'),
-    songDone,
-    songProg
-  );
-  apply(
-    document.querySelector('[data-start="movie"]'),
-    document.querySelector('[data-badge="movie"]'),
-    movieDone,
-    movieProg
-  );
-  apply(
-    document.querySelector('[data-start="magicblock"]'),
-    document.querySelector('[data-badge="magicblock"]'),
-    magicDone,
-    magicProg
-  );
+  // Glow Champion card on Home if generated
+  updateChampionGlowUI(allDone);
 }
 
 function initHomeButtons(){
@@ -371,7 +309,6 @@ if (mustCreate && !getProfile()){
 }
 
 /* ===== Rewards Modal (Home) ===== */
-/* ===== Rewards Modal (Home) ===== */
 (function initRewardsModal(){
   const rewardsBtn = document.getElementById("rewardsBtn");
   const modal = document.getElementById("rewardsModal");
@@ -381,19 +318,9 @@ if (mustCreate && !getProfile()){
   if (!rewardsBtn || !modal || !closeBtn || !grid) return;
 
   const REWARD_KEYS = {
-    songPrev: "mb_prev_song",
-    moviePrev: "mb_prev_movie",
-    magicPrev: "mb_prev_magicblock",
-
-    // progress (resume)
-    songProg: "mb_prog_song",
-    movieProg: "mb_prog_movie",
-    magicProg: "mb_prog_magicblock",
-
-    // legacy (old heavy png keys)
-    songPngLegacy: "mb_png_song",
-    moviePngLegacy: "mb_png_movie",
-    magicPngLegacy: "mb_png_magicblock",
+    songPng: "mb_prev_song",
+    moviePng: "mb_prev_movie",
+    magicPng: "mb_prev_magicblock",
   };
 
   const items = [
@@ -402,44 +329,32 @@ if (mustCreate && !getProfile()){
       title: "Quiz 1 — Song",
       sub: "Guess the Song by the Melody",
       doneKey: MB_KEYS.doneSong,
-      prevKey: REWARD_KEYS.songPrev,
-      legacyKey: REWARD_KEYS.songPngLegacy,
-      progKey: REWARD_KEYS.songProg,
-      openHref: "quizzes/song.html",
-      total: 10,
+      pngKey: REWARD_KEYS.songPng,
+      openHref: "quizzes/song.html"
     },
     {
       key: "movie",
       title: "Quiz 2 — Movie",
       sub: "Guess the Movie by the Frame",
       doneKey: MB_KEYS.doneMovie,
-      prevKey: REWARD_KEYS.moviePrev,
-      legacyKey: REWARD_KEYS.moviePngLegacy,
-      progKey: REWARD_KEYS.movieProg,
-      openHref: "quizzes/movie.html",
-      total: 10,
+      pngKey: REWARD_KEYS.moviePng,
+      openHref: "quizzes/movie.html"
     },
     {
       key: "magicblock",
       title: "Quiz 3 — MagicBlock",
       sub: "How well do you know MagicBlock?",
       doneKey: MB_KEYS.doneMagic,
-      prevKey: REWARD_KEYS.magicPrev,
-      legacyKey: REWARD_KEYS.magicPngLegacy,
-      progKey: REWARD_KEYS.magicProg,
-      openHref: "quizzes/magicblock.html",
-      total: 10,
+      pngKey: REWARD_KEYS.magicPng,
+      openHref: "quizzes/magicblock.html"
     },
     {
       key: "champion",
       title: "Champion Card",
       sub: "Unlocked after all 3 quizzes",
       doneKey: null,
-      prevKey: MB_KEYS.champPng, // stored as small preview JPEG
-      legacyKey: null,
-      progKey: null,
-      openHref: "champion.html",
-      total: null,
+      pngKey: MB_KEYS.champPng,
+      openHref: "champion.html"
     }
   ];
 
@@ -461,58 +376,22 @@ if (mustCreate && !getProfile()){
     return key ? localStorage.getItem(key) === "1" : false;
   }
 
-  function readJSON(key, fallback=null){
-    try{
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : fallback;
-    }catch{ return fallback; }
-  }
-
-  function getPreviewDataUrl(it){
-    const v1 = it.prevKey ? localStorage.getItem(it.prevKey) : null;
-    if (v1 && v1.startsWith("data:image/")) return v1;
-
-    // fallback to legacy PNG key if still present
-    const v2 = it.legacyKey ? localStorage.getItem(it.legacyKey) : null;
-    if (v2 && v2.startsWith("data:image/")) return v2;
-
-    return null;
-  }
-
-  function getProgress(it){
-    if (!it.progKey) return null;
-    const p = readJSON(it.progKey, null);
-    if (!p || typeof p.idx !== "number") return null;
-
-    // idx is "next question index" (0..total). Show resume only if 1..total-1
-    const total = it.total || 10;
-    if (p.idx >= 1 && p.idx < total) return p;
-    return null;
-  }
-
   function render(){
     grid.innerHTML = "";
 
-    const allDone = isDoneLocal(MB_KEYS.doneSong) && isDoneLocal(MB_KEYS.doneMovie) && isDoneLocal(MB_KEYS.doneMagic);
-
     items.forEach(it => {
-      const png = getPreviewDataUrl(it);
+      const png = localStorage.getItem(it.pngKey || "");
       const hasPng = !!(png && png.startsWith("data:image/"));
       const done = it.doneKey ? isDoneLocal(it.doneKey) : null;
-      const prog = it.doneKey ? getProgress(it) : null;
 
       const card = document.createElement("div");
       card.className = "rewardCard";
 
       const thumb = document.createElement("div");
       thumb.className = "rewardThumb";
-
       if (hasPng){
-        // skeleton to avoid flicker while <img> decodes
-        thumb.classList.add("skeleton");
         const img = document.createElement("img");
         img.alt = it.title;
-        img.onload = () => thumb.classList.remove("skeleton");
         img.src = png;
         thumb.appendChild(img);
       } else {
@@ -528,19 +407,11 @@ if (mustCreate && !getProfile()){
 
       const s = document.createElement("div");
       s.className = "rewardSub";
-
       if (it.key === "champion"){
-        s.textContent = allDone
-          ? (hasPng ? "Ready ✅" : "Unlocked ✅ (generate on Champion page)")
-          : `Locked (complete all quizzes) — ${Number(isDoneLocal(MB_KEYS.doneSong)) + Number(isDoneLocal(MB_KEYS.doneMovie)) + Number(isDoneLocal(MB_KEYS.doneMagic))} / 3 done`;
+        const allDone = isDoneLocal(MB_KEYS.doneSong) && isDoneLocal(MB_KEYS.doneMovie) && isDoneLocal(MB_KEYS.doneMagic);
+        s.textContent = allDone ? (hasPng ? "Ready ✅" : "Unlocked ✅ (generate on Champion page)") : "Locked (complete all quizzes)";
       } else {
-        if (done){
-          s.textContent = hasPng ? "Ready ✅" : "Completed ✅ (generate card inside quiz)";
-        } else if (prog){
-          s.textContent = `In progress — continue from Q${prog.idx + 1} / ${it.total}`;
-        } else {
-          s.textContent = "Not completed";
-        }
+        s.textContent = done ? (hasPng ? "Ready ✅" : "Completed ✅ (generate card inside quiz)") : "Not completed";
       }
 
       const actions = document.createElement("div");
@@ -548,27 +419,15 @@ if (mustCreate && !getProfile()){
 
       const openBtn = document.createElement("button");
       openBtn.className = "btn";
-
-      if (it.key === "champion"){
-        if (allDone){
-          openBtn.textContent = "Open Champion";
-          openBtn.addEventListener("click", () => (location.href = it.openHref));
-        } else {
-          openBtn.textContent = "Locked";
-          openBtn.disabled = true;
-        }
-      } else {
-        openBtn.textContent = done ? "Open quiz" : (prog ? `Continue from Q${prog.idx + 1}` : "Start");
-        openBtn.addEventListener("click", () => (location.href = it.openHref));
-      }
-
+      openBtn.textContent = it.key === "champion" ? "Open Champion" : (done ? "Open quiz" : "Start");
+      openBtn.addEventListener("click", () => (location.href = it.openHref));
       actions.appendChild(openBtn);
 
       if (hasPng){
         const dl = document.createElement("button");
         dl.className = "btn btn--ghost";
-        dl.textContent = "Download PNG";
-        dl.addEventListener("click", () => downloadDataUrl(png, filenameFor(it.key)));
+        dl.textContent = "Download";
+        dl.addEventListener("click", () => downloadDataUrl(png, filenameFor(it.key, png)));
         actions.appendChild(dl);
       }
 
@@ -583,11 +442,14 @@ if (mustCreate && !getProfile()){
     });
   }
 
-  function filenameFor(key){
-    if (key === "song") return "magicblock-song-result.png";
-    if (key === "movie") return "magicblock-movie-result.png";
-    if (key === "magicblock") return "magicblock-knowledge-result.png";
-    return "magicblock-champion-card.png";
+  function filenameFor(key, dataUrl){
+    const isJpg = (dataUrl || "").startsWith("data:image/jpeg");
+    const ext = isJpg ? "jpg" : "png";
+  
+    if (key === "song") return `magicblock-song-result.${ext}`;
+    if (key === "movie") return `magicblock-movie-result.${ext}`;
+    if (key === "magicblock") return `magicblock-knowledge-result.${ext}`;
+    return `magicblock-champion-card.${ext}`;
   }
 
   function downloadDataUrl(dataUrl, filename){
@@ -597,4 +459,3 @@ if (mustCreate && !getProfile()){
     a.click();
   }
 })();
-;
