@@ -273,6 +273,56 @@ function updateChampionGlowUI(allDone){
   }
 }
 
+function getProgObj(key){
+  return safeJSONParse(localStorage.getItem(key), null);
+}
+
+function progPercent(nextIndex, total){
+  const n = Math.max(0, Math.min(nextIndex || 0, total));
+  return Math.round((n / total) * 100);
+}
+
+function updateMiniProgressUI(){
+  const total = 10;
+
+  const map = {
+    song: MB_KEYS.progSong,
+    movie: MB_KEYS.progMovie,
+    magicblock: MB_KEYS.progMagic,
+  };
+
+  Object.entries(map).forEach(([k, progKey]) => {
+    const wrap = document.querySelector(`.miniProg[data-prog="${k}"]`);
+    if (!wrap) return;
+
+    const doneKey =
+      k === "song" ? MB_KEYS.doneSong :
+      k === "movie" ? MB_KEYS.doneMovie :
+      MB_KEYS.doneMagic;
+
+    const isCompleted = localStorage.getItem(doneKey) === "1";
+    if (isCompleted){
+      wrap.style.display = "none";
+      return;
+    }
+
+    const prog = getProgObj(progKey);
+    const next = prog?.next ?? 0; // next = індекс наступного питання (0..10)
+    if (!next){
+      wrap.style.display = "none";
+      return;
+    }
+
+    const pct = progPercent(next, total);
+    wrap.style.display = "flex";
+
+    const fill = wrap.querySelector(".miniProg__fill");
+    const text = wrap.querySelector(".miniProg__text");
+    if (fill) fill.style.width = `${pct}%`;
+    if (text) text.textContent = `${pct}%`;
+  });
+}
+
 /**
  * ✅ Buttons logic:
  * - Done => "Open"
@@ -323,6 +373,7 @@ function updateBadges(){
   if (champ) champ.style.display = allDone ? "block" : "none";
 
   updateChampionGlowUI(allDone);
+  updateMiniProgressUI();
 }
 
 function initHomeButtons(){
