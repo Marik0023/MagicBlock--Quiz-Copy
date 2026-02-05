@@ -3,31 +3,10 @@ const MB_KEYS = {
   doneMovie: "mb_done_movie",
   resMovie: "mb_result_movie",
   prevMovie: "mb_prev_movie",
-  progMovie: "mb_prog_movie",
 };
 
 function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
 function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
-
-// Storage can get full because previews are big (data URLs). If that happens,
-// clear ONLY preview items and retry saves.
-function clearBigPreviews(){
-  const keys = [
-    "mb_prev_song",
-    "mb_prev_movie",
-    "mb_prev_magic",
-    "mb_champ_png"
-  ];
-  keys.forEach(k => { try{ localStorage.removeItem(k); }catch{} });
-}
-
-function safeLSSet(key, value){
-  try{ localStorage.setItem(key, value); return true; }
-  catch(e){
-    clearBigPreviews();
-    try{ localStorage.setItem(key, value); return true; }catch{return false}
-  }
-}
 
 function forcePlayAll(selector){
   const vids = document.querySelectorAll(selector);
@@ -61,7 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
-  const progressFill = document.getElementById("progressFill");
   const frameVideo = document.getElementById("frameVideo");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
@@ -72,9 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const rAcc = document.getElementById("rAcc");
 
   const genBtn = document.getElementById("genBtn");
-  const progressNotice = document.getElementById("progressNotice");
-  const progressTextNote = document.getElementById("progressTextNote");
-    const cardZone = document.getElementById("cardZone");
+  const cardZone = document.getElementById("cardZone");
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
@@ -84,53 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let idx = 0;
   let correct = 0;
   let selectedIndex = null;
-  let answers = [];
 
-  if (done){
-    if (saved){
-      showResult(saved);
-    } else {
-      // Marked completed but result missing (often quota/full localStorage).
-      // Try to reconstruct from progress so the quiz stays "once".
-      const prog = safeJSONParse(localStorage.getItem(MB_KEYS.progMovie), null);
-      const p = getProfile();
-      let reconstructed = null;
-      if (prog && Array.isArray(prog.answers) && prog.answers.length){
-        const total = QUESTIONS.length;
-        const correct2 = prog.answers.filter(a => a && a.isCorrect).length;
-        reconstructed = {
-          total,
-          correct: correct2,
-          acc: Math.round((correct2 / total) * 100),
-          name: p?.name || "Player",
-          id: ensureResultId(QUIZ_CARD.idPrefix, null),
-          ts: Date.now(),
-          answers: prog.answers.slice(0, total),
-          reconstructed: true
-        };
-      } else {
-        reconstructed = {
-          total: QUESTIONS.length,
-          correct: 0,
-          acc: 0,
-          name: p?.name || "Player",
-          id: ensureResultId(QUIZ_CARD.idPrefix, null),
-          ts: Date.now(),
-          answers: [],
-          reconstructed: true
-        };
-      }
-
-      const resStr = JSON.stringify(reconstructed);
-      if (!safeLSSet(MB_KEYS.resMovie, resStr)){
-        clearBigPreviews();
-        safeLSSet(MB_KEYS.resMovie, resStr);
-      }
-      showResult(reconstructed);
-    }
-  } else {
-    renderQuestion();
-  }
+  if (done && saved) showResult(saved);
+  else renderQuestion();
 
   function renderQuestion(){
     selectedIndex = null;
@@ -173,30 +105,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function saveProgress(){
-    const payload = JSON.stringify({ idx, correct, answers, ts: Date.now() });
-    if (!safeLSSet(MB_KEYS.progMovie, payload)){
-      clearBigPreviews();
-      if (!safeLSSet(MB_KEYS.progMovie, payload)){
-        try{ localStorage.removeItem(MB_KEYS.progMovie); }catch{}
-      }
-    }
-  }
-
   nextBtn.addEventListener("click", () => {
     if (selectedIndex === null) return;
 
     const q = QUESTIONS[idx];
-    answers[idx] = {
-      q: `Question ${idx + 1}`,
-      options: q.options,
-      selected: selectedIndex,
-      correct: q.correctIndex
-    };
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
-    saveProgress();
     if (idx < QUESTIONS.length){
       renderQuestion();
       return;
@@ -209,26 +124,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const old = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
     const id = old?.id || buildId("MagicViewer");
 
-    const result = {
-      total,
-      correct,
-      acc,
-      name: p?.name || "Player",
-      id,
-      ts: Date.now(),
-      // ✅ for Result review
-      answers: answers.slice(0, total),
-    };
+    const result = { total, correct, acc, name: p?.name || "Player", id, ts: Date.now() };
 
-    const resultStr = JSON.stringify(result);
-    if (!safeLSSet(MB_KEYS.doneMovie, "1") || !safeLSSet(MB_KEYS.resMovie, resultStr)){
-      clearBigPreviews();
-      safeLSSet(MB_KEYS.doneMovie, "1");
-      safeLSSet(MB_KEYS.resMovie, resultStr);
-    }
-
-    // quiz is finished, progress no longer needed
-    try{ localStorage.removeItem(MB_KEYS.progMovie); }catch{}
+    localStorage.setItem(MB_KEYS.doneMovie, "1");
+    localStorage.setItem(MB_KEYS.resMovie, JSON.stringify(result));
     showResult(result);
   });
 
@@ -240,59 +139,68 @@ document.addEventListener("DOMContentLoaded", () => {
     rTotal.textContent = String(result.total);
     rCorrect.textContent = String(result.correct);
     rAcc.textContent = `${result.acc}%`;
-
-    renderReview(result);
   }
 
-  function renderReview(result){
-    const wrap = document.getElementById("reviewWrap");
-    const list = document.getElementById("reviewList");
-    if (!wrap || !list) return;
+  genBtn?.addEventListener("click", async () => {
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
+    if (!r || !cardCanvas) return;
 
-    const ans = Array.isArray(result?.answers) ? result.answers.filter(Boolean) : [];
-    if (!ans.length){
-      wrap.style.display = "none";
-      return;
+    await drawQuizResultCard(cardCanvas, {
+      title: "Guess the Movie by the Frame",
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || buildId("MagicViewer"),
+      logoSrc: "../assets/logo.webm",
+    });
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+
+    try{
+      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
+      localStorage.setItem(MB_KEYS.prevMovie, prev);
+      localStorage.removeItem("mb_png_movie");
+    }catch(e){
+      console.warn("Movie preview save failed:", e);
+      try{ localStorage.removeItem(MB_KEYS.prevMovie); }catch{}
     }
 
-    wrap.style.display = "block";
-    list.innerHTML = `
-      <div class="reviewGrid">
-        <div class="reviewHead">Q</div>
-        <div class="reviewHead"></div>
-        <div class="reviewHead">Your answer</div>
-        <div class="reviewHead hideOnMobile reviewHead">Correct</div>
-      </div>
-    `;
-    const grid = list.querySelector(".reviewGrid");
-
-    ans.forEach((a, i) => {
-      const ok = a.selected === a.correct;
-      const selText = (a.options && a.options[a.selected]) ? a.options[a.selected] : "—";
-      const corText = (a.options && a.options[a.correct]) ? a.options[a.correct] : "—";
-
-      const q = document.createElement("div");
-      q.className = "reviewQ reviewRow";
-      q.textContent = `Q${i + 1}`;
-
-      const icon = document.createElement("div");
-      icon.className = "reviewIcon reviewRow";
-      icon.textContent = ok ? "✅" : "❌";
-
-      const your = document.createElement("div");
-      your.className = "reviewYour reviewRow";
-      your.innerHTML = `<div>${selText}</div>${ok ? "" : `<div class="reviewMuted">Correct: ${corText}</div>`}`;
-
-      const correct = document.createElement("div");
-      correct.className = "reviewCorrect reviewRow reviewCorrectCol";
-      correct.textContent = corText;
-
-      grid.appendChild(q);
-      grid.appendChild(icon);
-      grid.appendChild(your);
-      grid.appendChild(correct);
-    });
+    if (genBtn) genBtn.textContent = "Regenerate Result Card";
+    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
+
+  dlBtn?.addEventListener("click", async () => {
+    if (!cardCanvas) return;
+
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
+    if (!r) return;
+
+    // ✅ redraw full-res before export
+    await drawQuizResultCard(cardCanvas, {
+      title: "Guess the Movie by the Frame",
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || buildId("MagicViewer"),
+      logoSrc: "../assets/logo.webm",
+    });
+
+    const a = document.createElement("a");
+    a.download = "magicblock-movie-result.png";
+    a.href = cardCanvas.toDataURL("image/png");
+    a.click();
+  });
+
+  // ✅ auto-restore preview (NO UPSCALE)
+  restoreQuizPreview(MB_KEYS.prevMovie, cardCanvas, cardZone, dlBtn, genBtn);
+});
 
 /* ===== Top profile ===== */
 function renderTopProfile(){
