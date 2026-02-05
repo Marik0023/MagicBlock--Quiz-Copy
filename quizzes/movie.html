@@ -43,35 +43,30 @@
 
     <section id="quizPanel" class="panel">
       <div class="quizLayout">
-        <!-- LEFT: video -->
         <div>
           <div class="questionTitle" id="qTitle">Question 1 of 10</div>
-    
+
           <div class="mbPlayer" style="padding:12px;">
-            <!-- якщо в тебе video: -->
             <video id="frameVideo" controls playsinline muted
               style="width:100%; border-radius:16px; border:1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.25);">
               <source id="frameSource" src="../assets/movies/1.mp4" type="video/mp4" />
             </video>
-    
-            <!-- якщо в тебе було img, видали його -->
-            <!-- <img id="frameImg" ... /> -->
           </div>
-    
+
           <div class="progressText" id="progressText">Progress: 1 / 10</div>
-          <div class="quizProg">
+
+          <div class="quizProg" id="quizProg" style="display:none;">
             <div class="quizProg__bar">
               <div class="quizProg__fill" id="quizProgFill" style="width:0%"></div>
             </div>
             <div class="quizProg__text" id="quizProgPct">0%</div>
           </div>
         </div>
-    
-        <!-- RIGHT: options -->
+
         <div>
           <div class="questionTitle ghostTitle"></div>
           <div class="options" id="options"></div>
-        
+
           <div class="nextWrap">
             <button class="btn nextBtn" id="nextBtn" disabled>Next</button>
           </div>
@@ -95,7 +90,6 @@
 
         <div id="cardZone" class="cardZone">
           <div class="cardPreview">
-            <!-- wide card -->
             <canvas id="cardCanvas" width="1600" height="900"></canvas>
           </div>
           <div class="cardActions">
