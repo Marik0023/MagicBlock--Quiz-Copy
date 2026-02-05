@@ -14,6 +14,24 @@ const QUIZ_CARD = {
 function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
 function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
 
+// Storage can get full because previews are big (data URLs). If that happens,
+// clear ONLY preview items and retry saves.
+function clearBigPreviews(){
+  const keys = [
+    "mb_prev_song",
+    "mb_prev_movie",
+    "mb_prev_magicblock",
+    "mb_png_champion"
+  ];
+  keys.forEach((k) => {
+    try{ localStorage.removeItem(k); }catch{}
+  });
+}
+
+function safeLSSet(key, value){
+  try{ localStorage.setItem(key, value); return true; }catch{ return false; }
+}
+
 function forcePlayAll(selector){
   const vids = document.querySelectorAll(selector);
   if (!vids.length) return;
@@ -90,13 +108,42 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (done && saved){
-    if (!saved.id){
-      saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
-      localStorage.setItem(MB_KEYS.resMagic, JSON.stringify(saved));
+  if (done){
+    if (saved){
+      if (!saved.id){
+        saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
+        safeLSSet(MB_KEYS.resMagic, JSON.stringify(saved));
+      }
+      showResult(saved);
+      return;
     }
-    showResult(saved);
-  } else {
+
+    // Marked completed but result missing (often quota/full localStorage).
+    // Try to reconstruct from progress so the quiz stays "once".
+    const p = getProfile();
+    const total = QUESTIONS.length;
+    const fromProg = (prog && Array.isArray(prog.answers) && prog.answers.length) ? prog.answers : [];
+    const correctFromProg = fromProg.reduce((acc, a) => acc + (a && a.isCorrect ? 1 : 0), 0);
+    const reconstructed = {
+      total,
+      correct: correctFromProg,
+      acc: total ? Math.round((correctFromProg / total) * 100) : 0,
+      name: p?.name || "Player",
+      id: ensureResultId(QUIZ_CARD.idPrefix, null),
+      answers: fromProg.slice(0, total),
+      ts: Date.now(),
+      missing: true,
+    };
+    const rStr = JSON.stringify(reconstructed);
+    if (!safeLSSet(MB_KEYS.resMagic, rStr)){
+      clearBigPreviews();
+      safeLSSet(MB_KEYS.resMagic, rStr);
+    }
+    showResult(reconstructed);
+    return;
+  }
+
+  {
     if (prog && typeof prog.idx === "number" && prog.idx > 0 && prog.idx < QUESTIONS.length){
       idx = Math.floor(prog.idx);
       correct = Math.max(0, Math.floor(prog.correct || 0));
@@ -142,10 +189,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function saveProgress(){
-    try{
-      localStorage.setItem(MB_KEYS.progMagic, JSON.stringify({ idx, correct, answers, ts: Date.now() }));
-    }catch(e){
-      try{ localStorage.removeItem(MB_KEYS.progMagic); }catch{}
+    const payload = JSON.stringify({ idx, correct, answers, ts: Date.now() });
+    if (!safeLSSet(MB_KEYS.progMagic, payload)){
+      clearBigPreviews();
+      safeLSSet(MB_KEYS.progMagic, payload);
     }
   }
 
@@ -186,8 +233,13 @@ document.addEventListener("DOMContentLoaded", () => {
       answers: answers.slice(0, total)
     };
 
-    localStorage.setItem(MB_KEYS.doneMagic, "1");
-    localStorage.setItem(MB_KEYS.resMagic, JSON.stringify(result));
+    const resultStr = JSON.stringify(result);
+    if (!safeLSSet(MB_KEYS.doneMagic, "1") || !safeLSSet(MB_KEYS.resMagic, resultStr)){
+      clearBigPreviews();
+      safeLSSet(MB_KEYS.doneMagic, "1");
+      safeLSSet(MB_KEYS.resMagic, resultStr);
+    }
+    try{ localStorage.removeItem(MB_KEYS.progMagic); }catch{}
     showResult(result);
   });
 
