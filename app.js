@@ -385,8 +385,22 @@ function initHomeButtons(){
 /* ===== Bootstrap ===== */
 renderTopProfile();
 initProfileModal();
-updateBadges();
+const allDone = updateBadges();  
+updateFooterHint(allDone);  
 initHomeButtons();
+
+// === Bonus ===
+function updateFooterHint(isChampionUnlocked) {
+  const el = document.getElementById("footerHint");
+  if (!el) return;
+
+  if (isChampionUnlocked) {
+    el.style.display = "none"; // hide completely
+  } else {
+    el.style.display = "";
+    el.textContent = "Complete all quizzes — a nice bonus is waiting for you 😉";
+  }
+}
 
 const mustCreate = document.body.getAttribute("data-require-profile") === "1";
 if (mustCreate && !getProfile()){
@@ -394,7 +408,7 @@ if (mustCreate && !getProfile()){
 }
 
 /* ===== Rewards Modal (Home) ===== */
-(function initRewardsModal(){
+function initRewardsModal(){
   const rewardsBtn = document.getElementById("rewardsBtn");
   const modal = document.getElementById("rewardsModal");
   const closeBtn = document.getElementById("rewardsCloseBtn");
