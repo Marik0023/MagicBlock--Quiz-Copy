@@ -178,7 +178,7 @@ function openProfileModal(force = false){
   const avatarBox = document.getElementById("avatarBox");
 
   // ✅ ЗМІНА: підпис кнопки залежно від режиму
-  if (saveBtn) saveBtn.textContent = isEdit ? "Зберегти зміни" : "Start";
+  if (saveBtn) saveBtn.textContent = isEdit ? "Edit" : "Start";
 
   if (nameInput) nameInput.value = p?.name || "";
 
