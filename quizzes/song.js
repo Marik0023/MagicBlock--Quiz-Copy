@@ -6,8 +6,8 @@ const MB_KEYS = {
   resSong: "mb_result_song",
   prevSong: "mb_prev_song",
 
-  // progress (resume) for HOME
-  // We store answeredCount (1..10). If 0 => keys are removed (HOME shows Start).
+  // ✅ HOME progress: store CURRENT question number (1..10)
+  // Example: if user is on Question 4 -> store 4 -> HOME shows 40%
   progSong: "mb_prog_song",
   progSongState: "mb_prog_song_state", // JSON { idx, correct, answers }
 };
@@ -44,28 +44,22 @@ function ensureResultId(prefix, existing) {
   return `MB-${prefix}-${makeSerial(6)}`;
 }
 
-/* ===== Progress helpers (Song) =====
-   We store for HOME:
-   - mb_prog_song = answeredCount (1..10)
-   - mb_prog_song_state = { idx, correct, answers }
-   Where idx = next question index (0..9).
-   If answeredCount <= 0 -> remove keys so HOME shows Start and 0%.
-*/
-function saveProgressSong(idxNext, correct, answers) {
-  // idxNext = next question index (0..10)
-  const answered = Math.max(0, Math.min(10, Number(idxNext) || 0));
+/* =========================
+   HOME Progress (Song)
+   - progSong = current question number (1..10)
+   - progSongState = { idx, correct, answers }
+   where idx = current question index (0..9)
+========================= */
+function saveProgressSong(idx, correct, answers) {
+  // idx = current question index (0..9)
+  const clampedIdx = Math.max(0, Math.min(9, Number(idx) || 0));
+  const qNum = clampedIdx + 1; // ✅ Question number (1..10)
 
-  // If nothing answered yet — keep HOME clean (Start, 0%)
-  if (answered <= 0) {
-    clearProgressSong();
-    return;
-  }
-
-  localStorage.setItem(MB_KEYS.progSong, String(answered));
+  localStorage.setItem(MB_KEYS.progSong, String(qNum));
   localStorage.setItem(
     MB_KEYS.progSongState,
     JSON.stringify({
-      idx: Math.max(0, Math.min(9, answered)), // next question index (0..9) while quiz running
+      idx: clampedIdx,
       correct: Number.isFinite(correct) ? correct : 0,
       answers: Array.isArray(answers) ? answers : [],
     })
@@ -73,12 +67,12 @@ function saveProgressSong(idxNext, correct, answers) {
 }
 
 function loadProgressSong() {
-  const answered = Number(localStorage.getItem(MB_KEYS.progSong) || "0");
+  const qNum = Number(localStorage.getItem(MB_KEYS.progSong) || "0");
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progSongState), null);
 
-  if (!Number.isFinite(answered) || answered <= 0) return null;
+  if (!Number.isFinite(qNum) || qNum <= 0) return null;
 
-  const idx = Number.isFinite(state?.idx) ? state.idx : Math.max(0, Math.min(9, answered));
+  const idx = Number.isFinite(state?.idx) ? state.idx : (qNum - 1);
   const correct = Number.isFinite(state?.correct) ? state.correct : 0;
   const answers = Array.isArray(state?.answers) ? state.answers : [];
 
@@ -140,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  let idx = 0;          // next question index (0..9)
+  let idx = 0;          // current question index (0..9)
   let correct = 0;
   let selectedIndex = null;
   let answers = [];
@@ -156,20 +150,20 @@ document.addEventListener("DOMContentLoaded", () => {
     clearProgressSong();
     showResult(savedRes);
   } else {
-    // Restore only if user already answered something before
+    // resume (if exists)
     const prog = loadProgressSong();
     if (prog) {
       idx = prog.idx;
       correct = prog.correct;
       answers = prog.answers;
-    } else {
-      // brand new session -> keep HOME clean
-      clearProgressSong();
     }
+
+    // ✅ once we are on some question - keep HOME in sync with "Question N"
+    saveProgressSong(idx, correct, answers);
     renderQuestion();
   }
 
-  // Save state only when there's real progress (answered >= 1)
+  // Save state on leave (only if not completed)
   window.addEventListener("beforeunload", () => {
     if (localStorage.getItem(MB_KEYS.doneSong) === "1") return;
     saveProgressSong(idx, correct, answers);
@@ -245,6 +239,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       optionsEl.appendChild(btn);
     });
+
+    // ✅ HOME sync even when user просто стоїть на питанні
+    saveProgressSong(idx, correct, answers);
   }
 
   function updateSelectedUI() {
@@ -258,19 +255,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const q = QUESTIONS[idx];
     answers[idx] = selectedIndex;
-
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
 
-    // ✅ update HOME progress only after at least 1 answered
-    saveProgressSong(idx, correct, answers);
-
     if (idx < QUESTIONS.length) {
+      // ✅ now we moved to next question, HOME must show new Question N
+      saveProgressSong(idx, correct, answers);
       renderQuestion();
       return;
     }
 
+    // finished
     const total = QUESTIONS.length;
     const acc = Math.round((correct / total) * 100);
     const p = getProfile();
