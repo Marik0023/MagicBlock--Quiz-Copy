@@ -3,6 +3,10 @@ const MB_KEYS = {
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
   prevSong: "mb_prev_song",
+
+  // progress (resume)
+  progSong: "mb_prog_song",                 // number (1..10)
+  progSongState: "mb_prog_song_state",      // JSON
 };
 
 const QUIZ_CARD = {
@@ -10,7 +14,7 @@ const QUIZ_CARD = {
   idPrefix: "MagicListener",
 };
 
-function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
+function safeJSONParse(v, fallback=null){ try { return JSON.parse(v); } catch { return fallback; } }
 function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
 
 function forcePlayAll(selector){
@@ -31,6 +35,42 @@ function makeSerial(len = 6){
 function ensureResultId(prefix, existing){
   if (existing && typeof existing === "string" && existing.startsWith("MB-")) return existing;
   return `MB-${prefix}-${makeSerial(6)}`;
+}
+
+/* ===== Progress helpers (Song) ===== */
+function saveProgressSong(idx0, correct, answers){
+  // store current question number as 1..10 (so Home can show Continue even on Q1)
+  const qNum = Math.max(1, Math.min(10, (idx0 + 1)));
+  localStorage.setItem(MB_KEYS.progSong, String(qNum));
+  localStorage.setItem(MB_KEYS.progSongState, JSON.stringify({
+    idx: idx0,
+    correct,
+    answers: Array.isArray(answers) ? answers : []
+  }));
+}
+
+function loadProgressSong(){
+  const n = Number(localStorage.getItem(MB_KEYS.progSong) || "0");
+  const state = safeJSONParse(localStorage.getItem(MB_KEYS.progSongState), null);
+
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  const idx = state?.idx;
+  const correct = state?.correct;
+  const answers = state?.answers;
+
+  if (!Number.isFinite(idx)) return { idx: Math.max(0, Math.min(9, n - 1)), correct: 0, answers: [] };
+
+  return {
+    idx: Math.max(0, Math.min(9, idx)),
+    correct: Number.isFinite(correct) ? correct : 0,
+    answers: Array.isArray(answers) ? answers : []
+  };
+}
+
+function clearProgressSong(){
+  localStorage.removeItem(MB_KEYS.progSong);
+  localStorage.removeItem(MB_KEYS.progSongState);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -83,6 +123,39 @@ document.addEventListener("DOMContentLoaded", () => {
   let idx = 0;
   let correct = 0;
   let selectedIndex = null;
+  let answers = []; // store selected answers per question index (for future review)
+
+  const savedRes = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
+  const done = localStorage.getItem(MB_KEYS.doneSong) === "1";
+
+  // ✅ If done -> show result, and clear progress just in case
+  if (done && savedRes){
+    if (!savedRes.id){
+      savedRes.id = ensureResultId(QUIZ_CARD.idPrefix, savedRes.id);
+      localStorage.setItem(MB_KEYS.resSong, JSON.stringify(savedRes));
+    }
+    clearProgressSong();
+    showResult(savedRes);
+  } else {
+    // ✅ restore progress
+    const prog = loadProgressSong();
+    if (prog){
+      idx = prog.idx;
+      correct = prog.correct;
+      answers = prog.answers;
+    }
+
+    // ✅ ensure progress exists even if user closes immediately
+    saveProgressSong(idx, correct, answers);
+    renderQuestion();
+  }
+
+  // Save current state if tab closed
+  window.addEventListener("beforeunload", () => {
+    if (localStorage.getItem(MB_KEYS.doneSong) !== "1"){
+      saveProgressSong(idx, correct, answers);
+    }
+  });
 
   playBtn?.addEventListener("click", async () => {
     try{
@@ -123,19 +196,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (playerTime) playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   }
 
-  const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
-  const done = localStorage.getItem(MB_KEYS.doneSong) === "1";
-
-  if (done && saved){
-    if (!saved.id){
-      saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
-      localStorage.setItem(MB_KEYS.resSong, JSON.stringify(saved));
-    }
-    showResult(saved);
-  } else {
-    renderQuestion();
-  }
-
   function renderQuestion(){
     const q = QUESTIONS[idx];
     if (!q) return;
@@ -168,6 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       optionsEl.appendChild(btn);
     });
+
+    // ✅ keep progress updated as soon as question is shown
+    saveProgressSong(idx, correct, answers);
   }
 
   function updateSelectedUI(){
@@ -180,14 +243,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectedIndex === null) return;
 
     const q = QUESTIONS[idx];
+    answers[idx] = selectedIndex;
+
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
+
     if (idx < QUESTIONS.length){
+      saveProgressSong(idx, correct, answers);
       renderQuestion();
       return;
     }
 
+    // finished
     const total = QUESTIONS.length;
     const acc = Math.round((correct / total) * 100);
     const p = getProfile();
@@ -197,12 +265,16 @@ document.addEventListener("DOMContentLoaded", () => {
       correct,
       acc,
       name: p?.name || "Player",
-      id: ensureResultId(QUIZ_CARD.idPrefix, saved?.id || null),
+      id: ensureResultId(QUIZ_CARD.idPrefix, savedRes?.id || null),
       ts: Date.now()
     };
 
     localStorage.setItem(MB_KEYS.doneSong, "1");
     localStorage.setItem(MB_KEYS.resSong, JSON.stringify(result));
+
+    // ✅ clear progress so Home won't show Continue
+    clearProgressSong();
+
     showResult(result);
   });
 
@@ -237,7 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
 
-    // save SMALL preview (520px)
     try{
       const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
       localStorage.setItem(MB_KEYS.prevSong, prev);
@@ -258,7 +329,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
     if (!r) return;
 
-    // ✅ always redraw full-res before download
     await drawQuizResultCard(cardCanvas, {
       title: QUIZ_CARD.title,
       name: p?.name || "Player",
@@ -276,7 +346,6 @@ document.addEventListener("DOMContentLoaded", () => {
     a.click();
   });
 
-  // ✅ auto-restore preview on load (NO UPSCALE)
   restoreQuizPreview(MB_KEYS.prevSong, cardCanvas, cardZone, dlBtn, genBtn);
 });
 
@@ -389,9 +458,6 @@ async function drawQuizResultCard(canvas, d){
   ctx.fillText(`Accuracy: ${d.acc}%`, avatarBox.x, H - 56);
 }
 
-/* =========================
-   ✅ RESTORE PREVIEW (NO UPSCALE)
-========================= */
 async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
   const prev = localStorage.getItem(previewKey);
   if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
@@ -404,7 +470,6 @@ async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBt
       img.src = prev;
     });
 
-    // ✅ canvas = preview size
     cardCanvas.width = img.naturalWidth || img.width;
     cardCanvas.height = img.naturalHeight || img.height;
 
@@ -422,9 +487,6 @@ async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBt
   }
 }
 
-/* =========================
-   HELPERS
-========================= */
 function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
   const w = srcCanvas.width;
   const scale = Math.min(1, maxW / w);
