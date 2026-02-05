@@ -3,7 +3,6 @@ const MB_KEYS = {
   doneMagic: "mb_done_magicblock",
   resMagic: "mb_result_magicblock",
   prevMagic: "mb_prev_magicblock",
-  progMagic: "mb_prog_magicblock",
 };
 
 const QUIZ_CARD = {
@@ -13,24 +12,6 @@ const QUIZ_CARD = {
 
 function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
 function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
-
-// Storage can get full because previews are big (data URLs). If that happens,
-// clear ONLY preview items and retry saves.
-function clearBigPreviews(){
-  const keys = [
-    "mb_prev_song",
-    "mb_prev_movie",
-    "mb_prev_magicblock",
-    "mb_png_champion"
-  ];
-  keys.forEach((k) => {
-    try{ localStorage.removeItem(k); }catch{}
-  });
-}
-
-function safeLSSet(key, value){
-  try{ localStorage.setItem(key, value); return true; }catch{ return false; }
-}
 
 function forcePlayAll(selector){
   const vids = document.querySelectorAll(selector);
@@ -75,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
-  const progressFill = document.getElementById("progressFill");
   const questionText = document.getElementById("questionText");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
@@ -86,70 +66,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const rAcc = document.getElementById("rAcc");
 
   const genBtn = document.getElementById("genBtn");
-  const progressNotice = document.getElementById("progressNotice");
-  const progressTextNote = document.getElementById("progressTextNote");
-    const cardZone = document.getElementById("cardZone");
+  const cardZone = document.getElementById("cardZone");
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
   let idx = 0;
   let correct = 0;
   let selectedIndex = null;
-  let answers = [];
 
   const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
   const done = localStorage.getItem(MB_KEYS.doneMagic) === "1";
-  const prog = safeJSONParse(localStorage.getItem(MB_KEYS.progMagic), null);
 
-  if (restartProgressBtn){
-        });
-  }
-
-  if (done){
-    if (saved){
-      if (!saved.id){
-        saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
-        safeLSSet(MB_KEYS.resMagic, JSON.stringify(saved));
-      }
-      showResult(saved);
-      return;
+  if (done && saved){
+    if (!saved.id){
+      saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
+      localStorage.setItem(MB_KEYS.resMagic, JSON.stringify(saved));
     }
-
-    // Marked completed but result missing (often quota/full localStorage).
-    // Try to reconstruct from progress so the quiz stays "once".
-    const p = getProfile();
-    const total = QUESTIONS.length;
-    const fromProg = (prog && Array.isArray(prog.answers) && prog.answers.length) ? prog.answers : [];
-    const correctFromProg = fromProg.reduce((acc, a) => acc + (a && a.isCorrect ? 1 : 0), 0);
-    const reconstructed = {
-      total,
-      correct: correctFromProg,
-      acc: total ? Math.round((correctFromProg / total) * 100) : 0,
-      name: p?.name || "Player",
-      id: ensureResultId(QUIZ_CARD.idPrefix, null),
-      answers: fromProg.slice(0, total),
-      ts: Date.now(),
-      missing: true,
-    };
-    const rStr = JSON.stringify(reconstructed);
-    if (!safeLSSet(MB_KEYS.resMagic, rStr)){
-      clearBigPreviews();
-      safeLSSet(MB_KEYS.resMagic, rStr);
-    }
-    showResult(reconstructed);
-    return;
-  }
-
-  {
-    if (prog && typeof prog.idx === "number" && prog.idx > 0 && prog.idx < QUESTIONS.length){
-      idx = Math.floor(prog.idx);
-      correct = Math.max(0, Math.floor(prog.correct || 0));
-      answers = Array.isArray(prog.answers) ? prog.answers : [];
-      if (progressNotice){
-        progressNotice.style.display = "flex";
-        if (progressTextNote) progressTextNote.textContent = `Progress restored — continue from Q${idx + 1} / ${QUESTIONS.length}`;
-      }
-    }
+    showResult(saved);
+  } else {
     renderQuestion();
   }
 
@@ -185,28 +119,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function saveProgress(){
-    const payload = JSON.stringify({ idx, correct, answers, ts: Date.now() });
-    if (!safeLSSet(MB_KEYS.progMagic, payload)){
-      clearBigPreviews();
-      safeLSSet(MB_KEYS.progMagic, payload);
-    }
-  }
-
   nextBtn.addEventListener("click", () => {
     if (selectedIndex === null) return;
 
     const q = QUESTIONS[idx];
-    answers[idx] = {
-      q: q.text || `Question ${idx + 1}`,
-      options: q.options,
-      selected: selectedIndex,
-      correct: q.correctIndex
-    };
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
-    saveProgress();
     if (idx < QUESTIONS.length){
       renderQuestion();
       return;
@@ -225,18 +144,11 @@ document.addEventListener("DOMContentLoaded", () => {
       acc,
       name: p?.name || "Player",
       id,
-      ts: Date.now(),
-      // ✅ for Result review
-      answers: answers.slice(0, total)
+      ts: Date.now()
     };
 
-    const resultStr = JSON.stringify(result);
-    if (!safeLSSet(MB_KEYS.doneMagic, "1") || !safeLSSet(MB_KEYS.resMagic, resultStr)){
-      clearBigPreviews();
-      safeLSSet(MB_KEYS.doneMagic, "1");
-      safeLSSet(MB_KEYS.resMagic, resultStr);
-    }
-    try{ localStorage.removeItem(MB_KEYS.progMagic); }catch{}
+    localStorage.setItem(MB_KEYS.doneMagic, "1");
+    localStorage.setItem(MB_KEYS.resMagic, JSON.stringify(result));
     showResult(result);
   });
 
@@ -248,59 +160,68 @@ document.addEventListener("DOMContentLoaded", () => {
     rTotal.textContent = String(result.total);
     rCorrect.textContent = String(result.correct);
     rAcc.textContent = `${result.acc}%`;
-
-    renderReview(result);
   }
 
-  function renderReview(result){
-    const wrap = document.getElementById("reviewWrap");
-    const list = document.getElementById("reviewList");
-    if (!wrap || !list) return;
+  genBtn?.addEventListener("click", async () => {
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
+    if (!r || !cardCanvas) return;
 
-    const ans = Array.isArray(result?.answers) ? result.answers.filter(Boolean) : [];
-    if (!ans.length){
-      wrap.style.display = "none";
-      return;
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_CARD.title,
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+      logoSrc: "../assets/logo.webm",
+    });
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+
+    try{
+      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
+      localStorage.setItem(MB_KEYS.prevMagic, prev);
+      localStorage.removeItem("mb_png_magicblock");
+    }catch(e){
+      console.warn("MagicBlock preview save failed:", e);
+      try{ localStorage.removeItem(MB_KEYS.prevMagic); }catch{}
     }
 
-    wrap.style.display = "block";
-    list.innerHTML = `
-      <div class="reviewGrid">
-        <div class="reviewHead">Q</div>
-        <div class="reviewHead"></div>
-        <div class="reviewHead">Your answer</div>
-        <div class="reviewHead hideOnMobile reviewHead">Correct</div>
-      </div>
-    `;
-    const grid = list.querySelector(".reviewGrid");
-
-    ans.forEach((a, i) => {
-      const ok = a.selected === a.correct;
-      const selText = (a.options && a.options[a.selected]) ? a.options[a.selected] : "—";
-      const corText = (a.options && a.options[a.correct]) ? a.options[a.correct] : "—";
-
-      const q = document.createElement("div");
-      q.className = "reviewQ reviewRow";
-      q.textContent = `Q${i + 1}`;
-
-      const icon = document.createElement("div");
-      icon.className = "reviewIcon reviewRow";
-      icon.textContent = ok ? "✅" : "❌";
-
-      const your = document.createElement("div");
-      your.className = "reviewYour reviewRow";
-      your.innerHTML = `<div>${selText}</div>${ok ? "" : `<div class="reviewMuted">Correct: ${corText}</div>`}`;
-
-      const correct = document.createElement("div");
-      correct.className = "reviewCorrect reviewRow reviewCorrectCol";
-      correct.textContent = corText;
-
-      grid.appendChild(q);
-      grid.appendChild(icon);
-      grid.appendChild(your);
-      grid.appendChild(correct);
-    });
+    if (genBtn) genBtn.textContent = "Regenerate Result Card";
+    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
+
+  dlBtn?.addEventListener("click", async () => {
+    if (!cardCanvas) return;
+
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
+    if (!r) return;
+
+    // ✅ redraw full-res before export
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_CARD.title,
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+      logoSrc: "../assets/logo.webm",
+    });
+
+    const a = document.createElement("a");
+    a.download = "magicblock-knowledge-result.png";
+    a.href = cardCanvas.toDataURL("image/png");
+    a.click();
+  });
+
+  // ✅ auto-restore preview (NO UPSCALE)
+  restoreQuizPreview(MB_KEYS.prevMagic, cardCanvas, cardZone, dlBtn, genBtn);
+});
 
 /* =========================
    CANVAS DRAW (MagicBlock)
