@@ -1,6 +1,3 @@
-// quizzes/magicblock.js — FULL (fixed progress: Progress = answered, % matches)
-// NOTE: drawQuizResultCard and helpers are INCLUDED (same style as your other quizzes)
-
 const MB_KEYS = {
   profile: "mb_profile",
   doneMagic: "mb_done_magicblock",
