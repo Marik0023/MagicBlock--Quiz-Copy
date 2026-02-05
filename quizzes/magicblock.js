@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const q = QUESTIONS[idx];
     answers[idx] = {
-      q: q.q || `Question ${idx + 1}`,
+      q: q.text || `Question ${idx + 1}`,
       options: q.options,
       selected: selectedIndex,
       correct: q.correctIndex
@@ -181,7 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
       acc,
       name: p?.name || "Player",
       id,
-      ts: Date.now()
+      ts: Date.now(),
+      // ✅ for Result review
+      answers: answers.slice(0, total)
     };
 
     localStorage.setItem(MB_KEYS.doneMagic, "1");
@@ -197,6 +199,44 @@ document.addEventListener("DOMContentLoaded", () => {
     rTotal.textContent = String(result.total);
     rCorrect.textContent = String(result.correct);
     rAcc.textContent = `${result.acc}%`;
+
+    renderReview(result);
+  }
+
+  function renderReview(result){
+    const wrap = document.getElementById("reviewWrap");
+    const list = document.getElementById("reviewList");
+    if (!wrap || !list) return;
+    const ans = Array.isArray(result?.answers) ? result.answers : [];
+    if (!ans.length){
+      wrap.style.display = "none";
+      return;
+    }
+    wrap.style.display = "block";
+    list.innerHTML = "";
+
+    ans.forEach((a, i) => {
+      const row = document.createElement("div");
+      row.className = "reviewRow";
+
+      const q = document.createElement("div");
+      q.className = "reviewQ";
+      q.textContent = `Q${i+1}`;
+
+      const picked = document.createElement("div");
+      picked.className = "reviewPick";
+      const isCorrect = a.selected === a.correct;
+      picked.innerHTML = `${isCorrect ? "✅" : "❌"} <span class="reviewLetter">${String.fromCharCode(65 + a.selected)}</span> ${a.options?.[a.selected] ?? ""}`;
+
+      const correct = document.createElement("div");
+      correct.className = "reviewCorrect";
+      correct.innerHTML = `Correct: <span class="reviewLetter">${String.fromCharCode(65 + a.correct)}</span> ${a.options?.[a.correct] ?? ""}`;
+
+      row.appendChild(q);
+      row.appendChild(picked);
+      row.appendChild(correct);
+      list.appendChild(row);
+    });
   }
 
   genBtn?.addEventListener("click", async () => {
