@@ -4,8 +4,8 @@ const MB_KEYS = {
   resMovie: "mb_result_movie",
   prevMovie: "mb_prev_movie",
 
-  // progress (resume)
-  progMovie: "mb_prog_movie",              // answered count (store only when >0)
+  // progress (resume) — answered count (0..10)
+  progMovie: "mb_prog_movie",
   progMovieState: "mb_prog_movie_state",
 };
 
@@ -21,40 +21,26 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
-function hasAnyAnswer(answers){
-  return Array.isArray(answers) && answers.some(v => Number.isFinite(v));
-}
-
 /* ===== Progress helpers (Movie) ===== */
 function saveProgressMovie(idx0, correct, answers){
-  const answered = Math.max(0, Math.min(9, Number(idx0) || 0));
-
-  if (answered <= 0 && !hasAnyAnswer(answers)){
-    clearProgressMovie();
-    return;
-  }
-
+  const answered = Math.max(0, Math.min(10, idx0));
   localStorage.setItem(MB_KEYS.progMovie, String(answered));
   localStorage.setItem(MB_KEYS.progMovieState, JSON.stringify({
-    idx: Math.max(0, Math.min(9, Number(idx0) || 0)),
+    idx: Math.max(0, Math.min(9, idx0)),
     correct: Number.isFinite(correct) ? correct : 0,
     answers: Array.isArray(answers) ? answers : []
   }));
 }
 function loadProgressMovie(){
-  const n = Number(localStorage.getItem(MB_KEYS.progMovie) || "0");
+  const answered = Number(localStorage.getItem(MB_KEYS.progMovie) || "0");
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progMovieState), null);
-  if (!Number.isFinite(n) || n <= 0) return null;
+  if (!Number.isFinite(answered) || answered <= 0) return null;
 
-  const idx = Number.isFinite(state?.idx) ? state.idx : n;
-  const correct = state?.correct;
-  const answers = state?.answers;
+  const idx = Number.isFinite(state?.idx) ? state.idx : answered;
+  const correct = Number.isFinite(state?.correct) ? state.correct : 0;
+  const answers = Array.isArray(state?.answers) ? state.answers : [];
 
-  return {
-    idx: Math.max(0, Math.min(9, idx)),
-    correct: Number.isFinite(correct) ? correct : 0,
-    answers: Array.isArray(answers) ? answers : []
-  };
+  return { idx: Math.max(0, Math.min(9, idx)), correct, answers };
 }
 function clearProgressMovie(){
   localStorage.removeItem(MB_KEYS.progMovie);
@@ -84,14 +70,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
+
+  const quizProgFill = document.getElementById("quizProgFill");
+  const quizProgPct  = document.getElementById("quizProgPct");
+
   const frameVideo = document.getElementById("frameVideo");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
-
-  // ✅ progress DOM
-  const quizProg = document.getElementById("quizProg");
-  const progFill = document.getElementById("quizProgFill");
-  const progPct  = document.getElementById("quizProgPct");
 
   const rName = document.getElementById("rName");
   const rTotal = document.getElementById("rTotal");
@@ -106,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
   const done = localStorage.getItem(MB_KEYS.doneMovie) === "1";
 
-  let idx = 0;
+  let idx = 0; // next question index (0..9)
   let correct = 0;
   let selectedIndex = null;
   let answers = [];
@@ -130,36 +115,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  function updateQuizProgressUI(){
-    if (!quizProg || !progFill || !progPct) return;
-    const total = QUESTIONS.length;
-    const answered = Math.max(0, Math.min(idx, total));
-
-    if (answered <= 0){
-      quizProg.style.display = "none";
-      progFill.style.width = "0%";
-      progPct.textContent = "0%";
-      return;
-    }
-
-    const pct = Math.round((answered / total) * 100);
-    quizProg.style.display = "flex";
-    progFill.style.width = `${pct}%`;
-    progPct.textContent = `${pct}%`;
-  }
-
   function renderQuestion(){
     selectedIndex = null;
     nextBtn.disabled = true;
     nextBtn.classList.remove("isShow");
 
+    const total = QUESTIONS.length;
     const q = QUESTIONS[idx];
-    qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
-    progressText.textContent = `Progress: ${idx + 1} / ${QUESTIONS.length}`;
 
-    updateQuizProgressUI();
+    qTitle.textContent = `Question ${idx + 1} of ${total}`;
+
+    // ✅ PROGRESS = answered
+    const answered = idx;
+    progressText.textContent = `Progress: ${answered} / ${total}`;
+    const pct = Math.round((answered / total) * 100);
+    if (quizProgFill) quizProgFill.style.width = `${pct}%`;
+    if (quizProgPct) quizProgPct.textContent = `${pct}%`;
 
     const src = q.frame;
+
     if (frameVideo){
       frameVideo.pause();
       frameVideo.src = src;
@@ -322,7 +296,7 @@ function buildId(prefix){
   return `MB-${prefix}-${serial}`;
 }
 
-/* ===== preview helpers + canvas helpers ===== */
+/* ===== preview helpers + canvas helpers (YOURS unchanged) ===== */
 async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
   const prev = localStorage.getItem(previewKey);
   if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
