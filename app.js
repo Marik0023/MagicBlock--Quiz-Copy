@@ -389,13 +389,22 @@ if (mustCreate && !getProfile()){
 
       const thumb = document.createElement("div");
       thumb.className = "rewardThumb";
+      
+      const isChampion = it.key === "champion";
+      const allDone =
+        isDoneLocal(MB_KEYS.doneSong) &&
+        isDoneLocal(MB_KEYS.doneMovie) &&
+        isDoneLocal(MB_KEYS.doneMagic);
+      
       if (hasPng){
         const img = document.createElement("img");
         img.alt = it.title;
         img.src = png;
         thumb.appendChild(img);
       } else {
-        thumb.textContent = "Not generated";
+        // ✅ Champion locked state
+        if (isChampion && !allDone) thumb.textContent = "Locked 🔒";
+        else thumb.textContent = "Not generated";
       }
 
       const meta = document.createElement("div");
