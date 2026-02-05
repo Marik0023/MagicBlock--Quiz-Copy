@@ -1,8 +1,9 @@
 const MB_KEYS = {
   profile: "mb_profile",
   doneMovie: "mb_done_movie",
-  resMovie: "mb_result_movie",
+  resMovie: "mb_res_movie",
   prevMovie: "mb_prev_movie",
+  progMovie: "mb_prog_movie",
 };
 
 function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
@@ -50,6 +51,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const rAcc = document.getElementById("rAcc");
 
   const genBtn = document.getElementById("genBtn");
+  const progressNotice = document.getElementById("progressNotice");
+  const progressTextNote = document.getElementById("progressTextNote");
+  const restartProgressBtn = document.getElementById("restartProgressBtn");
   const cardZone = document.getElementById("cardZone");
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
@@ -60,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let idx = 0;
   let correct = 0;
   let selectedIndex = null;
+  let answers = [];
 
   if (done && saved) showResult(saved);
   else renderQuestion();
@@ -105,13 +110,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function saveProgress(){
+    try{
+      localStorage.setItem(MB_KEYS.progMovie, JSON.stringify({ idx, correct, answers, ts: Date.now() }));
+    }catch(e){
+      try{ localStorage.removeItem(MB_KEYS.progMovie); }catch{}
+    }
+  }
+
   nextBtn.addEventListener("click", () => {
     if (selectedIndex === null) return;
 
     const q = QUESTIONS[idx];
+    answers[idx] = {
+      q: `Question ${idx + 1}`,
+      options: q.options,
+      selected: selectedIndex,
+      correct: q.correctIndex
+    };
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
+    saveProgress();
     if (idx < QUESTIONS.length){
       renderQuestion();
       return;
