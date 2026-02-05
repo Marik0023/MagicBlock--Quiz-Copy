@@ -129,17 +129,56 @@ function renderTopProfile(){
 }
 
 /* ===== Profile modal logic (home) ===== */
+// function openProfileModal(force = false){
+//   const modal = document.getElementById("profileModal");
+//   if (!modal) return;
+//   modal.classList.add("isOpen");
+
+//   const p = getProfile();
+//   const nameInput = document.getElementById("profileName");
+//   const fileInput = document.getElementById("profileFile");
+//   const preview = document.getElementById("profilePreview");
+//   const saveBtn = document.getElementById("profileSaveBtn");
+//   const avatarBox = document.getElementById("avatarBox");
+
+//   if (nameInput) nameInput.value = p?.name || "";
+
+//   if (preview){
+//     if (p?.avatar && p.avatar.startsWith("data:")){
+//       preview.src = p.avatar;
+//       avatarBox?.classList.remove("isPlaceholder");
+//     } else {
+//       preview.src = PLACEHOLDER_AVATAR;
+//       avatarBox?.classList.add("isPlaceholder");
+//     }
+//   }
+
+//   if (fileInput) fileInput.value = "";
+
+//   const closeBtn = document.getElementById("profileCloseBtn");
+//   if (closeBtn){
+//     closeBtn.style.display = (force && !p) ? "none" : "flex";
+//   }
+
+//   if (saveBtn) saveBtn.disabled = false;
+// }
 function openProfileModal(force = false){
   const modal = document.getElementById("profileModal");
   if (!modal) return;
-  modal.classList.add("isOpen");
 
   const p = getProfile();
+  const isEdit = !!p; // ✅ якщо профіль вже є — це режим редагування
+
+  modal.classList.add("isOpen");
+
   const nameInput = document.getElementById("profileName");
   const fileInput = document.getElementById("profileFile");
   const preview = document.getElementById("profilePreview");
   const saveBtn = document.getElementById("profileSaveBtn");
   const avatarBox = document.getElementById("avatarBox");
+
+  // ✅ ЗМІНА: підпис кнопки залежно від режиму
+  if (saveBtn) saveBtn.textContent = isEdit ? "Зберегти зміни" : "Start";
 
   if (nameInput) nameInput.value = p?.name || "";
 
