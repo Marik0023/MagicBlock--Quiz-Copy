@@ -5,7 +5,7 @@ const MB_KEYS = {
   prevMovie: "mb_prev_movie",
 
   // progress (resume)
-  progMovie: "mb_prog_movie",
+  progMovie: "mb_prog_movie",              // answered count (store only when >0)
   progMovieState: "mb_prog_movie_state",
 };
 
@@ -21,13 +21,23 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
+function hasAnyAnswer(answers){
+  return Array.isArray(answers) && answers.some(v => Number.isFinite(v));
+}
+
 /* ===== Progress helpers (Movie) ===== */
 function saveProgressMovie(idx0, correct, answers){
-  const qNum = Math.max(1, Math.min(10, (idx0 + 1)));
-  localStorage.setItem(MB_KEYS.progMovie, String(qNum));
+  const answered = Math.max(0, Math.min(9, Number(idx0) || 0));
+
+  if (answered <= 0 && !hasAnyAnswer(answers)){
+    clearProgressMovie();
+    return;
+  }
+
+  localStorage.setItem(MB_KEYS.progMovie, String(answered));
   localStorage.setItem(MB_KEYS.progMovieState, JSON.stringify({
-    idx: idx0,
-    correct,
+    idx: Math.max(0, Math.min(9, Number(idx0) || 0)),
+    correct: Number.isFinite(correct) ? correct : 0,
     answers: Array.isArray(answers) ? answers : []
   }));
 }
@@ -36,11 +46,9 @@ function loadProgressMovie(){
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progMovieState), null);
   if (!Number.isFinite(n) || n <= 0) return null;
 
-  const idx = state?.idx;
+  const idx = Number.isFinite(state?.idx) ? state.idx : n;
   const correct = state?.correct;
   const answers = state?.answers;
-
-  if (!Number.isFinite(idx)) return { idx: Math.max(0, Math.min(9, n - 1)), correct: 0, answers: [] };
 
   return {
     idx: Math.max(0, Math.min(9, idx)),
@@ -80,6 +88,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
 
+  // ✅ progress DOM
+  const quizProg = document.getElementById("quizProg");
+  const progFill = document.getElementById("quizProgFill");
+  const progPct  = document.getElementById("quizProgPct");
+
   const rName = document.getElementById("rName");
   const rTotal = document.getElementById("rTotal");
   const rCorrect = document.getElementById("rCorrect");
@@ -108,7 +121,6 @@ document.addEventListener("DOMContentLoaded", () => {
       correct = prog.correct;
       answers = prog.answers;
     }
-    saveProgressMovie(idx, correct, answers);
     renderQuestion();
   }
 
@@ -117,6 +129,24 @@ document.addEventListener("DOMContentLoaded", () => {
       saveProgressMovie(idx, correct, answers);
     }
   });
+
+  function updateQuizProgressUI(){
+    if (!quizProg || !progFill || !progPct) return;
+    const total = QUESTIONS.length;
+    const answered = Math.max(0, Math.min(idx, total));
+
+    if (answered <= 0){
+      quizProg.style.display = "none";
+      progFill.style.width = "0%";
+      progPct.textContent = "0%";
+      return;
+    }
+
+    const pct = Math.round((answered / total) * 100);
+    quizProg.style.display = "flex";
+    progFill.style.width = `${pct}%`;
+    progPct.textContent = `${pct}%`;
+  }
 
   function renderQuestion(){
     selectedIndex = null;
@@ -127,8 +157,9 @@ document.addEventListener("DOMContentLoaded", () => {
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
     progressText.textContent = `Progress: ${idx + 1} / ${QUESTIONS.length}`;
 
-    const src = q.frame;
+    updateQuizProgressUI();
 
+    const src = q.frame;
     if (frameVideo){
       frameVideo.pause();
       frameVideo.src = src;
