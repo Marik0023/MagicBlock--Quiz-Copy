@@ -4,47 +4,65 @@ const MB_KEYS = {
   resMovie: "mb_result_movie",
   prevMovie: "mb_prev_movie",
 
-  // progress (resume) — answered count (0..10)
-  progMovie: "mb_prog_movie",
-  progMovieState: "mb_prog_movie_state",
+  // progress (resume) for HOME
+  progMovie: "mb_prog_movie",            // number (1..10)
+  progMovieState: "mb_prog_movie_state", // JSON { idx, correct, answers }
 };
 
-function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
-function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
+function safeJSONParse(v, fallback = null) {
+  try { return JSON.parse(v); } catch { return fallback; }
+}
+function getProfile() {
+  return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
+}
 
-function forcePlayAll(selector){
+function forcePlayAll(selector) {
   const vids = document.querySelectorAll(selector);
   if (!vids.length) return;
-  const tryPlay = () => vids.forEach(v => v.play().catch(()=>{}));
+  const tryPlay = () => vids.forEach(v => v.play().catch(() => {}));
   tryPlay();
-  window.addEventListener("click", tryPlay, { once:true });
-  window.addEventListener("touchstart", tryPlay, { once:true });
+  window.addEventListener("click", tryPlay, { once: true });
+  window.addEventListener("touchstart", tryPlay, { once: true });
 }
 
 /* ===== Progress helpers (Movie) ===== */
-function saveProgressMovie(idx0, correct, answers){
-  const answered = Math.max(0, Math.min(10, idx0));
-  localStorage.setItem(MB_KEYS.progMovie, String(answered));
+function saveProgressMovie(idx0, correct, answers) {
+  const qNum = Math.max(1, Math.min(10, (idx0 + 1)));
+  localStorage.setItem(MB_KEYS.progMovie, String(qNum));
   localStorage.setItem(MB_KEYS.progMovieState, JSON.stringify({
-    idx: Math.max(0, Math.min(9, idx0)),
-    correct: Number.isFinite(correct) ? correct : 0,
+    idx: idx0,
+    correct,
     answers: Array.isArray(answers) ? answers : []
   }));
 }
-function loadProgressMovie(){
-  const answered = Number(localStorage.getItem(MB_KEYS.progMovie) || "0");
+function loadProgressMovie() {
+  const n = Number(localStorage.getItem(MB_KEYS.progMovie) || "0");
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progMovieState), null);
-  if (!Number.isFinite(answered) || answered <= 0) return null;
+  if (!Number.isFinite(n) || n <= 0) return null;
 
-  const idx = Number.isFinite(state?.idx) ? state.idx : answered;
-  const correct = Number.isFinite(state?.correct) ? state.correct : 0;
-  const answers = Array.isArray(state?.answers) ? state.answers : [];
+  const idx = state?.idx;
+  const correct = state?.correct;
+  const answers = state?.answers;
 
-  return { idx: Math.max(0, Math.min(9, idx)), correct, answers };
+  if (!Number.isFinite(idx)) {
+    return { idx: Math.max(0, Math.min(9, n - 1)), correct: 0, answers: [] };
+  }
+
+  return {
+    idx: Math.max(0, Math.min(9, idx)),
+    correct: Number.isFinite(correct) ? correct : 0,
+    answers: Array.isArray(answers) ? answers : []
+  };
 }
-function clearProgressMovie(){
+function clearProgressMovie() {
   localStorage.removeItem(MB_KEYS.progMovie);
   localStorage.removeItem(MB_KEYS.progMovieState);
+}
+
+/* ===== ID ===== */
+function buildId(prefix) {
+  const serial = Math.random().toString(36).slice(2, 7).toUpperCase();
+  return `MB-${prefix}-${serial}`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -53,15 +71,15 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopProfile();
 
   const QUESTIONS = [
-    { frame: "../assets/movies/1.mp4", options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
-    { frame: "../assets/movies/2.mp4", options: ["The Internship", "We’re the Millers", "Grown Ups", "Daddy’s Home"], correctIndex: 2 },
-    { frame: "../assets/movies/3.mp4", options: ["The Lord of the Rings", "Harry Potter", "Percy Jackson & the Olympians", "The Chronicles of Narnia"], correctIndex: 1 },
-    { frame: "../assets/movies/4.mp4", options: ["The Gentlemen", "Layer Cake", "RocknRolla", "Snatch"], correctIndex: 0 },
-    { frame: "../assets/movies/5.mp4", options: ["Wednesday", "The Umbrella Academy", "Riverdale", "Chilling Adventures of Sabrina"], correctIndex: 0 },
-    { frame: "../assets/movies/6.mp4", options: ["Gravity", "Interstellar", "The Martian", "Arrival"], correctIndex: 1 },
-    { frame: "../assets/movies/7.mp4", options: ["The OA", "The X-Files", "Dark", "Stranger Things"], correctIndex: 3 },
-    { frame: "../assets/movies/8.mp4", options: ["Need for Speed", "Baby Driver", "Gone in 60 Seconds", "The Fast and the Furious"], correctIndex: 3 },
-    { frame: "../assets/movies/9.mp4", options: ["The Hangover", "Superbad", "21 Jump Street", "Project X"], correctIndex: 0 },
+    { frame: "../assets/movies/1.mp4",  options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
+    { frame: "../assets/movies/2.mp4",  options: ["The Internship", "We’re the Millers", "Grown Ups", "Daddy’s Home"], correctIndex: 2 },
+    { frame: "../assets/movies/3.mp4",  options: ["The Lord of the Rings", "Harry Potter", "Percy Jackson & the Olympians", "The Chronicles of Narnia"], correctIndex: 1 },
+    { frame: "../assets/movies/4.mp4",  options: ["The Gentlemen", "Layer Cake", "RocknRolla", "Snatch"], correctIndex: 0 },
+    { frame: "../assets/movies/5.mp4",  options: ["Wednesday", "The Umbrella Academy", "Riverdale", "Chilling Adventures of Sabrina"], correctIndex: 0 },
+    { frame: "../assets/movies/6.mp4",  options: ["Gravity", "Interstellar", "The Martian", "Arrival"], correctIndex: 1 },
+    { frame: "../assets/movies/7.mp4",  options: ["The OA", "The X-Files", "Dark", "Stranger Things"], correctIndex: 3 },
+    { frame: "../assets/movies/8.mp4",  options: ["Need for Speed", "Baby Driver", "Gone in 60 Seconds", "The Fast and the Furious"], correctIndex: 3 },
+    { frame: "../assets/movies/9.mp4",  options: ["The Hangover", "Superbad", "21 Jump Street", "Project X"], correctIndex: 0 },
     { frame: "../assets/movies/10.mp4", options: ["1917", "Saving Private Ryan", "Hacksaw Ridge", "Fury"], correctIndex: 2 },
   ];
 
@@ -69,11 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultPanel = document.getElementById("resultPanel");
 
   const qTitle = document.getElementById("qTitle");
-  const progressText = document.getElementById("progressText");
-
-  const quizProgFill = document.getElementById("quizProgFill");
-  const quizProgPct  = document.getElementById("quizProgPct");
-
   const frameVideo = document.getElementById("frameVideo");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
@@ -91,55 +104,45 @@ document.addEventListener("DOMContentLoaded", () => {
   const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
   const done = localStorage.getItem(MB_KEYS.doneMovie) === "1";
 
-  let idx = 0; // next question index (0..9)
+  let idx = 0;
   let correct = 0;
   let selectedIndex = null;
   let answers = [];
 
-  if (done && saved){
+  if (done && saved) {
     clearProgressMovie();
     showResult(saved);
   } else {
     const prog = loadProgressMovie();
-    if (prog){
+    if (prog) {
       idx = prog.idx;
       correct = prog.correct;
       answers = prog.answers;
     }
+    saveProgressMovie(idx, correct, answers);
     renderQuestion();
   }
 
   window.addEventListener("beforeunload", () => {
-    if (localStorage.getItem(MB_KEYS.doneMovie) !== "1"){
+    if (localStorage.getItem(MB_KEYS.doneMovie) !== "1") {
       saveProgressMovie(idx, correct, answers);
     }
   });
 
-  function renderQuestion(){
+  function renderQuestion() {
     selectedIndex = null;
     nextBtn.disabled = true;
     nextBtn.classList.remove("isShow");
 
-    const total = QUESTIONS.length;
     const q = QUESTIONS[idx];
+    qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
 
-    qTitle.textContent = `Question ${idx + 1} of ${total}`;
-
-    // ✅ PROGRESS = answered
-    const answered = idx;
-    progressText.textContent = `Progress: ${answered} / ${total}`;
-    const pct = Math.round((answered / total) * 100);
-    if (quizProgFill) quizProgFill.style.width = `${pct}%`;
-    if (quizProgPct) quizProgPct.textContent = `${pct}%`;
-
-    const src = q.frame;
-
-    if (frameVideo){
+    if (frameVideo) {
       frameVideo.pause();
-      frameVideo.src = src;
+      frameVideo.src = q.frame;
       frameVideo.load();
       frameVideo.currentTime = 0;
-      frameVideo.play().catch(()=>{});
+      frameVideo.play().catch(() => {});
     }
 
     optionsEl.innerHTML = "";
@@ -147,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const btn = document.createElement("button");
       btn.className = "optionBtn";
       btn.type = "button";
-      btn.textContent = `${String.fromCharCode(65+i)}) ${label}`;
+      btn.textContent = `${String.fromCharCode(65 + i)}) ${label}`;
       btn.addEventListener("click", () => {
         selectedIndex = i;
         updateSelectedUI();
@@ -157,10 +160,11 @@ document.addEventListener("DOMContentLoaded", () => {
       optionsEl.appendChild(btn);
     });
 
+    // keep HOME progress updated
     saveProgressMovie(idx, correct, answers);
   }
 
-  function updateSelectedUI(){
+  function updateSelectedUI() {
     [...optionsEl.querySelectorAll(".optionBtn")].forEach((b, i) => {
       b.classList.toggle("isSelected", i === selectedIndex);
     });
@@ -175,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
-    if (idx < QUESTIONS.length){
+    if (idx < QUESTIONS.length) {
       saveProgressMovie(idx, correct, answers);
       renderQuestion();
       return;
@@ -197,7 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showResult(result);
   });
 
-  function showResult(result){
+  function showResult(result) {
     quizPanel.style.display = "none";
     resultPanel.style.display = "block";
 
@@ -226,17 +230,17 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
 
-    try{
+    try {
       const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
       localStorage.setItem(MB_KEYS.prevMovie, prev);
       localStorage.removeItem("mb_png_movie");
-    }catch(e){
+    } catch (e) {
       console.warn("Movie preview save failed:", e);
-      try{ localStorage.removeItem(MB_KEYS.prevMovie); }catch{}
+      try { localStorage.removeItem(MB_KEYS.prevMovie); } catch {}
     }
 
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
-    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
+    cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   dlBtn?.addEventListener("click", async () => {
@@ -267,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ===== Top profile ===== */
-function renderTopProfile(){
+function renderTopProfile() {
   const pill = document.getElementById("profilePill");
   if (!pill) return;
 
@@ -276,7 +280,7 @@ function renderTopProfile(){
   const hintEl = pill.querySelector("[data-profile-hint]");
   const p = getProfile();
 
-  if (!p){
+  if (!p) {
     if (img) img.src = "";
     if (nameEl) nameEl.textContent = "No profile";
     if (hintEl) hintEl.textContent = "Go Home";
@@ -290,18 +294,12 @@ function renderTopProfile(){
   pill.addEventListener("click", () => location.href = "../index.html");
 }
 
-/* ===== ID ===== */
-function buildId(prefix){
-  const serial = Math.random().toString(36).slice(2, 7).toUpperCase();
-  return `MB-${prefix}-${serial}`;
-}
-
-/* ===== preview helpers + canvas helpers (YOURS unchanged) ===== */
-async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
+/* ===== preview helpers + canvas helpers (unchanged) ===== */
+async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn) {
   const prev = localStorage.getItem(previewKey);
   if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
 
-  try{
+  try {
     const img = new Image();
     await new Promise((res, rej) => {
       img.onload = res;
@@ -313,14 +311,14 @@ async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBt
     cardCanvas.height = img.naturalHeight || img.height;
 
     const ctx = cardCanvas.getContext("2d");
-    ctx.clearRect(0,0,cardCanvas.width,cardCanvas.height);
+    ctx.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
     ctx.drawImage(img, 0, 0);
 
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
     return true;
-  }catch(e){
+  } catch (e) {
     console.warn("restore movie preview failed:", e);
     return false;
   }
