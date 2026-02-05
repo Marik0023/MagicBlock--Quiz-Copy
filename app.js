@@ -385,8 +385,15 @@ function initHomeButtons(){
 /* ===== Bootstrap ===== */
 renderTopProfile();
 initProfileModal();
-const allDone = updateBadges();  
-updateFooterHint(allDone);  
+updateBadges();
+
+// ✅ CALL HERE (Step 3)
+const allDone =
+  isDone(MB_KEYS.doneSong) &&
+  isDone(MB_KEYS.doneMovie) &&
+  isDone(MB_KEYS.doneMagic);
+
+updateFooterHint(allDone); 
 initHomeButtons();
 
 // === Bonus ===
