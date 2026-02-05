@@ -75,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
+  const progressFill = document.getElementById("progressFill");
   const questionText = document.getElementById("questionText");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
@@ -87,8 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const genBtn = document.getElementById("genBtn");
   const progressNotice = document.getElementById("progressNotice");
   const progressTextNote = document.getElementById("progressTextNote");
-  const restartProgressBtn = document.getElementById("restartProgressBtn");
-  const cardZone = document.getElementById("cardZone");
+    const cardZone = document.getElementById("cardZone");
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
@@ -102,10 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const prog = safeJSONParse(localStorage.getItem(MB_KEYS.progMagic), null);
 
   if (restartProgressBtn){
-    restartProgressBtn.addEventListener("click", () => {
-      try{ localStorage.removeItem(MB_KEYS.progMagic); }catch{}
-      location.reload();
-    });
+        });
   }
 
   if (done){
@@ -259,98 +256,51 @@ document.addEventListener("DOMContentLoaded", () => {
     const wrap = document.getElementById("reviewWrap");
     const list = document.getElementById("reviewList");
     if (!wrap || !list) return;
-    const ans = Array.isArray(result?.answers) ? result.answers : [];
+
+    const ans = Array.isArray(result?.answers) ? result.answers.filter(Boolean) : [];
     if (!ans.length){
       wrap.style.display = "none";
       return;
     }
+
     wrap.style.display = "block";
-    list.innerHTML = "";
+    list.innerHTML = `
+      <div class="reviewGrid">
+        <div class="reviewHead">Q</div>
+        <div class="reviewHead"></div>
+        <div class="reviewHead">Your answer</div>
+        <div class="reviewHead hideOnMobile reviewHead">Correct</div>
+      </div>
+    `;
+    const grid = list.querySelector(".reviewGrid");
 
     ans.forEach((a, i) => {
-      const row = document.createElement("div");
-      row.className = "reviewRow";
+      const ok = a.selected === a.correct;
+      const selText = (a.options && a.options[a.selected]) ? a.options[a.selected] : "—";
+      const corText = (a.options && a.options[a.correct]) ? a.options[a.correct] : "—";
 
       const q = document.createElement("div");
-      q.className = "reviewQ";
-      q.textContent = `Q${i+1}`;
+      q.className = "reviewQ reviewRow";
+      q.textContent = `Q${i + 1}`;
 
-      const picked = document.createElement("div");
-      picked.className = "reviewPick";
-      const isCorrect = a.selected === a.correct;
-      picked.innerHTML = `${isCorrect ? "✅" : "❌"} <span class="reviewLetter">${String.fromCharCode(65 + a.selected)}</span> ${a.options?.[a.selected] ?? ""}`;
+      const icon = document.createElement("div");
+      icon.className = "reviewIcon reviewRow";
+      icon.textContent = ok ? "✅" : "❌";
+
+      const your = document.createElement("div");
+      your.className = "reviewYour reviewRow";
+      your.innerHTML = `<div>${selText}</div>${ok ? "" : `<div class="reviewMuted">Correct: ${corText}</div>`}`;
 
       const correct = document.createElement("div");
-      correct.className = "reviewCorrect";
-      correct.innerHTML = `Correct: <span class="reviewLetter">${String.fromCharCode(65 + a.correct)}</span> ${a.options?.[a.correct] ?? ""}`;
+      correct.className = "reviewCorrect reviewRow reviewCorrectCol";
+      correct.textContent = corText;
 
-      row.appendChild(q);
-      row.appendChild(picked);
-      row.appendChild(correct);
-      list.appendChild(row);
+      grid.appendChild(q);
+      grid.appendChild(icon);
+      grid.appendChild(your);
+      grid.appendChild(correct);
     });
-  }
-
-  genBtn?.addEventListener("click", async () => {
-    const p = getProfile();
-    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
-    if (!r || !cardCanvas) return;
-
-    await drawQuizResultCard(cardCanvas, {
-      title: QUIZ_CARD.title,
-      name: p?.name || "Player",
-      avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      acc: r.acc,
-      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
-      logoSrc: "../assets/logo.webm",
-    });
-
-    cardZone?.classList.add("isOpen");
-    if (dlBtn) dlBtn.disabled = false;
-
-    try{
-      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
-      localStorage.setItem(MB_KEYS.prevMagic, prev);
-      localStorage.removeItem("mb_png_magicblock");
-    }catch(e){
-      console.warn("MagicBlock preview save failed:", e);
-      try{ localStorage.removeItem(MB_KEYS.prevMagic); }catch{}
-    }
-
-    if (genBtn) genBtn.textContent = "Regenerate Result Card";
-    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
-
-  dlBtn?.addEventListener("click", async () => {
-    if (!cardCanvas) return;
-
-    const p = getProfile();
-    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
-    if (!r) return;
-
-    // ✅ redraw full-res before export
-    await drawQuizResultCard(cardCanvas, {
-      title: QUIZ_CARD.title,
-      name: p?.name || "Player",
-      avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      acc: r.acc,
-      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
-      logoSrc: "../assets/logo.webm",
-    });
-
-    const a = document.createElement("a");
-    a.download = "magicblock-knowledge-result.png";
-    a.href = cardCanvas.toDataURL("image/png");
-    a.click();
-  });
-
-  // ✅ auto-restore preview (NO UPSCALE)
-  restoreQuizPreview(MB_KEYS.prevMagic, cardCanvas, cardZone, dlBtn, genBtn);
-});
 
 /* =========================
    CANVAS DRAW (MagicBlock)
