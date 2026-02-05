@@ -1,11 +1,12 @@
+<!-- quizzes/magicblock.html -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Song Quiz — MagicBlock</title>
+  <title>MagicBlock Quiz — MagicBlock</title>
   <link rel="stylesheet" href="../styles.css" />
-  <script src="song.js" defer></script>
+  <script src="magicblock.js" defer></script>
 </head>
 
 <body class="mbQuiz">
@@ -37,7 +38,7 @@
 
   <main class="container">
     <section class="quizHero">
-      <h1>Guess the Song by the Melody</h1>
+      <h1>How well do you know MagicBlock?</h1>
       <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
     </section>
 
@@ -48,36 +49,11 @@
         <div>
           <div class="questionTitle" id="qTitle">Question 1 of 10</div>
 
-          <div class="mbPlayer">
-            <div class="mbPlayer__row">
-              <div class="mbPlayer__cover">
-                <img id="playerCover" src="../assets/covers/placeholder.jpg" alt="" />
-              </div>
-
-              <div class="mbPlayer__meta">
-                <div class="mbPlayer__title" id="playerName">Guess the song</div>
-                <div class="mbPlayer__time" id="playerTime">0:00 / 0:00</div>
-              </div>
-
-              <button class="mbPlayer__btn" id="playBtn" aria-label="Play/Pause">▶</button>
-            </div>
-
-            <div class="mbPlayer__bar">
-              <input class="range" id="seekBar" type="range" min="0" max="100" value="0" />
+          <div class="mbPlayer" style="padding:16px;">
+            <div style="font-weight:900; font-size:18px; line-height:1.25;" id="questionText">
+              Question text…
             </div>
           </div>
-
-          <div class="progressText" id="progressText">Progress: 1 / 10</div>
-
-          <!-- ✅ progress bar (hidden until first answer) -->
-          <div class="quizProg" id="quizProg" style="display:none;">
-            <div class="quizProg__bar">
-              <div class="quizProg__fill" id="quizProgFill" style="width:0%"></div>
-            </div>
-            <div class="quizProg__text" id="quizProgPct">0%</div>
-          </div>
-
-          <audio id="audio" preload="metadata"></audio>
         </div>
 
         <!-- RIGHT -->
