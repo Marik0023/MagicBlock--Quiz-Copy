@@ -309,6 +309,7 @@ if (mustCreate && !getProfile()){
 }
 
 /* ===== Rewards Modal (Home) ===== */
+/* ===== Rewards Modal (Home) ===== */
 (function initRewardsModal(){
   const rewardsBtn = document.getElementById("rewardsBtn");
   const modal = document.getElementById("rewardsModal");
@@ -318,9 +319,19 @@ if (mustCreate && !getProfile()){
   if (!rewardsBtn || !modal || !closeBtn || !grid) return;
 
   const REWARD_KEYS = {
-    songPng: "mb_prev_song",
-    moviePng: "mb_prev_movie",
-    magicPng: "mb_prev_magicblock",
+    songPrev: "mb_prev_song",
+    moviePrev: "mb_prev_movie",
+    magicPrev: "mb_prev_magicblock",
+
+    // progress (resume)
+    songProg: "mb_prog_song",
+    movieProg: "mb_prog_movie",
+    magicProg: "mb_prog_magicblock",
+
+    // legacy (old heavy png keys)
+    songPngLegacy: "mb_png_song",
+    moviePngLegacy: "mb_png_movie",
+    magicPngLegacy: "mb_png_magicblock",
   };
 
   const items = [
@@ -329,32 +340,44 @@ if (mustCreate && !getProfile()){
       title: "Quiz 1 — Song",
       sub: "Guess the Song by the Melody",
       doneKey: MB_KEYS.doneSong,
-      pngKey: REWARD_KEYS.songPng,
-      openHref: "quizzes/song.html"
+      prevKey: REWARD_KEYS.songPrev,
+      legacyKey: REWARD_KEYS.songPngLegacy,
+      progKey: REWARD_KEYS.songProg,
+      openHref: "quizzes/song.html",
+      total: 10,
     },
     {
       key: "movie",
       title: "Quiz 2 — Movie",
       sub: "Guess the Movie by the Frame",
       doneKey: MB_KEYS.doneMovie,
-      pngKey: REWARD_KEYS.moviePng,
-      openHref: "quizzes/movie.html"
+      prevKey: REWARD_KEYS.moviePrev,
+      legacyKey: REWARD_KEYS.moviePngLegacy,
+      progKey: REWARD_KEYS.movieProg,
+      openHref: "quizzes/movie.html",
+      total: 10,
     },
     {
       key: "magicblock",
       title: "Quiz 3 — MagicBlock",
       sub: "How well do you know MagicBlock?",
       doneKey: MB_KEYS.doneMagic,
-      pngKey: REWARD_KEYS.magicPng,
-      openHref: "quizzes/magicblock.html"
+      prevKey: REWARD_KEYS.magicPrev,
+      legacyKey: REWARD_KEYS.magicPngLegacy,
+      progKey: REWARD_KEYS.magicProg,
+      openHref: "quizzes/magicblock.html",
+      total: 10,
     },
     {
       key: "champion",
       title: "Champion Card",
       sub: "Unlocked after all 3 quizzes",
       doneKey: null,
-      pngKey: MB_KEYS.champPng,
-      openHref: "champion.html"
+      prevKey: MB_KEYS.champPng, // stored as small preview JPEG
+      legacyKey: null,
+      progKey: null,
+      openHref: "champion.html",
+      total: null,
     }
   ];
 
@@ -376,22 +399,58 @@ if (mustCreate && !getProfile()){
     return key ? localStorage.getItem(key) === "1" : false;
   }
 
+  function readJSON(key, fallback=null){
+    try{
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : fallback;
+    }catch{ return fallback; }
+  }
+
+  function getPreviewDataUrl(it){
+    const v1 = it.prevKey ? localStorage.getItem(it.prevKey) : null;
+    if (v1 && v1.startsWith("data:image/")) return v1;
+
+    // fallback to legacy PNG key if still present
+    const v2 = it.legacyKey ? localStorage.getItem(it.legacyKey) : null;
+    if (v2 && v2.startsWith("data:image/")) return v2;
+
+    return null;
+  }
+
+  function getProgress(it){
+    if (!it.progKey) return null;
+    const p = readJSON(it.progKey, null);
+    if (!p || typeof p.idx !== "number") return null;
+
+    // idx is "next question index" (0..total). Show resume only if 1..total-1
+    const total = it.total || 10;
+    if (p.idx >= 1 && p.idx < total) return p;
+    return null;
+  }
+
   function render(){
     grid.innerHTML = "";
 
+    const allDone = isDoneLocal(MB_KEYS.doneSong) && isDoneLocal(MB_KEYS.doneMovie) && isDoneLocal(MB_KEYS.doneMagic);
+
     items.forEach(it => {
-      const png = localStorage.getItem(it.pngKey || "");
+      const png = getPreviewDataUrl(it);
       const hasPng = !!(png && png.startsWith("data:image/"));
       const done = it.doneKey ? isDoneLocal(it.doneKey) : null;
+      const prog = it.doneKey ? getProgress(it) : null;
 
       const card = document.createElement("div");
       card.className = "rewardCard";
 
       const thumb = document.createElement("div");
       thumb.className = "rewardThumb";
+
       if (hasPng){
+        // skeleton to avoid flicker while <img> decodes
+        thumb.classList.add("skeleton");
         const img = document.createElement("img");
         img.alt = it.title;
+        img.onload = () => thumb.classList.remove("skeleton");
         img.src = png;
         thumb.appendChild(img);
       } else {
@@ -407,11 +466,19 @@ if (mustCreate && !getProfile()){
 
       const s = document.createElement("div");
       s.className = "rewardSub";
+
       if (it.key === "champion"){
-        const allDone = isDoneLocal(MB_KEYS.doneSong) && isDoneLocal(MB_KEYS.doneMovie) && isDoneLocal(MB_KEYS.doneMagic);
-        s.textContent = allDone ? (hasPng ? "Ready ✅" : "Unlocked ✅ (generate on Champion page)") : "Locked (complete all quizzes)";
+        s.textContent = allDone
+          ? (hasPng ? "Ready ✅" : "Unlocked ✅ (generate on Champion page)")
+          : `Locked (complete all quizzes) — ${Number(isDoneLocal(MB_KEYS.doneSong)) + Number(isDoneLocal(MB_KEYS.doneMovie)) + Number(isDoneLocal(MB_KEYS.doneMagic))} / 3 done`;
       } else {
-        s.textContent = done ? (hasPng ? "Ready ✅" : "Completed ✅ (generate card inside quiz)") : "Not completed";
+        if (done){
+          s.textContent = hasPng ? "Ready ✅" : "Completed ✅ (generate card inside quiz)";
+        } else if (prog){
+          s.textContent = `In progress — continue from Q${prog.idx + 1} / ${it.total}`;
+        } else {
+          s.textContent = "Not completed";
+        }
       }
 
       const actions = document.createElement("div");
@@ -419,15 +486,27 @@ if (mustCreate && !getProfile()){
 
       const openBtn = document.createElement("button");
       openBtn.className = "btn";
-      openBtn.textContent = it.key === "champion" ? "Open Champion" : (done ? "Open quiz" : "Start");
-      openBtn.addEventListener("click", () => (location.href = it.openHref));
+
+      if (it.key === "champion"){
+        if (allDone){
+          openBtn.textContent = "Open Champion";
+          openBtn.addEventListener("click", () => (location.href = it.openHref));
+        } else {
+          openBtn.textContent = "Locked";
+          openBtn.disabled = true;
+        }
+      } else {
+        openBtn.textContent = done ? "Open quiz" : (prog ? `Continue from Q${prog.idx + 1}` : "Start");
+        openBtn.addEventListener("click", () => (location.href = it.openHref));
+      }
+
       actions.appendChild(openBtn);
 
       if (hasPng){
         const dl = document.createElement("button");
         dl.className = "btn btn--ghost";
-        dl.textContent = "Download";
-        dl.addEventListener("click", () => downloadDataUrl(png, filenameFor(it.key, png)));
+        dl.textContent = "Download PNG";
+        dl.addEventListener("click", () => downloadDataUrl(png, filenameFor(it.key)));
         actions.appendChild(dl);
       }
 
@@ -442,14 +521,11 @@ if (mustCreate && !getProfile()){
     });
   }
 
-  function filenameFor(key, dataUrl){
-    const isJpg = (dataUrl || "").startsWith("data:image/jpeg");
-    const ext = isJpg ? "jpg" : "png";
-  
-    if (key === "song") return `magicblock-song-result.${ext}`;
-    if (key === "movie") return `magicblock-movie-result.${ext}`;
-    if (key === "magicblock") return `magicblock-knowledge-result.${ext}`;
-    return `magicblock-champion-card.${ext}`;
+  function filenameFor(key){
+    if (key === "song") return "magicblock-song-result.png";
+    if (key === "movie") return "magicblock-movie-result.png";
+    if (key === "magicblock") return "magicblock-knowledge-result.png";
+    return "magicblock-champion-card.png";
   }
 
   function downloadDataUrl(dataUrl, filename){
@@ -459,3 +535,4 @@ if (mustCreate && !getProfile()){
     a.click();
   }
 })();
+;
