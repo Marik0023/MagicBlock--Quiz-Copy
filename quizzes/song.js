@@ -1,13 +1,14 @@
+// quizzes/song.js
+
 const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
   prevSong: "mb_prev_song",
 
-  // progress (resume)
-  // IMPORTANT: now stores ANSWERED COUNT (0..10), not question number
-  progSong: "mb_prog_song",
-  progSongState: "mb_prog_song_state",
+  // progress (resume) for HOME
+  progSong: "mb_prog_song",            // number (1..10)
+  progSongState: "mb_prog_song_state", // JSON { idx, correct, answers }
 };
 
 const QUIZ_CARD = {
@@ -15,62 +16,68 @@ const QUIZ_CARD = {
   idPrefix: "MagicListener",
 };
 
-function safeJSONParse(v, fallback=null){ try { return JSON.parse(v); } catch { return fallback; } }
-function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
+function safeJSONParse(v, fallback = null) {
+  try { return JSON.parse(v); } catch { return fallback; }
+}
+function getProfile() {
+  return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
+}
 
-function forcePlayAll(selector){
+function forcePlayAll(selector) {
   const vids = document.querySelectorAll(selector);
   if (!vids.length) return;
-  const reminder = () => vids.forEach(v => v.play().catch(()=>{}));
+  const reminder = () => vids.forEach(v => v.play().catch(() => {}));
   reminder();
-  window.addEventListener("click", reminder, { once:true });
-  window.addEventListener("touchstart", reminder, { once:true });
+  window.addEventListener("click", reminder, { once: true });
+  window.addEventListener("touchstart", reminder, { once: true });
 }
 
-function makeSerial(len = 6){
+function makeSerial(len = 6) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
-  for (let i=0;i<len;i++) out += chars[Math.floor(Math.random()*chars.length)];
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
-function ensureResultId(prefix, existing){
+function ensureResultId(prefix, existing) {
   if (existing && typeof existing === "string" && existing.startsWith("MB-")) return existing;
   return `MB-${prefix}-${makeSerial(6)}`;
 }
 
 /* ===== Progress helpers (Song) =====
    We store:
-   - progSong: answeredCount (0..10)
-   - progSongState: { idx, correct, answers } where idx = next question index (0..9)
+   - mb_prog_song = current question number (1..10)
+   - mb_prog_song_state = { idx, correct, answers }
+   This is used by HOME to show mini progress and "Continue".
 */
-function saveProgressSong(idx0, correct, answers){
-  const answered = Math.max(0, Math.min(10, idx0)); // idx0 == next question index
-  localStorage.setItem(MB_KEYS.progSong, String(answered));
+function saveProgressSong(idx0, correct, answers) {
+  const qNum = Math.max(1, Math.min(10, (idx0 + 1)));
+  localStorage.setItem(MB_KEYS.progSong, String(qNum));
   localStorage.setItem(MB_KEYS.progSongState, JSON.stringify({
-    idx: Math.max(0, Math.min(9, idx0)),
-    correct: Number.isFinite(correct) ? correct : 0,
+    idx: idx0,
+    correct,
     answers: Array.isArray(answers) ? answers : []
   }));
 }
-
-function loadProgressSong(){
-  const answered = Number(localStorage.getItem(MB_KEYS.progSong) || "0");
+function loadProgressSong() {
+  const n = Number(localStorage.getItem(MB_KEYS.progSong) || "0");
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progSongState), null);
+  if (!Number.isFinite(n) || n <= 0) return null;
 
-  if (!Number.isFinite(answered) || answered <= 0) return null;
+  const idx = state?.idx;
+  const correct = state?.correct;
+  const answers = state?.answers;
 
-  const idx = Number.isFinite(state?.idx) ? state.idx : answered; // fallback: idx == answered
-  const correct = Number.isFinite(state?.correct) ? state.correct : 0;
-  const answers = Array.isArray(state?.answers) ? state.answers : [];
+  if (!Number.isFinite(idx)) {
+    return { idx: Math.max(0, Math.min(9, n - 1)), correct: 0, answers: [] };
+  }
 
   return {
     idx: Math.max(0, Math.min(9, idx)),
-    correct,
-    answers
+    correct: Number.isFinite(correct) ? correct : 0,
+    answers: Array.isArray(answers) ? answers : []
   };
 }
-
-function clearProgressSong(){
+function clearProgressSong() {
   localStorage.removeItem(MB_KEYS.progSong);
   localStorage.removeItem(MB_KEYS.progSongState);
 }
@@ -81,15 +88,15 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopProfile();
 
   const QUESTIONS = [
-    { audio: "../assets/songs/1.mp3", options: ["Mark Ronson feat. Bruno Mars — Uptown Funk", "Pharrell Williams — Happy", "Justin Timberlake — Can’t Stop the Feeling", "Bruno Mars — 24K Magic"], correctIndex: 0 },
-    { audio: "../assets/songs/2.mp3", options: ["Billie Eilish — therefore I am", "Billie Eilish — bad guy", "Lorde — Royals", "Dua Lipa — Don’t Start Now"], correctIndex: 1 },
-    { audio: "../assets/songs/3.mp3", options: ["Gorillaz — Clint Eastwood", "The Killers — Mr. Brightside", "Gorillaz — Feel Good Inc.", "Franz Ferdinand — Take Me Out"], correctIndex: 2 },
-    { audio: "../assets/songs/4.mp3", options: ["The Weeknd — Blinding Lights", "Daft Punk — Get Lucky", "Bruno Mars — That’s What I Like", "The Weeknd feat. Daft Punk — Starboy"], correctIndex: 3 },
-    { audio: "../assets/songs/5.mp3", options: ["Ed Sheeran — Shape of You", "Justin Bieber — Sorry", "Ed Sheeran — Thinking Out Loud", "Charlie Puth — Attention"], correctIndex: 0 },
-    { audio: "../assets/songs/6.mp3", options: ["Lewis Capaldi — Someone You Loved", "Tones and I — Dance Monkey", "Marshmello feat. Bastille — Happier", "Shawn Mendes & Camila Cabello — Señorita"], correctIndex: 1 },
-    { audio: "../assets/songs/7.mp3", options: ["Camila Cabello — Havana", "Enrique Iglesias — Bailando", "Luis Fonsi feat. Daddy Yankee — Despacito", "J Balvin & Willy William — Mi Gente"], correctIndex: 2 },
-    { audio: "../assets/songs/8.mp3", options: ["Lil Nas X — Panini", "Drake — God’s Plan", "Travis Scott — SICKO MODE", "Lil Nas X — Old Town Road"], correctIndex: 3 },
-    { audio: "../assets/songs/9.mp3", options: ["ROSÉ & Bruno Mars — APT.", "Justin Bieber — Believe", "Miley Cyrus — Flowers", "Bruno Mars — Locked Out of Heaven"], correctIndex: 0 },
+    { audio: "../assets/songs/1.mp3",  options: ["Mark Ronson feat. Bruno Mars — Uptown Funk", "Pharrell Williams — Happy", "Justin Timberlake — Can’t Stop the Feeling", "Bruno Mars — 24K Magic"], correctIndex: 0 },
+    { audio: "../assets/songs/2.mp3",  options: ["Billie Eilish — therefore I am", "Billie Eilish — bad guy", "Lorde — Royals", "Dua Lipa — Don’t Start Now"], correctIndex: 1 },
+    { audio: "../assets/songs/3.mp3",  options: ["Gorillaz — Clint Eastwood", "The Killers — Mr. Brightside", "Gorillaz — Feel Good Inc.", "Franz Ferdinand — Take Me Out"], correctIndex: 2 },
+    { audio: "../assets/songs/4.mp3",  options: ["The Weeknd — Blinding Lights", "Daft Punk — Get Lucky", "Bruno Mars — That’s What I Like", "The Weeknd feat. Daft Punk — Starboy"], correctIndex: 3 },
+    { audio: "../assets/songs/5.mp3",  options: ["Ed Sheeran — Shape of You", "Justin Bieber — Sorry", "Ed Sheeran — Thinking Out Loud", "Charlie Puth — Attention"], correctIndex: 0 },
+    { audio: "../assets/songs/6.mp3",  options: ["Lewis Capaldi — Someone You Loved", "Tones and I — Dance Monkey", "Marshmello feat. Bastille — Happier", "Shawn Mendes & Camila Cabello — Señorita"], correctIndex: 1 },
+    { audio: "../assets/songs/7.mp3",  options: ["Camila Cabello — Havana", "Enrique Iglesias — Bailando", "Luis Fonsi feat. Daddy Yankee — Despacito", "J Balvin & Willy William — Mi Gente"], correctIndex: 2 },
+    { audio: "../assets/songs/8.mp3",  options: ["Lil Nas X — Panini", "Drake — God’s Plan", "Travis Scott — SICKO MODE", "Lil Nas X — Old Town Road"], correctIndex: 3 },
+    { audio: "../assets/songs/9.mp3",  options: ["ROSÉ & Bruno Mars — APT.", "Justin Bieber — Believe", "Miley Cyrus — Flowers", "Bruno Mars — Locked Out of Heaven"], correctIndex: 0 },
     { audio: "../assets/songs/10.mp3", options: ["Stromae — Papaoutai", "Stromae — Alors on danse", "Stromae — Formidable", "Stromae — Tous les mêmes"], correctIndex: 1 },
   ];
 
@@ -97,12 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultPanel = document.getElementById("resultPanel");
 
   const qTitle = document.getElementById("qTitle");
-  const progressText = document.getElementById("progressText");
-
-  // ✅ FIXED IDs (match song.html)
-  const quizProgFill = document.getElementById("quizProgFill");
-  const quizProgPct  = document.getElementById("quizProgPct");
-
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
 
@@ -121,13 +122,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
-  const criticalOk = !!(quizPanel && qTitle && progressText && optionsEl && nextBtn && audio && quizProgFill && quizProgPct);
-  if (!criticalOk){
+  const criticalOk = !!(quizPanel && qTitle && optionsEl && nextBtn && audio);
+  if (!criticalOk) {
     console.error("[Song Quiz] Missing critical DOM nodes. Check IDs in song.html.");
     return;
   }
 
-  let idx = 0;              // next question index (0..9)
+  let idx = 0;
   let correct = 0;
   let selectedIndex = null;
   let answers = [];
@@ -135,8 +136,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const savedRes = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
   const done = localStorage.getItem(MB_KEYS.doneSong) === "1";
 
-  if (done && savedRes){
-    if (!savedRes.id){
+  if (done && savedRes) {
+    if (!savedRes.id) {
       savedRes.id = ensureResultId(QUIZ_CARD.idPrefix, savedRes.id);
       localStorage.setItem(MB_KEYS.resSong, JSON.stringify(savedRes));
     }
@@ -144,25 +145,23 @@ document.addEventListener("DOMContentLoaded", () => {
     showResult(savedRes);
   } else {
     const prog = loadProgressSong();
-    if (prog){
+    if (prog) {
       idx = prog.idx;
       correct = prog.correct;
       answers = prog.answers;
     }
-
-    // IMPORTANT: do NOT store progress for idx=0 as "started"
-    // It will start showing only after first answered (idx becomes 1)
+    saveProgressSong(idx, correct, answers);
     renderQuestion();
   }
 
   window.addEventListener("beforeunload", () => {
-    if (localStorage.getItem(MB_KEYS.doneSong) !== "1"){
+    if (localStorage.getItem(MB_KEYS.doneSong) !== "1") {
       saveProgressSong(idx, correct, answers);
     }
   });
 
   playBtn?.addEventListener("click", async () => {
-    try{
+    try {
       if (audio.paused) await audio.play();
       else audio.pause();
     } catch {}
@@ -175,32 +174,32 @@ document.addEventListener("DOMContentLoaded", () => {
   audio.addEventListener("loadedmetadata", updateTime);
   audio.addEventListener("timeupdate", () => {
     updateTime();
-    if (!isNaN(audio.duration) && audio.duration > 0 && seekBar){
+    if (!isNaN(audio.duration) && audio.duration > 0 && seekBar) {
       seekBar.value = String(Math.round((audio.currentTime / audio.duration) * 100));
     }
   });
 
   seekBar?.addEventListener("input", () => {
-    if (!isNaN(audio.duration) && audio.duration > 0){
+    if (!isNaN(audio.duration) && audio.duration > 0) {
       const t = (Number(seekBar.value) / 100) * audio.duration;
       audio.currentTime = t;
     }
   });
 
-  function syncPlayIcon(){
+  function syncPlayIcon() {
     if (playBtn) playBtn.textContent = audio.paused ? "▶" : "⏸";
   }
-  function formatTime(s){
+  function formatTime(s) {
     if (!isFinite(s)) return "0:00";
     const m = Math.floor(s / 60);
     const r = Math.floor(s % 60);
-    return `${m}:${String(r).padStart(2,"0")}`;
+    return `${m}:${String(r).padStart(2, "0")}`;
   }
-  function updateTime(){
+  function updateTime() {
     if (playerTime) playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   }
 
-  function renderQuestion(){
+  function renderQuestion() {
     const q = QUESTIONS[idx];
     if (!q) return;
 
@@ -208,20 +207,8 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBtn.disabled = true;
     nextBtn.classList.remove("isShow");
 
-    const total = QUESTIONS.length;
+    qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
 
-    // UI: current question number
-    qTitle.textContent = `Question ${idx + 1} of ${total}`;
-
-    // ✅ PROGRESS = answered count
-    const answered = idx; // because idx is "next question"
-    progressText.textContent = `Progress: ${answered} / ${total}`;
-
-    const pct = Math.round((answered / total) * 100);
-    quizProgFill.style.width = `${pct}%`;
-    quizProgPct.textContent = `${pct}%`;
-
-    // player reset
     audio.pause();
     audio.currentTime = 0;
     audio.src = q.audio || "";
@@ -230,11 +217,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (playerTime) playerTime.textContent = "0:00 / 0:00";
 
     optionsEl.innerHTML = "";
-    (q.options || ["A","B","C","D"]).forEach((label, i) => {
+    (q.options || ["A", "B", "C", "D"]).forEach((label, i) => {
       const btn = document.createElement("button");
       btn.className = "optionBtn";
       btn.type = "button";
-      btn.textContent = `${String.fromCharCode(65+i)}) ${label}`;
+      btn.textContent = `${String.fromCharCode(65 + i)}) ${label}`;
       btn.addEventListener("click", () => {
         selectedIndex = i;
         updateSelectedUI();
@@ -244,11 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
       optionsEl.appendChild(btn);
     });
 
-    // Save state (home will show progress only after first answer, because answered=0 doesn't display)
+    // keep HOME progress updated
     saveProgressSong(idx, correct, answers);
   }
 
-  function updateSelectedUI(){
+  function updateSelectedUI() {
     [...optionsEl.querySelectorAll(".optionBtn")].forEach((b, i) => {
       b.classList.toggle("isSelected", i === selectedIndex);
     });
@@ -264,13 +251,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     idx++;
 
-    if (idx < QUESTIONS.length){
+    if (idx < QUESTIONS.length) {
       saveProgressSong(idx, correct, answers);
       renderQuestion();
       return;
     }
 
-    // finished
     const total = QUESTIONS.length;
     const acc = Math.round((correct / total) * 100);
     const p = getProfile();
@@ -291,14 +277,14 @@ document.addEventListener("DOMContentLoaded", () => {
     showResult(result);
   });
 
-  function showResult(result){
+  function showResult(result) {
     quizPanel.style.display = "none";
     if (resultPanel) resultPanel.style.display = "block";
 
-    rName && (rName.textContent = result.name || "Player");
-    rTotal && (rTotal.textContent = String(result.total));
-    rCorrect && (rCorrect.textContent = String(result.correct));
-    rAcc && (rAcc.textContent = `${result.acc}%`);
+    if (rName) rName.textContent = result.name || "Player";
+    if (rTotal) rTotal.textContent = String(result.total);
+    if (rCorrect) rCorrect.textContent = String(result.correct);
+    if (rAcc) rAcc.textContent = `${result.acc}%`;
   }
 
   genBtn?.addEventListener("click", async () => {
@@ -322,17 +308,17 @@ document.addEventListener("DOMContentLoaded", () => {
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
 
-    try{
+    try {
       const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
       localStorage.setItem(MB_KEYS.prevSong, prev);
       localStorage.removeItem("mb_png_song");
-    }catch(e){
+    } catch (e) {
       console.warn("Song preview save failed:", e);
-      try{ localStorage.removeItem(MB_KEYS.prevSong); }catch{}
+      try { localStorage.removeItem(MB_KEYS.prevSong); } catch {}
     }
 
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
-    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
+    cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   dlBtn?.addEventListener("click", async () => {
@@ -363,16 +349,16 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================
-   CANVAS DRAW (Song) - YOURS (unchanged)
+   CANVAS DRAW (Song) + helpers (unchanged)
 ========================= */
-async function drawQuizResultCard(canvas, d){
+async function drawQuizResultCard(canvas, d) {
   const ctx = canvas.getContext("2d");
 
   canvas.width = 1600;
   canvas.height = 900;
 
   const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0, 0, W, H);
 
   const card = { x: 0, y: 0, w: W, h: H, r: 96 };
 
@@ -380,11 +366,11 @@ async function drawQuizResultCard(canvas, d){
   ctx.fillStyle = "#BFC0C2";
   ctx.fill();
 
-  const vg = ctx.createRadialGradient(W*0.52, H*0.38, 140, W*0.52, H*0.38, W*0.95);
+  const vg = ctx.createRadialGradient(W * 0.52, H * 0.38, 140, W * 0.52, H * 0.38, W * 0.95);
   vg.addColorStop(0, "rgba(255,255,255,.22)");
   vg.addColorStop(1, "rgba(0,0,0,.12)");
   ctx.fillStyle = vg;
-  ctx.fillRect(0,0,W,H);
+  ctx.fillRect(0, 0, W, H);
 
   addNoise(ctx, 0, 0, W, H, 0.055);
 
@@ -396,9 +382,9 @@ async function drawQuizResultCard(canvas, d){
   if (logoBitmap) drawContainBitmap(ctx, logoBitmap, logoBox.x, logoBox.y, logoBox.w, logoBox.h);
 
   const title = d.title || "Guess the Song by the Melody";
-  const titleLeft  = logoBox.x + logoBox.w + 70;
+  const titleLeft = logoBox.x + logoBox.w + 70;
   const titleRight = W - padX;
-  const titleMaxW  = Math.max(260, titleRight - titleLeft);
+  const titleMaxW = Math.max(260, titleRight - titleLeft);
 
   const titleY = padTop + 10;
   ctx.fillStyle = "rgba(255,255,255,.92)";
@@ -418,7 +404,7 @@ async function drawQuizResultCard(canvas, d){
   ctx.restore();
 
   const leftColX = avatarBox.x + avatarBox.w + 120;
-  const rightX   = W - padX;
+  const rightX = W - padX;
 
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -463,7 +449,7 @@ async function drawQuizResultCard(canvas, d){
   ctx.fillStyle = "rgba(255,255,255,.92)";
   ctx.font = "900 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.textBaseline = "middle";
-  ctx.fillText(d.idText || "MB-MagicListener-XXXXX", pillX + 30, pillY + pillH/2);
+  ctx.fillText(d.idText || "MB-MagicListener-XXXXX", pillX + 30, pillY + pillH / 2);
 
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "rgba(0,0,0,.34)";
@@ -471,11 +457,11 @@ async function drawQuizResultCard(canvas, d){
   ctx.fillText(`Accuracy: ${d.acc}%`, avatarBox.x, H - 56);
 }
 
-async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn){
+async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn) {
   const prev = localStorage.getItem(previewKey);
   if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
 
-  try{
+  try {
     const img = new Image();
     await new Promise((res, rej) => {
       img.onload = res;
@@ -487,14 +473,14 @@ async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBt
     cardCanvas.height = img.naturalHeight || img.height;
 
     const ctx = cardCanvas.getContext("2d");
-    ctx.clearRect(0,0,cardCanvas.width,cardCanvas.height);
+    ctx.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
     ctx.drawImage(img, 0, 0);
 
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
     return true;
-  }catch(e){
+  } catch (e) {
     console.warn("restore song preview failed:", e);
     return false;
   }
@@ -515,19 +501,19 @@ function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
   return t.toDataURL("image/jpeg", quality);
 }
 
-function drawRoundedRect(ctx, x, y, w, h, r){
-  const rr = Math.min(r, w/2, h/2);
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
   ctx.beginPath();
-  ctx.moveTo(x+rr, y);
-  ctx.arcTo(x+w, y, x+w, y+h, rr);
-  ctx.arcTo(x+w, y+h, x, y+h, rr);
-  ctx.arcTo(x, y+h, x, y, rr);
-  ctx.arcTo(x, y, x+w, y, rr);
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
 }
 
-function fitText(ctx, text, maxPx, minPx, maxW, weight="900"){
-  for (let px=maxPx; px>=minPx; px--){
+function fitText(ctx, text, maxPx, minPx, maxW, weight = "900") {
+  for (let px = maxPx; px >= minPx; px--) {
     const f = `${weight} ${px}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
     ctx.font = f;
     if (ctx.measureText(text).width <= maxW) return f;
@@ -535,47 +521,47 @@ function fitText(ctx, text, maxPx, minPx, maxW, weight="900"){
   return `${weight} ${minPx}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
 }
 
-async function drawAvatarRounded(ctx, dataUrl, x, y, w, h, r){
+async function drawAvatarRounded(ctx, dataUrl, x, y, w, h, r) {
   ctx.save();
   drawRoundedRect(ctx, x, y, w, h, r);
   ctx.clip();
 
   ctx.fillStyle = "rgba(255,255,255,.18)";
-  ctx.fillRect(x,y,w,h);
+  ctx.fillRect(x, y, w, h);
 
-  if (dataUrl && dataUrl.startsWith("data:")){
+  if (dataUrl && dataUrl.startsWith("data:")) {
     const img = await loadImage(dataUrl);
     drawCoverImage(ctx, img, x, y, w, h);
   }
   ctx.restore();
 }
 
-function drawCoverImage(ctx, img, x, y, w, h){
+function drawCoverImage(ctx, img, x, y, w, h) {
   const sw = img.naturalWidth || img.width;
   const sh = img.naturalHeight || img.height;
   if (!sw || !sh) return;
 
-  const s = Math.max(w/sw, h/sh);
-  const dw = sw*s;
-  const dh = sh*s;
-  const dx = x + (w - dw)/2;
-  const dy = y + (h - dh)/2;
+  const s = Math.max(w / sw, h / sh);
+  const dw = sw * s;
+  const dh = sh * s;
+  const dx = x + (w - dw) / 2;
+  const dy = y + (h - dh) / 2;
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
-function drawContainBitmap(ctx, bmp, x, y, w, h){
+function drawContainBitmap(ctx, bmp, x, y, w, h) {
   const sw = bmp.width, sh = bmp.height;
   if (!sw || !sh) return;
 
-  const s = Math.min(w/sw, h/sh);
-  const dw = sw*s;
-  const dh = sh*s;
-  const dx = x + (w - dw)/2;
-  const dy = y + (h - dh)/2;
+  const s = Math.min(w / sw, h / sh);
+  const dw = sw * s;
+  const dh = sh * s;
+  const dx = x + (w - dw) / 2;
+  const dy = y + (h - dh) / 2;
   ctx.drawImage(bmp, dx, dy, dw, dh);
 }
 
-function loadImage(src){
+function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
@@ -584,7 +570,7 @@ function loadImage(src){
   });
 }
 
-async function loadWebmFrameAsBitmap(src, t=0.05){
+async function loadWebmFrameAsBitmap(src, t = 0.05) {
   return new Promise((resolve) => {
     const v = document.createElement("video");
     v.muted = true;
@@ -594,21 +580,21 @@ async function loadWebmFrameAsBitmap(src, t=0.05){
     v.src = src;
 
     const cleanup = () => {
-      try{ v.pause(); }catch{}
+      try { v.pause(); } catch {}
       v.src = "";
     };
 
-    v.addEventListener("error", () => { cleanup(); resolve(null); }, { once:true });
+    v.addEventListener("error", () => { cleanup(); resolve(null); }, { once: true });
 
     v.addEventListener("loadedmetadata", async () => {
-      try{
+      try {
         const tt = Math.min(Math.max(t, 0), Math.max(0.01, (v.duration || 1) - 0.01));
         v.currentTime = tt;
 
         v.addEventListener("seeked", async () => {
-          try{
+          try {
             const vw = v.videoWidth, vh = v.videoHeight;
-            if (!vw || !vh){ cleanup(); resolve(null); return; }
+            if (!vw || !vh) { cleanup(); resolve(null); return; }
 
             const c = document.createElement("canvas");
             c.width = vw; c.height = vh;
@@ -621,29 +607,29 @@ async function loadWebmFrameAsBitmap(src, t=0.05){
             cleanup();
             resolve(null);
           }
-        }, { once:true });
+        }, { once: true });
 
       } catch {
         cleanup();
         resolve(null);
       }
-    }, { once:true });
+    }, { once: true });
   });
 }
 
-function addNoise(ctx, x, y, w, h, alpha=0.06){
-  const img = ctx.getImageData(x,y,w,h);
+function addNoise(ctx, x, y, w, h, alpha = 0.06) {
+  const img = ctx.getImageData(x, y, w, h);
   const d = img.data;
-  for (let i=0; i<d.length; i+=4){
-    const n = (Math.random()*255)|0;
-    d[i]   = d[i]   + (n - 128)*alpha;
-    d[i+1] = d[i+1] + (n - 128)*alpha;
-    d[i+2] = d[i+2] + (n - 128)*alpha;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (Math.random() * 255) | 0;
+    d[i] = d[i] + (n - 128) * alpha;
+    d[i + 1] = d[i + 1] + (n - 128) * alpha;
+    d[i + 2] = d[i + 2] + (n - 128) * alpha;
   }
   ctx.putImageData(img, x, y);
 }
 
-function renderTopProfile(){
+function renderTopProfile() {
   const pill = document.getElementById("profilePill");
   if (!pill) return;
 
@@ -652,7 +638,7 @@ function renderTopProfile(){
   const hintEl = pill.querySelector("[data-profile-hint]");
 
   const p = safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
-  if (!p){
+  if (!p) {
     if (img) img.src = "";
     if (nameEl) nameEl.textContent = "No profile";
     if (hintEl) hintEl.textContent = "Go Home";
