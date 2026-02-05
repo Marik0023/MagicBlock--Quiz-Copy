@@ -3,7 +3,6 @@ const MB_KEYS = {
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
   prevSong: "mb_prev_song",
-  progSong: "mb_prog_song",
 };
 
 const QUIZ_CARD = {
@@ -13,38 +12,6 @@ const QUIZ_CARD = {
 
 function safeJSONParse(v, fallback=null){ try{return JSON.parse(v)}catch{return fallback} }
 function getProfile(){ return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null); }
-
-// Storage can get full because previews are big (data URLs). If that happens,
-// clear ONLY preview items and retry saves.
-function clearBigPreviews(){
-  const keys = [
-    "mb_prev_song",
-    "mb_prev_movie",
-    "mb_prev_magicblock",
-    "mb_champ_png",
-    // legacy keys (older builds)
-    "mb_png_song",
-    "mb_png_movie",
-    "mb_png_magicblock",
-  ];
-  keys.forEach(k => { try{ localStorage.removeItem(k); }catch{} });
-}
-
-function safeLSSet(key, value){
-  try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch (e) {
-    // quota full -> clear previews and retry once
-    try{ clearBigPreviews(); }catch{}
-    try{
-      localStorage.setItem(key, value);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
 
 function forcePlayAll(selector){
   const vids = document.querySelectorAll(selector);
@@ -89,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
-  const progressFill = document.getElementById("progressFill");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
 
@@ -104,9 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const rAcc = document.getElementById("rAcc");
 
   const genBtn = document.getElementById("genBtn");
-  const progressNotice = document.getElementById("progressNotice");
-  const progressTextNote = document.getElementById("progressTextNote");
-    const cardZone = document.getElementById("cardZone");
+  const cardZone = document.getElementById("cardZone");
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
@@ -119,7 +83,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let idx = 0;
   let correct = 0;
   let selectedIndex = null;
-  let answers = [];
 
   playBtn?.addEventListener("click", async () => {
     try{
@@ -162,65 +125,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
   const done = localStorage.getItem(MB_KEYS.doneSong) === "1";
-  const prog = safeJSONParse(localStorage.getItem(MB_KEYS.progSong), null);
 
-  if (restartProgressBtn){
-        });
-  }
-
-  if (done){
-    if (saved){
-      if (!saved.id){
-        saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
-        safeLSSet(MB_KEYS.resSong, JSON.stringify(saved));
-      }
-      showResult(saved);
-    } else {
-      // Edge case: marked completed but result missing (often quota/full localStorage).
-      // Try to reconstruct from progress so the quiz stays "once".
-      const p = getProfile();
-      const total = QUESTIONS.length;
-      let rebuilt = null;
-      if (prog && Array.isArray(prog.answers) && prog.answers.length){
-        const fixedAnswers = prog.answers.slice(0, total).map(a => a || null);
-        const c = fixedAnswers.filter(a => a && a.isCorrect).length;
-        rebuilt = {
-          total,
-          correct: c,
-          acc: total ? Math.round((c/total)*100) : 0,
-          name: p?.name || "Player",
-          id: ensureResultId(QUIZ_CARD.idPrefix, null),
-          ts: Date.now(),
-          answers: fixedAnswers,
-          missing: true
-        };
-      } else {
-        rebuilt = {
-          total,
-          correct: 0,
-          acc: 0,
-          name: p?.name || "Player",
-          id: ensureResultId(QUIZ_CARD.idPrefix, null),
-          ts: Date.now(),
-          answers: [],
-          missing: true
-        };
-      }
-      const rebuiltStr = JSON.stringify(rebuilt);
-      safeLSSet(MB_KEYS.resSong, rebuiltStr);
-      showResult(rebuilt);
+  if (done && saved){
+    if (!saved.id){
+      saved.id = ensureResultId(QUIZ_CARD.idPrefix, saved.id);
+      localStorage.setItem(MB_KEYS.resSong, JSON.stringify(saved));
     }
+    showResult(saved);
   } else {
-    // ✅ Restore in-progress attempt (if user closed the tab mid-quiz)
-    if (prog && typeof prog.idx === "number" && prog.idx > 0 && prog.idx < QUESTIONS.length){
-      idx = Math.floor(prog.idx);
-      correct = Math.max(0, Math.floor(prog.correct || 0));
-      answers = Array.isArray(prog.answers) ? prog.answers : [];
-      if (progressNotice){
-        progressNotice.style.display = "flex";
-        if (progressTextNote) progressTextNote.textContent = `Progress restored — continue from Q${idx + 1} / ${QUESTIONS.length}`;
-      }
-    }
     renderQuestion();
   }
 
@@ -264,29 +176,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function saveProgress(){
-    const payload = JSON.stringify({ idx, correct, answers, ts: Date.now() });
-    if (!safeLSSet(MB_KEYS.progSong, payload)){
-      // If we still can't save, drop progress silently.
-      try{ localStorage.removeItem(MB_KEYS.progSong); }catch{}
-    }
-  }
-
   nextBtn.addEventListener("click", () => {
     if (selectedIndex === null) return;
 
     const q = QUESTIONS[idx];
-    // store per-question answer (for review)
-    answers[idx] = {
-      q: `Question ${idx + 1}`,
-      options: q.options,
-      selected: selectedIndex,
-      correct: q.correctIndex
-    };
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
-    saveProgress();
     if (idx < QUESTIONS.length){
       renderQuestion();
       return;
@@ -302,18 +198,11 @@ document.addEventListener("DOMContentLoaded", () => {
       acc,
       name: p?.name || "Player",
       id: ensureResultId(QUIZ_CARD.idPrefix, saved?.id || null),
-      // ✅ keep per-question review
-      answers,
       ts: Date.now()
     };
 
-    // Mark completed, but be robust to quota errors.
-    // If quota is full, we clear previews and retry so we don't lose results.
-    if (!safeLSSet(MB_KEYS.doneSong, "1")) {
-      // worst case: still allow showing result in UI
-    }
-    safeLSSet(MB_KEYS.resSong, JSON.stringify(result));
-    try { localStorage.removeItem(MB_KEYS.progSong); } catch {}
+    localStorage.setItem(MB_KEYS.doneSong, "1");
+    localStorage.setItem(MB_KEYS.resSong, JSON.stringify(result));
     showResult(result);
   });
 
@@ -325,64 +214,71 @@ document.addEventListener("DOMContentLoaded", () => {
     rTotal && (rTotal.textContent = String(result.total));
     rCorrect && (rCorrect.textContent = String(result.correct));
     rAcc && (rAcc.textContent = `${result.acc}%`);
-
-    // ✅ Question review
-    const reviewWrap = document.getElementById("reviewWrap");
-    const reviewList = document.getElementById("reviewList");
-    if (reviewWrap && reviewList && Array.isArray(result.answers)){
-      reviewWrap.style.display = "block";
-      renderReviewList(reviewList, result.answers);
-    }
   }
 
-  function renderReviewList(container, list){
-    if (!container) return;
-    const items = Array.isArray(list) ? list.filter(Boolean) : [];
-    if (!items.length){
-      container.innerHTML = "";
-      return;
+  genBtn?.addEventListener("click", async () => {
+    if (!cardCanvas) return;
+
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
+    if (!r) return;
+
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_CARD.title,
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+      logoSrc: "../assets/logo.webm",
+    });
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+
+    // save SMALL preview (520px)
+    try{
+      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
+      localStorage.setItem(MB_KEYS.prevSong, prev);
+      localStorage.removeItem("mb_png_song");
+    }catch(e){
+      console.warn("Song preview save failed:", e);
+      try{ localStorage.removeItem(MB_KEYS.prevSong); }catch{}
     }
 
-    container.innerHTML = `
-      <div class="reviewBox">
-        <div class="reviewHead">Question review</div>
-        <div class="reviewGrid">
-          <div class="reviewHead">Q</div>
-          <div class="reviewHead"></div>
-          <div class="reviewHead">Your answer</div>
-          <div class="reviewHead hideOnMobile reviewHead">Correct</div>
-        </div>
-      </div>
-    `;
-
-    const grid = container.querySelector(".reviewGrid");
-    items.forEach((a, i) => {
-      const ok = a.selected === a.correct;
-      const selText = (a.options && a.options[a.selected]) ? a.options[a.selected] : "—";
-      const corText = (a.options && a.options[a.correct]) ? a.options[a.correct] : "—";
-
-      const q = document.createElement("div");
-      q.className = "reviewQ reviewRow";
-      q.textContent = `Q${i + 1}`;
-
-      const icon = document.createElement("div");
-      icon.className = "reviewIcon reviewRow";
-      icon.textContent = ok ? "✅" : "❌";
-
-      const your = document.createElement("div");
-      your.className = "reviewYour reviewRow";
-      your.innerHTML = `<div>${selText}</div>${ok ? "" : `<div class="reviewMuted">Correct: ${corText}</div>`}`;
-
-      const correct = document.createElement("div");
-      correct.className = "reviewCorrect reviewRow reviewCorrectCol";
-      correct.textContent = corText;
-
-      grid.appendChild(q);
-      grid.appendChild(icon);
-      grid.appendChild(your);
-      grid.appendChild(correct);
-    });
+    if (genBtn) genBtn.textContent = "Regenerate Result Card";
+    cardZone?.scrollIntoView({ behavior:"smooth", block:"start" });
   });
+
+  dlBtn?.addEventListener("click", async () => {
+    if (!cardCanvas) return;
+
+    const p = getProfile();
+    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resSong), null);
+    if (!r) return;
+
+    // ✅ always redraw full-res before download
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_CARD.title,
+      name: p?.name || "Player",
+      avatar: p?.avatar || "",
+      correct: r.correct,
+      total: r.total,
+      acc: r.acc,
+      idText: r.id || ensureResultId(QUIZ_CARD.idPrefix, null),
+      logoSrc: "../assets/logo.webm",
+    });
+
+    const a = document.createElement("a");
+    a.download = "magicblock-song-result.png";
+    a.href = cardCanvas.toDataURL("image/png");
+    a.click();
+  });
+
+  // ✅ auto-restore preview on load (NO UPSCALE)
+  restoreQuizPreview(MB_KEYS.prevSong, cardCanvas, cardZone, dlBtn, genBtn);
+});
 
 /* =========================
    CANVAS DRAW (Song)
