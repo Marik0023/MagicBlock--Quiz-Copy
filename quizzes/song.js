@@ -96,6 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const qTitle = document.getElementById("qTitle");
   const progressText = document.getElementById("progressText");
+  const progFill = document.getElementById("progFill");
+  const progPct  = document.getElementById("progPct");
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
 
@@ -206,6 +208,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
     progressText.textContent = `Progress: ${idx + 1} / ${QUESTIONS.length}`;
+    // ✅ progress bar
+    const pct = Math.round(((idx + 1) / QUESTIONS.length) * 100);
+    if (progFill) progFill.style.width = `${pct}%`;
+    if (progPct)  progPct.textContent = `${pct}%`;
 
     audio.pause();
     audio.currentTime = 0;
