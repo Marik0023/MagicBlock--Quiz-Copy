@@ -1215,7 +1215,8 @@ body.mbQuiz .cardActions{
   margin: 0 0 14px 0;
 }
 
-/* ===== Answer Review (Result panel) — FINAL ===== */
+/* ===== Answer Review (Result panel) ===== */
+
 .mbQuiz .reviewBox{
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.18);
@@ -1245,9 +1246,9 @@ body.mbQuiz .cardActions{
 /* один рядок */
 .mbQuiz .reviewItem{
   display: grid;
-  grid-template-columns: 140px 1fr;  /* ширше, щоб не ламало */
+  grid-template-columns: 140px 1fr; /* ✅ рівний лівий бейдж */
   gap: 14px;
-  align-items: start;
+  align-items: center;
 
   padding: 12px 14px;
   border-radius: 16px;
@@ -1261,8 +1262,8 @@ body.mbQuiz .cardActions{
   align-items: center;
   justify-content: center;
 
-  height: 34px;
-  padding: 0 12px;
+  width: 140px;        /* ✅ фіксована ширина = рівно як у movie */
+  height: 36px;
 
   border-radius: 999px;
   background: rgba(0,0,0,.28);
@@ -1271,7 +1272,7 @@ body.mbQuiz .cardActions{
   font-weight: 900;
   font-size: 12px;
   color: rgba(255,255,255,.78);
-  letter-spacing: .6px;
+  letter-spacing: .9px;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -1284,7 +1285,7 @@ body.mbQuiz .cardActions{
   color: rgba(255,255,255,.92);
 }
 
-/* текст питання під відповіддю */
+/* текст питання під відповіддю (якщо будеш додавати) */
 .mbQuiz .reviewHint{
   margin-top: 6px;
   font-size: 13px;
@@ -1308,9 +1309,11 @@ body.mbQuiz .cardActions{
 @media (max-width: 720px){
   .mbQuiz .reviewItem{
     grid-template-columns: 1fr;
+    align-items: start;
   }
   .mbQuiz .reviewQ{
+    width: fit-content;     /* ✅ на мобілці не тягнемо на всю ширину */
     justify-content: flex-start;
-    width: fit-content;
+    padding: 0 12px;        /* ✅ щоб pill виглядав норм */
   }
 }
