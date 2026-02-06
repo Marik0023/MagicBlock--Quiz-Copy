@@ -1,5 +1,3 @@
-// quizzes/magicblock.js
-
 const MB_KEYS = {
   profile: "mb_profile",
 
@@ -8,10 +6,9 @@ const MB_KEYS = {
   prevMagic: "mb_prev_magicblock",
 
   progMagic: "mb_prog_magicblock",
-  progMagicState: "mb_prog_magicblock_state", // JSON { idx, correct, answers }
+  progMagicState: "mb_prog_magicblock_state",
 
-  // ✅ Answer Review: hide forever after Generate
-  reviewMagicHidden: "mb_review_magicblock_hidden",
+  reviewHiddenMagic: "mb_review_hidden_magicblock",
 };
 
 const QUIZ_CARD = {
@@ -50,7 +47,7 @@ function ensureResultId(prefix, existing) {
 function saveProgressMagic(idx0, correct, answers) {
   const total = 10;
   const idx = Math.max(0, Math.min(total - 1, Number(idx0) || 0));
-  const qNum = Math.max(1, Math.min(total, idx + 1)); // 1..10
+  const qNum = Math.max(1, Math.min(total, idx + 1));
 
   localStorage.setItem(MB_KEYS.progMagic, String(qNum));
   localStorage.setItem(
@@ -97,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { text: "On what date did the MagicBlock presale start?", options: ["February 5 [2026]", "February 1 [2026]", "February 5 [2025]", "Will start on March 5"], correctIndex: 0 },
     { text: "Why does MagicBlock argue “custom chain” approaches can hurt DePIN projects?", options: ["They remove smart contracts", "They make Solana unusable", "They fragment liquidity and add complexity", "They require proof-of-work mining"], correctIndex: 2 },
     { text: "What does MagicBlock claim “on-chain coordination” improves for infrastructure networks?", options: ["Trust, because actions are verifiable and tamper-proof on Solana", "It reduces hardware costs to zero", "It guarantees anonymity for all participants", "It eliminates the need for tokens"], correctIndex: 0 },
-    { text: "What does MagicBlock call its privacy-enabled rollup design?", options: [" Private Execution Chain (PEC)", "Encrypted Settlement Layer (ESL)", "Confidential Sidechain Runtime (CSR)", "Private Ephemeral Rollup (PER)"], correctIndex: 3 },
+    { text: "What does MagicBlock call its privacy-enabled rollup design?", options: ["Private Execution Chain (PEC)", "Encrypted Settlement Layer (ESL)", "Confidential Sidechain Runtime (CSR)", "Private Ephemeral Rollup (PER)"], correctIndex: 3 },
     { text: "What is the total supply of the $BLOCK token?", options: ["1,000,000,000", "100,000,000,000", "10,000,000,000", "5,000,000,000"], correctIndex: 1 },
   ];
 
@@ -119,7 +116,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
-  // ✅ review elements (must exist in HTML)
   const reviewBox = document.getElementById("reviewBox");
   const reviewList = document.getElementById("reviewList");
 
@@ -127,60 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!criticalOk) {
     console.error("[MagicBlock Quiz] Missing critical DOM nodes. Check IDs in magicblock.html.");
     return;
-  }
-
-  // ===== Review helpers =====
-  function showReview() {
-    if (!reviewBox) return;
-    reviewBox.style.display = "block";
-    reviewBox.classList.remove("isHidden");
-    reviewBox.classList.remove("isGone");
-  }
-
-  function hideReviewAnimatedForever() {
-    localStorage.setItem(MB_KEYS.reviewMagicHidden, "1");
-    if (!reviewBox) return;
-
-    reviewBox.classList.add("isHidden");
-    window.setTimeout(() => {
-      reviewBox.classList.add("isGone");
-      reviewBox.style.display = "none";
-    }, 220);
-  }
-
-  function renderAnswerReviewMagic() {
-    if (!reviewBox || !reviewList) return;
-
-    const hidden = localStorage.getItem(MB_KEYS.reviewMagicHidden) === "1";
-    if (hidden) {
-      reviewBox.classList.add("isGone");
-      reviewBox.style.display = "none";
-      return;
-    }
-
-    reviewList.innerHTML = "";
-
-    QUESTIONS.forEach((q, i) => {
-      const questionTextFull = q.text || `Question ${i + 1} of ${QUESTIONS.length}`;
-      const correctLabel = q.options?.[q.correctIndex] ?? "—";
-
-      const item = document.createElement("div");
-      item.className = "reviewItem";
-
-      const qEl = document.createElement("div");
-      qEl.className = "reviewQ";
-      qEl.textContent = questionTextFull;
-
-      const aEl = document.createElement("div");
-      aEl.className = "reviewA";
-      aEl.textContent = correctLabel;
-
-      item.appendChild(qEl);
-      item.appendChild(aEl);
-      reviewList.appendChild(item);
-    });
-
-    showReview();
   }
 
   let idx = 0;
@@ -191,6 +133,50 @@ document.addEventListener("DOMContentLoaded", () => {
   const savedRes = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
   const done = localStorage.getItem(MB_KEYS.doneMagic) === "1";
 
+  // ===== Answer Review render =====
+  function renderAnswerReviewMagic() {
+    if (!reviewBox || !reviewList) return;
+
+    if (localStorage.getItem(MB_KEYS.reviewHiddenMagic) === "1") {
+      reviewBox.classList.add("isGone");
+      return;
+    }
+
+    reviewList.innerHTML = "";
+
+    QUESTIONS.forEach((q, i) => {
+      const correctLabel = q.options?.[q.correctIndex] ?? "—";
+      const question = q.text || "—";
+
+      const item = document.createElement("div");
+      item.className = "reviewItem";
+
+      const qEl = document.createElement("div");
+      qEl.className = "reviewQ";
+      qEl.textContent = `Question ${i + 1}`;
+
+      const right = document.createElement("div");
+
+      const aEl = document.createElement("div");
+      aEl.className = "reviewA";
+      aEl.textContent = correctLabel;
+
+      const hint = document.createElement("div");
+      hint.className = "reviewHint";
+      hint.textContent = question;
+
+      right.appendChild(aEl);
+      right.appendChild(hint);
+
+      item.appendChild(qEl);
+      item.appendChild(right);
+      reviewList.appendChild(item);
+    });
+
+    reviewBox.classList.remove("isHidden", "isGone");
+  }
+
+  // If completed => show result
   if (done && savedRes) {
     if (!savedRes.id) {
       savedRes.id = ensureResultId(QUIZ_CARD.idPrefix, savedRes.id);
@@ -300,17 +286,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rCorrect) rCorrect.textContent = String(result.correct);
     if (rAcc) rAcc.textContent = `${result.acc}%`;
 
-    const hidden = localStorage.getItem(MB_KEYS.reviewMagicHidden) === "1";
-    if (!hidden) renderAnswerReviewMagic();
-    else if (reviewBox) {
-      reviewBox.classList.add("isGone");
-      reviewBox.style.display = "none";
-    }
+    renderAnswerReviewMagic();
   }
 
   genBtn?.addEventListener("click", async () => {
-    // ✅ hide forever
-    hideReviewAnimatedForever();
+    // Hide review назавжди
+    if (reviewBox && !reviewBox.classList.contains("isGone")) {
+      reviewBox.classList.add("isHidden");
+      setTimeout(() => reviewBox.classList.add("isGone"), 220);
+    }
+    localStorage.setItem(MB_KEYS.reviewHiddenMagic, "1");
 
     const p = getProfile();
     const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
@@ -370,31 +355,9 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreQuizPreview(MB_KEYS.prevMagic, cardCanvas, cardZone, dlBtn, genBtn);
 });
 
-/* ===== Top profile pill ===== */
-function renderTopProfile() {
-  const pill = document.getElementById("profilePill");
-  if (!pill) return;
-
-  const img = pill.querySelector("img");
-  const nameEl = pill.querySelector("[data-profile-name]");
-  const hintEl = pill.querySelector("[data-profile-hint]");
-
-  const p = safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
-  if (!p) {
-    if (img) img.src = "";
-    if (nameEl) nameEl.textContent = "No profile";
-    if (hintEl) hintEl.textContent = "Go Home";
-    pill.addEventListener("click", () => location.href = "../index.html");
-    return;
-  }
-
-  if (img) img.src = p.avatar || "";
-  if (nameEl) nameEl.textContent = p.name || "Player";
-  if (hintEl) hintEl.textContent = "Edit on Home";
-  pill.addEventListener("click", () => location.href = "../index.html");
-}
-
-/* ===== preview helpers + canvas helpers (unchanged, keep your existing ones) ===== */
+/* =========================
+   PREVIEW RESTORE
+========================= */
 async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn) {
   const prev = localStorage.getItem(previewKey);
   if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
