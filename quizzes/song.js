@@ -1,10 +1,14 @@
+// quizzes/song.js
+
 const MB_KEYS = {
   profile: "mb_profile",
   doneSong: "mb_done_song",
   resSong: "mb_result_song",
   prevSong: "mb_prev_song",
+
+  // HOME progress
   progSong: "mb_prog_song",
-  progSongState: "mb_prog_song_state",
+  progSongState: "mb_prog_song_state", // JSON { idx, correct, answers }
 };
 
 const QUIZ_CARD = {
@@ -67,7 +71,11 @@ function loadProgressSong() {
   const correct = Number.isFinite(state?.correct) ? state.correct : 0;
   const answers = Array.isArray(state?.answers) ? state.answers : [];
 
-  return { idx: Math.max(0, Math.min(9, idx)), correct, answers };
+  return {
+    idx: Math.max(0, Math.min(9, idx)),
+    correct,
+    answers,
+  };
 }
 
 function clearProgressSong() {
@@ -76,85 +84,23 @@ function clearProgressSong() {
 }
 
 /* =========================
-   VINYL — smooth rotation (no CSS animation)
+   VINYL helpers (smooth)
 ========================= */
-function createVinylController(audioEl, vinylEl, turnsPerTrack = 8) {
-  let raf = 0;
-  let playing = false;
-  let lastNow = 0;
-  let lastAudioTime = 0; // seconds
+function setVinylRotationByTime(audioEl, vinylEl, turns = 8, timeOverride = null) {
+  if (!audioEl || !vinylEl) return;
 
-  const clamp01 = (x) => Math.max(0, Math.min(1, x));
-
-  function baseDegAt(timeSec) {
-    const dur = audioEl.duration;
-    if (!isFinite(dur) || dur <= 0) return 0;
-    const p = clamp01(timeSec / dur);
-    return p * 360 * turnsPerTrack;
+  const dur = audioEl.duration;
+  if (!isFinite(dur) || dur <= 0) {
+    vinylEl.style.transform = "rotate(0deg)";
+    return;
   }
 
-  function applyDeg(deg) {
-    if (!vinylEl) return;
-    vinylEl.style.transform = `rotate(${deg}deg)`;
-  }
+  const t = (timeOverride == null) ? (audioEl.currentTime || 0) : timeOverride;
+  const clampedT = Math.max(0, Math.min(dur, t));
+  const p = clampedT / dur; // 0..1
 
-  function tick(now) {
-    if (!playing) return;
-
-    const dur = audioEl.duration;
-    if (!isFinite(dur) || dur <= 0) {
-      applyDeg(0);
-      raf = requestAnimationFrame(tick);
-      return;
-    }
-
-    // інтерполяція між timeupdate: додаємо “віртуальний” приріст часу
-    const dt = (now - lastNow) / 1000;
-    lastNow = now;
-
-    // приблизний поточний час (плавний)
-    const approxTime = Math.min(dur, lastAudioTime + dt * (audioEl.playbackRate || 1));
-    const deg = baseDegAt(approxTime);
-
-    applyDeg(deg);
-    raf = requestAnimationFrame(tick);
-  }
-
-  function syncToAudioTime() {
-    lastAudioTime = audioEl.currentTime || 0;
-    applyDeg(baseDegAt(lastAudioTime));
-  }
-
-  return {
-    onPlay() {
-      playing = true;
-      lastNow = performance.now();
-      lastAudioTime = audioEl.currentTime || 0;
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(tick);
-    },
-    onPause() {
-      playing = false;
-      cancelAnimationFrame(raf);
-      syncToAudioTime();
-    },
-    onTimeUpdate() {
-      // ловимо “реальний” currentTime, щоб інтерполяція не упливала
-      lastAudioTime = audioEl.currentTime || 0;
-      if (!playing) syncToAudioTime();
-    },
-    onSeek() {
-      lastAudioTime = audioEl.currentTime || 0;
-      syncToAudioTime();
-    },
-    onEndedOrReset() {
-      playing = false;
-      cancelAnimationFrame(raf);
-      lastAudioTime = 0;
-      applyDeg(0);
-    },
-    syncNow: syncToAudioTime,
-  };
+  const deg = p * 360 * turns;
+  vinylEl.style.transform = `rotate(${deg}deg)`;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -204,9 +150,81 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const TURNS_PER_TRACK = 8; // можеш 6/10/12
-  const vinylCtl = createVinylController(audio, vinyl, TURNS_PER_TRACK);
+  // 🔧 тут регулюєш “скільки обертів за весь трек”
+  const TURNS_PER_TRACK = 10; // 8/10/12 — вибери як подобається
 
+  // --- smooth clock: робить rotation плавним, навіть якщо audio.currentTime оновлюється ривками ---
+  const smooth = { running: false, baseT: 0, baseP: 0 };
+
+  function smoothStart() {
+    smooth.running = true;
+    smooth.baseT = audio.currentTime || 0;
+    smooth.baseP = performance.now();
+  }
+  function smoothStop() {
+    smooth.running = false;
+  }
+  function smoothResync() {
+    smooth.baseT = audio.currentTime || 0;
+    smooth.baseP = performance.now();
+  }
+  function getSmoothTime() {
+    if (!smooth.running) return audio.currentTime || 0;
+
+    const now = performance.now();
+    const rate = audio.playbackRate || 1;
+    let t = smooth.baseT + ((now - smooth.baseP) / 1000) * rate;
+
+    const real = audio.currentTime || 0;
+    // якщо браузер “підтягнув” currentTime ривком — ресінкнемось
+    if (isFinite(real) && Math.abs(real - t) > 0.18) {
+      smooth.baseT = real;
+      smooth.baseP = now;
+      t = real;
+    }
+    return t;
+  }
+
+  // --- RAF loop for vinyl (super smooth) ---
+  let rafId = null;
+
+  function startVinylRAF() {
+    if (rafId) return;
+    vinyl.classList.add("isPlaying");
+    smoothStart();
+
+    const tick = () => {
+      const t = getSmoothTime();
+      setVinylRotationByTime(audio, vinyl, TURNS_PER_TRACK, t);
+
+      if (!audio.paused && !audio.ended) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        rafId = null;
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stopVinylRAF() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    vinyl.classList.remove("isPlaying");
+    smoothStop();
+  }
+
+  function resetPlayer() {
+    stopVinylRAF();
+    try { audio.pause(); } catch {}
+    audio.currentTime = 0;
+    seekBar.value = "0";
+    playBtn.textContent = "▶";
+    playerTime.textContent = "0:00 / 0:00";
+    vinyl.style.transform = "rotate(0deg)";
+  }
+
+  // ---------- QUIZ STATE ----------
   let idx = 0;
   let correct = 0;
   let selectedIndex = null;
@@ -238,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveProgressSong(idx, correct, answers);
   });
 
-  // ---------- PLAYER ----------
+  // ---------- PLAYER EVENTS ----------
   playBtn.addEventListener("click", async () => {
     try {
       if (audio.paused) await audio.play();
@@ -248,45 +266,50 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   audio.addEventListener("play", () => {
-    vinylCtl.onPlay();
+    startVinylRAF();
     syncPlayUI();
   });
 
   audio.addEventListener("pause", () => {
-    vinylCtl.onPause();
+    // зупиняємо RAF і ставимо диск точно на поточний час
+    stopVinylRAF();
+    setVinylRotationByTime(audio, vinyl, TURNS_PER_TRACK, audio.currentTime || 0);
     syncPlayUI();
   });
 
   audio.addEventListener("ended", () => {
-    audio.currentTime = 0;
-    seekBar.value = "0";
-    vinylCtl.onEndedOrReset();
-    updateTime();
+    resetPlayer();
     syncPlayUI();
   });
 
   audio.addEventListener("loadedmetadata", () => {
     updateTime();
-    vinylCtl.syncNow();
+    setVinylRotationByTime(audio, vinyl, TURNS_PER_TRACK, 0);
   });
 
   audio.addEventListener("timeupdate", () => {
+    // UI (слайдер/час) можна лишити на timeupdate — норм
     updateTime();
-
     if (isFinite(audio.duration) && audio.duration > 0) {
       seekBar.value = String(Math.round((audio.currentTime / audio.duration) * 100));
     } else {
       seekBar.value = "0";
     }
-
-    vinylCtl.onTimeUpdate();
   });
 
   seekBar.addEventListener("input", () => {
     if (!isFinite(audio.duration) || audio.duration <= 0) return;
+
     const t = (Number(seekBar.value) / 100) * audio.duration;
     audio.currentTime = t;
-    vinylCtl.onSeek();
+
+    // після seek — ресінк smooth clock (щоб не було стрибка)
+    if (!audio.paused) {
+      smoothResync();
+      startVinylRAF();
+    } else {
+      setVinylRotationByTime(audio, vinyl, TURNS_PER_TRACK, t);
+    }
     updateTime();
   });
 
@@ -305,15 +328,6 @@ document.addEventListener("DOMContentLoaded", () => {
     playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   }
 
-  function resetPlayerForQuestion() {
-    try { audio.pause(); } catch {}
-    audio.currentTime = 0;
-    seekBar.value = "0";
-    playerTime.textContent = "0:00 / 0:00";
-    vinylCtl.onEndedOrReset();
-    syncPlayUI();
-  }
-
   // ---------- QUIZ ----------
   function renderQuestion() {
     const q = QUESTIONS[idx];
@@ -325,7 +339,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
 
-    resetPlayerForQuestion();
+    // reset player
+    resetPlayer();
     audio.src = q.audio || "";
 
     optionsEl.innerHTML = "";
@@ -397,7 +412,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rAcc) rAcc.textContent = `${result.acc}%`;
   }
 
-  // --- твій result card код нижче залиш як є ---
   genBtn?.addEventListener("click", async () => {
     if (!cardCanvas) return;
 
@@ -460,7 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* =========================
-   CANVAS DRAW (Song) + helpers 
+   CANVAS DRAW (Song) + helpers (UNCHANGED)
 ========================= */
 
 async function drawQuizResultCard(canvas, d) {
