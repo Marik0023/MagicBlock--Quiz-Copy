@@ -1101,12 +1101,16 @@ body.mbQuiz .cardActions{
   opacity: .92;
 }
 
-/* ===== Movie quiz: custom play overlay ===== */
+/* =========================================================
+   Movie quiz — Custom Play Overlay
+========================================================= */
+
 .mbQuiz .mbVideoWrap{
   position: relative;
   width: 100%;
   border-radius: 16px;
   overflow: hidden;
+
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.25);
 }
@@ -1115,39 +1119,78 @@ body.mbQuiz .cardActions{
   width: 100%;
   height: auto;
   display: block;
-  border-radius: 16px;
 }
 
+/* overlay button (covers whole video) */
 .mbQuiz .videoPlayBtn{
   position: absolute;
   inset: 0;
+
   display: grid;
   place-items: center;
-  background: rgba(0,0,0,.18);
+
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+
+  /* look */
+  background: radial-gradient(ellipse at center,
+    rgba(255,255,255,.10) 0%,
+    rgba(0,0,0,.32) 55%,
+    rgba(0,0,0,.52) 100%
+  );
+
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  border: 0;
-  cursor: pointer;
-  transition: background .18s ease, transform .18s ease, opacity .18s ease;
+
+  /* smooth show/hide */
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+
+  transition:
+    opacity .22s ease,
+    visibility .22s ease,
+    background .18s ease;
 }
 
-.mbQuiz .videoPlayBtn img{
-  width: 50px;      /* можеш збільшити/зменшити */
-  height: 50px;
-  display: block;
-  filter: drop-shadow(0 10px 24px rgba(0,0,0,.55));
-  transform: translateZ(0);
-}
-
-.mbQuiz .videoPlayBtn:hover{
-  background: rgba(0,0,0,.26);
-}
-
-.mbQuiz .videoPlayBtn:active img{
-  transform: scale(.96);
-}
-
+/* hidden state (fade out) */
 .mbQuiz .videoPlayBtn.isHidden{
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
+}
+
+/* play icon */
+.mbQuiz .videoPlayBtn img{
+  width: 56px;   /* змінюй якщо треба */
+  height: 56px;
+  display: block;
+
+  transform: translateZ(0) scale(1);
+  filter:
+    drop-shadow(0 14px 28px rgba(0,0,0,.55));
+
+  transition: transform .18s ease, filter .18s ease;
+}
+
+/* hover glow */
+.mbQuiz .videoPlayBtn:hover{
+  background: radial-gradient(ellipse at center,
+    rgba(255,255,255,.14) 0%,
+    rgba(0,0,0,.34) 55%,
+    rgba(0,0,0,.56) 100%
+  );
+}
+
+.mbQuiz .videoPlayBtn:hover img{
+  transform: translateZ(0) scale(1.06);
+  filter:
+    drop-shadow(0 18px 34px rgba(0,0,0,.60))
+    drop-shadow(0 0 16px rgba(255,255,255,.22));
+}
+
+/* press */
+.mbQuiz .videoPlayBtn:active img{
+  transform: translateZ(0) scale(0.98);
 }
