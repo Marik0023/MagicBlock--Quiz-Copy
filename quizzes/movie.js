@@ -28,11 +28,14 @@ function forcePlayAll(selector) {
 function saveProgressMovie(idx0, correct, answers) {
   const qNum = Math.max(1, Math.min(10, (idx0 + 1)));
   localStorage.setItem(MB_KEYS.progMovie, String(qNum));
-  localStorage.setItem(MB_KEYS.progMovieState, JSON.stringify({
-    idx: idx0,
-    correct,
-    answers: Array.isArray(answers) ? answers : []
-  }));
+  localStorage.setItem(
+    MB_KEYS.progMovieState,
+    JSON.stringify({
+      idx: idx0,
+      correct: Number.isFinite(correct) ? correct : 0,
+      answers: Array.isArray(answers) ? answers : [],
+    })
+  );
 }
 function loadProgressMovie() {
   const n = Number(localStorage.getItem(MB_KEYS.progMovie) || "0");
@@ -50,7 +53,7 @@ function loadProgressMovie() {
   return {
     idx: Math.max(0, Math.min(9, idx)),
     correct: Number.isFinite(correct) ? correct : 0,
-    answers: Array.isArray(answers) ? answers : []
+    answers: Array.isArray(answers) ? answers : [],
   };
 }
 function clearProgressMovie() {
@@ -90,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
 
-  const playOverlayBtn = document.getElementById("videoPlayBtn");
+  const playOverlayBtn = document.getElementById("videoPlayBtn"); // full overlay button
 
   const rName = document.getElementById("rName");
   const rTotal = document.getElementById("rTotal");
@@ -102,6 +105,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
+  const criticalOk = !!(quizPanel && qTitle && frameVideo && optionsEl && nextBtn && playOverlayBtn);
+  if (!criticalOk) {
+    console.error("[Movie Quiz] Missing critical DOM nodes. Check IDs in movie.html.");
+    return;
+  }
+
   const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
   const done = localStorage.getItem(MB_KEYS.doneMovie) === "1";
 
@@ -110,41 +119,83 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedIndex = null;
   let answers = [];
 
-  // --- overlay helpers ---
+  // ===== Overlay + Sound policy =====
+  // We allow sound ONLY after the first user click on overlay or video.
+  let soundUnlocked = false;
+
+  // show/hide with CSS fade (opacity/visibility)
   function showOverlay() {
-    playOverlayBtn?.classList.remove("isHidden");
+    playOverlayBtn.classList.remove("isHidden");
   }
   function hideOverlay() {
-    playOverlayBtn?.classList.add("isHidden");
+    playOverlayBtn.classList.add("isHidden");
   }
 
-  // Клік по кастомній кнопці: дозволений звук + старт відео
-  playOverlayBtn?.addEventListener("click", async () => {
+  async function playWithSound() {
     if (!frameVideo) return;
-    try {
-      frameVideo.muted = false;      // важливо: звук лише після кліку
+
+    // unlock sound only when user explicitly clicks
+    if (!soundUnlocked) {
+      soundUnlocked = true;
+      frameVideo.muted = false;
       frameVideo.volume = 1.0;
+    } else {
+      // keep sound state (unmuted) once unlocked
+      frameVideo.muted = false;
+    }
+
+    try {
       await frameVideo.play();
       hideOverlay();
     } catch (e) {
-      // якщо браузер вперся — лишимо overlay, щоб юзер клікнув ще раз
-      showOverlay();
+      // If browser blocks, keep overlay so user can click again.
       console.warn("Play failed:", e);
+      showOverlay();
     }
+  }
+
+  function pauseVideo() {
+    if (!frameVideo) return;
+    try { frameVideo.pause(); } catch {}
+    showOverlay();
+  }
+
+  function togglePlayPauseFromClick() {
+    if (!frameVideo) return;
+
+    // if ended -> start again from beginning
+    if (frameVideo.ended) {
+      try { frameVideo.currentTime = 0; } catch {}
+      playWithSound();
+      return;
+    }
+
+    if (frameVideo.paused) playWithSound();
+    else pauseVideo();
+  }
+
+  // Click overlay -> play (with sound unlock) / if already playing, pause
+  playOverlayBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    togglePlayPauseFromClick();
   });
 
-  frameVideo?.addEventListener("pause", () => {
-    // якщо юзер поставив на паузу — покажемо overlay назад
-    // але тільки якщо не на самому кінці “завис”
-    showOverlay();
-  });
-  frameVideo?.addEventListener("ended", () => {
-    showOverlay();
-  });
-  frameVideo?.addEventListener("play", () => {
-    hideOverlay();
+  // Click on the video frame itself -> toggle play/pause too
+  frameVideo.addEventListener("click", (e) => {
+    e.preventDefault();
+    togglePlayPauseFromClick();
   });
 
+  // Keep overlay state in sync (for keyboard/pause etc)
+  frameVideo.addEventListener("play", () => hideOverlay());
+  frameVideo.addEventListener("pause", () => {
+    // show overlay when paused (manual pause, ended, etc.)
+    showOverlay();
+  });
+  frameVideo.addEventListener("ended", () => showOverlay());
+
+  // ===== Init state (done/progress) =====
   if (done && saved) {
     clearProgressMovie();
     showResult(saved);
@@ -173,31 +224,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const q = QUESTIONS[idx];
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
 
-    // --- VIDEO: no autoplay, show first frame ---
-    if (frameVideo) {
+    // VIDEO: no autoplay. Show first frame. Overlay visible.
+    frameVideo.pause();
+
+    // While waiting, keep it muted (sound unlock happens only on click)
+    frameVideo.muted = true;
+
+    // swap source
+    frameVideo.src = q.frame;
+    frameVideo.load();
+
+    showOverlay();
+
+    // after metadata, jump a hair so first frame paints reliably
+    const onMeta = () => {
+      frameVideo.removeEventListener("loadedmetadata", onMeta);
+      try {
+        frameVideo.currentTime = 0.001;
+      } catch {}
       frameVideo.pause();
-      frameVideo.muted = true;   // на етапі “стоїмо” — хай буде muted (все одно paused)
-      frameVideo.currentTime = 0;
-
-      frameVideo.src = q.frame;
-      frameVideo.load();
-
       showOverlay();
+    };
+    frameVideo.addEventListener("loadedmetadata", onMeta);
 
-      // Після метаданих — ставимо на початок (інколи 0 не малює кадр, тому 0.001)
-      const onMeta = () => {
-        try {
-          frameVideo.currentTime = 0.001;
-        } catch {}
-        // одразу на паузі
-        frameVideo.pause();
-        frameVideo.removeEventListener("loadedmetadata", onMeta);
-      };
-      frameVideo.addEventListener("loadedmetadata", onMeta);
-    }
-
+    // Options
     optionsEl.innerHTML = "";
-    q.options.forEach((label, i) => {
+    (q.options || []).forEach((label, i) => {
       const btn = document.createElement("button");
       btn.className = "optionBtn";
       btn.type = "button";
@@ -223,9 +275,11 @@ document.addEventListener("DOMContentLoaded", () => {
   nextBtn.addEventListener("click", () => {
     if (selectedIndex === null) return;
 
+    // pause video when moving next
+    pauseVideo();
+
     const q = QUESTIONS[idx];
     answers[idx] = selectedIndex;
-
     if (selectedIndex === q.correctIndex) correct++;
 
     idx++;
@@ -253,12 +307,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showResult(result) {
     quizPanel.style.display = "none";
-    resultPanel.style.display = "block";
+    if (resultPanel) resultPanel.style.display = "block";
 
-    rName.textContent = result.name || "Player";
-    rTotal.textContent = String(result.total);
-    rCorrect.textContent = String(result.correct);
-    rAcc.textContent = `${result.acc}%`;
+    if (rName) rName.textContent = result.name || "Player";
+    if (rTotal) rTotal.textContent = String(result.total);
+    if (rCorrect) rCorrect.textContent = String(result.correct);
+    if (rAcc) rAcc.textContent = `${result.acc}%`;
   }
 
   genBtn?.addEventListener("click", async () => {
