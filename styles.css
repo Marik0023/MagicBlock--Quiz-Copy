@@ -1317,3 +1317,86 @@ body.mbQuiz .cardActions{
     padding: 0 12px;        /* ✅ щоб pill виглядав норм */
   }
 }
+
+/* ===== Footer bar ===== */
+.mbFooter{
+  width: 100%;
+  margin-top: 22px;
+  padding: 10px 0 18px;
+}
+
+.mbFooter__bar{
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 10px 14px;
+
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  border-radius: 18px;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.mbFooter__link{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 40px;
+  padding: 0 16px;
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+
+  color: rgba(255,255,255,.90);
+  text-decoration: none;
+
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.mbFooter__link:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.22);
+}
+
+.mbFooter__link:active{
+  transform: translateY(0px);
+}
+
+.mbFooter__credit{
+  max-width: 1180px;
+  margin: 10px auto 0;
+  padding: 0 14px;
+
+  text-align: center;
+  color: rgba(255,255,255,.62);
+
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .2px;
+}
+
+.mbFooter__credit span{
+  color: rgba(255,255,255,.86);
+  font-weight: 900;
+}
+
+/* mobile */
+@media (max-width: 720px){
+  .mbFooter__bar{
+    margin: 0 12px;
+  }
+}
