@@ -1078,3 +1078,38 @@ body.mbQuiz .cardActions{
 .vinyl.isPlaying{
   transition: none;
 }
+
+/* ===== Volume inside bar (Song quiz) ===== */
+.mbQuiz .mbPlayer__bar{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mbQuiz .mbPlayer__bar #seekBar{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mbQuiz .vol{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding-left: 12px;
+  border-left: 1px solid rgba(255,255,255,.12);
+}
+
+.mbQuiz .vol__icon{
+  width: 22px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1;
+  opacity: .9;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mbQuiz .vol__range{
+  width: 120px;
+}
