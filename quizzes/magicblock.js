@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { text: "Why does MagicBlock argue “custom chain” approaches can hurt DePIN projects?", options: ["They remove smart contracts", "They make Solana unusable", "They fragment liquidity and add complexity", "They require proof-of-work mining"], correctIndex: 2 },
     { text: "What does MagicBlock claim “on-chain coordination” improves for infrastructure networks?", options: ["Trust, because actions are verifiable and tamper-proof on Solana", "It reduces hardware costs to zero", "It guarantees anonymity for all participants", "It eliminates the need for tokens"], correctIndex: 0 },
     { text: "What does MagicBlock call its privacy-enabled rollup design?", options: ["Private Execution Chain (PEC)", "Encrypted Settlement Layer (ESL)", "Confidential Sidechain Runtime (CSR)", "Private Ephemeral Rollup (PER)"], correctIndex: 3 },
-    { text: "What is the total supply of the $BLOCK token?", options: ["1,000,000,000", "100,000,000,000", "10,000,000,000", "5,000,000,000"], correctIndex: 1 },
+    { text: "What is the total supply of the $BLOCK token?", options: ["1,000,000,000", "100,000,000,000", "10,000,000,000", "5,000,000,000"], correctIndex: 2 },
   ];
 
   const quizPanel = document.getElementById("quizPanel");
