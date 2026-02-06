@@ -283,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const qEl = document.createElement("div");
       qEl.className = "reviewQ";
-      qEl.textContent = `Question ${i + 1} of ${QUESTIONS.length}`;
+      qEl.textContent = `Question ${i + 1}`;
 
       const aEl = document.createElement("div");
       aEl.className = "reviewA";
