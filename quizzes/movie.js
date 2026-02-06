@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     QUESTIONS.forEach((q, i) => {
       const correctLabel = q.options?.[q.correctIndex] ?? "—";
-      const questionText = "Which movie is shown in this frame?";
+      // const questionText = "Which movie is shown in this frame?";
 
       const item = document.createElement("div");
       item.className = "reviewItem";
