@@ -1,4 +1,3 @@
-<!-- quizzes/song.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -44,16 +43,16 @@
 
     <!-- QUIZ -->
     <section id="quizPanel" class="panel">
+      <!-- ✅ qTitle stays top-left -->
+      <div class="questionTitle questionTitle--top" id="qTitle">Question 1 of 10</div>
+
+      <!-- ✅ only these two columns are centered vertically -->
       <div class="quizLayout">
         <!-- LEFT -->
         <div>
-          <div class="questionTitle" id="qTitle">Question 1 of 10</div>
-
           <div class="mbPlayer">
             <div class="mbPlayer__row">
-              <!-- cover (we show vinyl here) -->
               <div class="mbPlayer__cover">
-                <!-- вініл (зараз він у cover) -->
                 <img id="vinyl" class="vinyl" src="../assets/vinilmb.png" alt="Vinyl" />
               </div>
 
@@ -66,9 +65,7 @@
             </div>
 
             <div class="mbPlayer__bar">
-              <!-- seek -->
               <input class="range" id="seekBar" type="range" min="0" max="100" value="0" />
-              <!-- volume (без mute кнопки) -->
               <input class="range range--vol vol__range" id="volBar" type="range" min="0" max="100" value="80" />
             </div>
           </div>
