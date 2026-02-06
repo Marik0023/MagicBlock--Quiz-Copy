@@ -1,11 +1,15 @@
 const MB_KEYS = {
   profile: "mb_profile",
+
   doneMovie: "mb_done_movie",
   resMovie: "mb_result_movie",
   prevMovie: "mb_prev_movie",
 
   progMovie: "mb_prog_movie",            // number (1..10)
   progMovieState: "mb_prog_movie_state", // JSON { idx, correct, answers }
+
+  // ✅ Answer Review: hide forever after Generate
+  reviewMovieHidden: "mb_review_movie_hidden",
 };
 
 function safeJSONParse(v, fallback = null) {
@@ -73,16 +77,16 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopProfile();
 
   const QUESTIONS = [
-    { frame: "../assets/movies/1.mp4",  options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
-    { frame: "../assets/movies/2.mp4",  options: ["The Internship", "We’re the Millers", "Grown Ups", "Daddy’s Home"], correctIndex: 2 },
-    { frame: "../assets/movies/3.mp4",  options: ["The Lord of the Rings", "Harry Potter", "Percy Jackson & the Olympians", "The Chronicles of Narnia"], correctIndex: 1 },
-    { frame: "../assets/movies/4.mp4",  options: ["The Gentlemen", "Layer Cake", "RocknRolla", "Snatch"], correctIndex: 0 },
-    { frame: "../assets/movies/5.mp4",  options: ["Wednesday", "The Umbrella Academy", "Riverdale", "Chilling Adventures of Sabrina"], correctIndex: 0 },
-    { frame: "../assets/movies/6.mp4",  options: ["Gravity", "Interstellar", "The Martian", "Arrival"], correctIndex: 1 },
-    { frame: "../assets/movies/7.mp4",  options: ["The OA", "The X-Files", "Dark", "Stranger Things"], correctIndex: 3 },
-    { frame: "../assets/movies/8.mp4",  options: ["Need for Speed", "Baby Driver", "Gone in 60 Seconds", "The Fast and the Furious"], correctIndex: 3 },
-    { frame: "../assets/movies/9.mp4",  options: ["The Hangover", "Superbad", "21 Jump Street", "Project X"], correctIndex: 0 },
-    { frame: "../assets/movies/10.mp4", options: ["1917", "Saving Private Ryan", "Hacksaw Ridge", "Fury"], correctIndex: 2 },
+    { frame: "../assets/movies/1.mp4",  text: "Which movie is shown in this frame?", options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
+    { frame: "../assets/movies/2.mp4",  text: "Which movie is shown in this frame?", options: ["The Internship", "We’re the Millers", "Grown Ups", "Daddy’s Home"], correctIndex: 2 },
+    { frame: "../assets/movies/3.mp4",  text: "Which movie is shown in this frame?", options: ["The Lord of the Rings", "Harry Potter", "Percy Jackson & the Olympians", "The Chronicles of Narnia"], correctIndex: 1 },
+    { frame: "../assets/movies/4.mp4",  text: "Which movie is shown in this frame?", options: ["The Gentlemen", "Layer Cake", "RocknRolla", "Snatch"], correctIndex: 0 },
+    { frame: "../assets/movies/5.mp4",  text: "Which movie is shown in this frame?", options: ["Wednesday", "The Umbrella Academy", "Riverdale", "Chilling Adventures of Sabrina"], correctIndex: 0 },
+    { frame: "../assets/movies/6.mp4",  text: "Which movie is shown in this frame?", options: ["Gravity", "Interstellar", "The Martian", "Arrival"], correctIndex: 1 },
+    { frame: "../assets/movies/7.mp4",  text: "Which movie is shown in this frame?", options: ["The OA", "The X-Files", "Dark", "Stranger Things"], correctIndex: 3 },
+    { frame: "../assets/movies/8.mp4",  text: "Which movie is shown in this frame?", options: ["Need for Speed", "Baby Driver", "Gone in 60 Seconds", "The Fast and the Furious"], correctIndex: 3 },
+    { frame: "../assets/movies/9.mp4",  text: "Which movie is shown in this frame?", options: ["The Hangover", "Superbad", "21 Jump Street", "Project X"], correctIndex: 0 },
+    { frame: "../assets/movies/10.mp4", text: "Which movie is shown in this frame?", options: ["1917", "Saving Private Ryan", "Hacksaw Ridge", "Fury"], correctIndex: 2 },
   ];
 
   const quizPanel = document.getElementById("quizPanel");
@@ -105,10 +109,68 @@ document.addEventListener("DOMContentLoaded", () => {
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
+  // ✅ review elements (must exist in HTML)
+  const reviewBox = document.getElementById("reviewBox");
+  const reviewList = document.getElementById("reviewList");
+
   const criticalOk = !!(quizPanel && qTitle && frameVideo && optionsEl && nextBtn && playOverlayBtn);
   if (!criticalOk) {
     console.error("[Movie Quiz] Missing critical DOM nodes. Check IDs in movie.html.");
     return;
+  }
+
+  // ===== Review helpers =====
+  function showReview() {
+    if (!reviewBox) return;
+    reviewBox.style.display = "block";
+    reviewBox.classList.remove("isHidden");
+    reviewBox.classList.remove("isGone");
+  }
+
+  function hideReviewAnimatedForever() {
+    localStorage.setItem(MB_KEYS.reviewMovieHidden, "1");
+    if (!reviewBox) return;
+
+    reviewBox.classList.add("isHidden");
+    window.setTimeout(() => {
+      reviewBox.classList.add("isGone");
+      reviewBox.style.display = "none";
+    }, 220);
+  }
+
+  function renderAnswerReviewMovie() {
+    if (!reviewBox || !reviewList) return;
+
+    const hidden = localStorage.getItem(MB_KEYS.reviewMovieHidden) === "1";
+    if (hidden) {
+      reviewBox.classList.add("isGone");
+      reviewBox.style.display = "none";
+      return;
+    }
+
+    reviewList.innerHTML = "";
+
+    QUESTIONS.forEach((q, i) => {
+      const questionText = q.text || `Question ${i + 1} of ${QUESTIONS.length}`;
+      const correctLabel = q.options?.[q.correctIndex] ?? "—";
+
+      const item = document.createElement("div");
+      item.className = "reviewItem";
+
+      const qEl = document.createElement("div");
+      qEl.className = "reviewQ";
+      qEl.textContent = questionText;
+
+      const aEl = document.createElement("div");
+      aEl.className = "reviewA";
+      aEl.textContent = correctLabel;
+
+      item.appendChild(qEl);
+      item.appendChild(aEl);
+      reviewList.appendChild(item);
+    });
+
+    showReview();
   }
 
   const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
@@ -120,27 +182,19 @@ document.addEventListener("DOMContentLoaded", () => {
   let answers = [];
 
   // ===== Overlay + Sound policy =====
-  // We allow sound ONLY after the first user click on overlay or video.
   let soundUnlocked = false;
 
-  // show/hide with CSS fade (opacity/visibility)
-  function showOverlay() {
-    playOverlayBtn.classList.remove("isHidden");
-  }
-  function hideOverlay() {
-    playOverlayBtn.classList.add("isHidden");
-  }
+  function showOverlay() { playOverlayBtn.classList.remove("isHidden"); }
+  function hideOverlay() { playOverlayBtn.classList.add("isHidden"); }
 
   async function playWithSound() {
     if (!frameVideo) return;
 
-    // unlock sound only when user explicitly clicks
     if (!soundUnlocked) {
       soundUnlocked = true;
       frameVideo.muted = false;
       frameVideo.volume = 1.0;
     } else {
-      // keep sound state (unmuted) once unlocked
       frameVideo.muted = false;
     }
 
@@ -148,7 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
       await frameVideo.play();
       hideOverlay();
     } catch (e) {
-      // If browser blocks, keep overlay so user can click again.
       console.warn("Play failed:", e);
       showOverlay();
     }
@@ -163,7 +216,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function togglePlayPauseFromClick() {
     if (!frameVideo) return;
 
-    // if ended -> start again from beginning
     if (frameVideo.ended) {
       try { frameVideo.currentTime = 0; } catch {}
       playWithSound();
@@ -174,25 +226,19 @@ document.addEventListener("DOMContentLoaded", () => {
     else pauseVideo();
   }
 
-  // Click overlay -> play (with sound unlock) / if already playing, pause
   playOverlayBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     togglePlayPauseFromClick();
   });
 
-  // Click on the video frame itself -> toggle play/pause too
   frameVideo.addEventListener("click", (e) => {
     e.preventDefault();
     togglePlayPauseFromClick();
   });
 
-  // Keep overlay state in sync (for keyboard/pause etc)
   frameVideo.addEventListener("play", () => hideOverlay());
-  frameVideo.addEventListener("pause", () => {
-    // show overlay when paused (manual pause, ended, etc.)
-    showOverlay();
-  });
+  frameVideo.addEventListener("pause", () => showOverlay());
   frameVideo.addEventListener("ended", () => showOverlay());
 
   // ===== Init state (done/progress) =====
@@ -224,30 +270,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const q = QUESTIONS[idx];
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
 
-    // VIDEO: no autoplay. Show first frame. Overlay visible.
     frameVideo.pause();
-
-    // While waiting, keep it muted (sound unlock happens only on click)
     frameVideo.muted = true;
 
-    // swap source
     frameVideo.src = q.frame;
     frameVideo.load();
 
     showOverlay();
 
-    // after metadata, jump a hair so first frame paints reliably
     const onMeta = () => {
       frameVideo.removeEventListener("loadedmetadata", onMeta);
-      try {
-        frameVideo.currentTime = 0.001;
-      } catch {}
+      try { frameVideo.currentTime = 0.001; } catch {}
       frameVideo.pause();
       showOverlay();
     };
     frameVideo.addEventListener("loadedmetadata", onMeta);
 
-    // Options
     optionsEl.innerHTML = "";
     (q.options || []).forEach((label, i) => {
       const btn = document.createElement("button");
@@ -275,7 +313,6 @@ document.addEventListener("DOMContentLoaded", () => {
   nextBtn.addEventListener("click", () => {
     if (selectedIndex === null) return;
 
-    // pause video when moving next
     pauseVideo();
 
     const q = QUESTIONS[idx];
@@ -313,9 +350,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rTotal) rTotal.textContent = String(result.total);
     if (rCorrect) rCorrect.textContent = String(result.correct);
     if (rAcc) rAcc.textContent = `${result.acc}%`;
+
+    // ✅ review visible only until Generate
+    const hidden = localStorage.getItem(MB_KEYS.reviewMovieHidden) === "1";
+    if (!hidden) renderAnswerReviewMovie();
+    else if (reviewBox) {
+      reviewBox.classList.add("isGone");
+      reviewBox.style.display = "none";
+    }
   }
 
   genBtn?.addEventListener("click", async () => {
+    // ✅ hide forever
+    hideReviewAnimatedForever();
+
     const p = getProfile();
     const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
     if (!r || !cardCanvas) return;
