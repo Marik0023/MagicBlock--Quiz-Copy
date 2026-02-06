@@ -189,6 +189,8 @@ document.addEventListener("DOMContentLoaded", () => {
   audio.addEventListener("loadedmetadata", updateTime);
   audio.addEventListener("timeupdate", () => {
     updateTime();
+    syncVinylSeek();
+    
     if (!isNaN(audio.duration) && audio.duration > 0 && seekBar) {
       seekBar.value = String(Math.round((audio.currentTime / audio.duration) * 100));
     }
@@ -198,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isNaN(audio.duration) && audio.duration > 0) {
       const t = (Number(seekBar.value) / 100) * audio.duration;
       audio.currentTime = t;
+      syncVinylSeek();
     }
   });
 
@@ -217,6 +220,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (playerTime) playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   }
 
+  function syncVinylSeek() {
+    if (!vinyl) return;
+    if (!isFinite(audio.duration) || audio.duration <= 0) return;
+  
+    const spinsPerTrack = 8; // 6..12 як хочеш
+    const progress = audio.currentTime / audio.duration; // 0..1
+    const deg = progress * 360 * spinsPerTrack;
+  
+    vinyl.style.setProperty("--seek-rot", `${deg}deg`);
+  }
+  
   function renderQuestion() {
     const q = QUESTIONS[idx];
     if (!q) return;
