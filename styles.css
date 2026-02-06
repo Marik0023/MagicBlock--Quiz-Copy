@@ -1048,6 +1048,13 @@ body.mbQuiz .cardActions{
 }
 
 /* ===== VINYL (Song quiz) — smooth via JS (no CSS animation) ===== */
+.mbQuiz .mbPlayer__cover{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* сам диск */
 .vinyl{
   width: 100%;
   height: 100%;
@@ -1056,8 +1063,13 @@ body.mbQuiz .cardActions{
   display: block;
 
   transform: rotate(0deg);
-  transform-origin: 50% 50%;
   will-change: transform;
 
+  /* легка “живість” */
   filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
+}
+
+/* під час програвання вимикаємо transition (JS крутить кожен кадр) */
+.vinyl.isPlaying{
+  transition: none;
 }
