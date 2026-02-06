@@ -1217,14 +1217,17 @@ body.mbQuiz .cardActions{
 
 /* ===== Answer Review (Result panel) ===== */
 .mbQuiz .reviewBox{
-  margin-top: 18px;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.18);
   border-radius: 18px;
   padding: 14px 14px 12px;
+  margin-top: 18px;
+
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .18s ease, transform .18s ease;
 }
 
-/* title */
 .mbQuiz .reviewBox h3{
   margin: 0 0 10px 0;
   font-weight: 900;
@@ -1233,14 +1236,13 @@ body.mbQuiz .cardActions{
   color: rgba(255,255,255,.92);
 }
 
-/* list wrapper */
 .mbQuiz .reviewList{
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* one row */
+/* один рядок відповіді */
 .mbQuiz .reviewItem{
   display: grid;
   grid-template-columns: 86px 1fr;
@@ -1253,7 +1255,6 @@ body.mbQuiz .cardActions{
   background: rgba(255,255,255,.06);
 }
 
-/* Q label */
 .mbQuiz .reviewQ{
   font-weight: 900;
   font-size: 12px;
@@ -1263,7 +1264,6 @@ body.mbQuiz .cardActions{
   padding-top: 2px;
 }
 
-/* answer text */
 .mbQuiz .reviewA{
   font-weight: 800;
   font-size: 14px;
@@ -1271,15 +1271,14 @@ body.mbQuiz .cardActions{
   color: rgba(255,255,255,.92);
 }
 
-/* optional hint text */
-.mbQuiz .reviewHint{
-  margin-top: 4px;
-  font-size: 12px;
-  color: rgba(255,255,255,.62);
+/* Fade out (не займає місце тільки після isGone) */
+.mbQuiz .reviewBox.isHidden{
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
 }
 
-/* IMPORTANT:
-   hide means fully remove block so it doesn't keep space */
-.mbQuiz .reviewBox.isHidden{
+/* реально прибрати місце */
+.mbQuiz .reviewBox.isGone{
   display: none !important;
 }
