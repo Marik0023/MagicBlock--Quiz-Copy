@@ -7,7 +7,6 @@ const MB_KEYS = {
   prevSong: "mb_prev_song",
 
   // ✅ HOME progress: store CURRENT question number (1..10)
-  // Example: if user is on Question 4 -> store 4 -> HOME shows 40%
   progSong: "mb_prog_song",
   progSongState: "mb_prog_song_state", // JSON { idx, correct, answers }
 };
@@ -46,14 +45,10 @@ function ensureResultId(prefix, existing) {
 
 /* =========================
    HOME Progress (Song)
-   - progSong = current question number (1..10)
-   - progSongState = { idx, correct, answers }
-   where idx = current question index (0..9)
 ========================= */
 function saveProgressSong(idx, correct, answers) {
-  // idx = current question index (0..9)
   const clampedIdx = Math.max(0, Math.min(9, Number(idx) || 0));
-  const qNum = clampedIdx + 1; // ✅ Question number (1..10)
+  const qNum = clampedIdx + 1;
 
   localStorage.setItem(MB_KEYS.progSong, String(qNum));
   localStorage.setItem(
@@ -86,6 +81,37 @@ function loadProgressSong() {
 function clearProgressSong() {
   localStorage.removeItem(MB_KEYS.progSong);
   localStorage.removeItem(MB_KEYS.progSongState);
+}
+
+/* =========================
+   VINYL helpers (ONE place)
+   - turns: скільки обертів за весь трек
+========================= */
+function setVinylSeekRotation(audioEl, vinylEl, turns = 8) {
+  if (!audioEl || !vinylEl) return;
+
+  const dur = audioEl.duration;
+  if (!isFinite(dur) || dur <= 0) {
+    vinylEl.style.setProperty("--seek-rot", "0deg");
+    return;
+  }
+
+  const t = Math.max(0, Math.min(dur, audioEl.currentTime || 0));
+  const p = t / dur; // 0..1
+  const deg = p * 360 * turns;
+
+  vinylEl.style.setProperty("--seek-rot", `${deg}deg`);
+}
+
+function resetVinyl(audioEl, vinylEl) {
+  if (audioEl) {
+    try { audioEl.pause(); } catch {}
+    audioEl.currentTime = 0;
+  }
+  if (vinylEl) {
+    vinylEl.classList.remove("isSpinning");
+    vinylEl.style.setProperty("--seek-rot", "0deg");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -129,13 +155,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const cardCanvas = document.getElementById("cardCanvas");
   const dlBtn = document.getElementById("dlBtn");
 
-  const criticalOk = !!(quizPanel && qTitle && optionsEl && nextBtn && audio);
+  const criticalOk = !!(quizPanel && qTitle && optionsEl && nextBtn && audio && playBtn && seekBar && vinyl);
   if (!criticalOk) {
     console.error("[Song Quiz] Missing critical DOM nodes. Check IDs in song.html.");
     return;
   }
 
-  let idx = 0;          // current question index (0..9)
+  const TURNS_PER_TRACK = 8; // 👈 можеш 6/10/12
+
+  let idx = 0;
   let correct = 0;
   let selectedIndex = null;
   let answers = [];
@@ -151,86 +179,84 @@ document.addEventListener("DOMContentLoaded", () => {
     clearProgressSong();
     showResult(savedRes);
   } else {
-    // resume (if exists)
     const prog = loadProgressSong();
     if (prog) {
       idx = prog.idx;
       correct = prog.correct;
       answers = prog.answers;
     }
-
-    // ✅ once we are on some question - keep HOME in sync with "Question N"
     saveProgressSong(idx, correct, answers);
     renderQuestion();
   }
 
-  // Save state on leave (only if not completed)
   window.addEventListener("beforeunload", () => {
     if (localStorage.getItem(MB_KEYS.doneSong) === "1") return;
     saveProgressSong(idx, correct, answers);
   });
 
-  playBtn?.addEventListener("click", async () => {
+  // ---------- PLAYER EVENTS ----------
+  playBtn.addEventListener("click", async () => {
     try {
       if (audio.paused) await audio.play();
       else audio.pause();
     } catch {}
-    syncPlayIcon();
+    syncPlayUI();
   });
 
-  audio.addEventListener("play", syncPlayIcon);
-  audio.addEventListener("pause", syncPlayIcon);
+  audio.addEventListener("play", syncPlayUI);
+  audio.addEventListener("pause", syncPlayUI);
+
   audio.addEventListener("ended", () => {
-    if (vinyl) vinyl.classList.remove("isSpinning");
-    if (seekBar) seekBar.value = "0";
-    syncPlayIcon();
+    // на кінець — повертаємо на старт і зупиняємо
+    resetVinyl(audio, vinyl);
+    seekBar.value = "0";
+    updateTime();
+    syncPlayUI();
   });
 
-  audio.addEventListener("loadedmetadata", updateTime);
+  audio.addEventListener("loadedmetadata", () => {
+    updateTime();
+    setVinylSeekRotation(audio, vinyl, TURNS_PER_TRACK);
+  });
+
   audio.addEventListener("timeupdate", () => {
     updateTime();
-    syncVinylSeek();
-    
-    if (!isNaN(audio.duration) && audio.duration > 0 && seekBar) {
+
+    if (isFinite(audio.duration) && audio.duration > 0) {
       seekBar.value = String(Math.round((audio.currentTime / audio.duration) * 100));
+    } else {
+      seekBar.value = "0";
     }
+
+    setVinylSeekRotation(audio, vinyl, TURNS_PER_TRACK);
   });
 
-  seekBar?.addEventListener("input", () => {
-    if (!isNaN(audio.duration) && audio.duration > 0) {
-      const t = (Number(seekBar.value) / 100) * audio.duration;
-      audio.currentTime = t;
-      syncVinylSeek();
-    }
+  seekBar.addEventListener("input", () => {
+    if (!isFinite(audio.duration) || audio.duration <= 0) return;
+    const t = (Number(seekBar.value) / 100) * audio.duration;
+    audio.currentTime = t;
+    setVinylSeekRotation(audio, vinyl, TURNS_PER_TRACK);
+    updateTime();
   });
 
-  function syncPlayIcon() {
-    if (playBtn) playBtn.textContent = audio.paused ? "▶" : "⏸";
-
-    if (!vinyl) return;
+  function syncPlayUI() {
+    playBtn.textContent = audio.paused ? "▶" : "⏸";
     vinyl.classList.toggle("isSpinning", !audio.paused);
+    setVinylSeekRotation(audio, vinyl, TURNS_PER_TRACK);
   }
+
   function formatTime(s) {
     if (!isFinite(s)) return "0:00";
     const m = Math.floor(s / 60);
     const r = Math.floor(s % 60);
     return `${m}:${String(r).padStart(2, "0")}`;
   }
+
   function updateTime() {
-    if (playerTime) playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+    playerTime.textContent = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
   }
 
-  function syncVinylSeek() {
-    if (!vinyl) return;
-    if (!isFinite(audio.duration) || audio.duration <= 0) return;
-  
-    const spinsPerTrack = 8; // 6..12 як хочеш
-    const progress = audio.currentTime / audio.duration; // 0..1
-    const deg = progress * 360 * spinsPerTrack;
-  
-    vinyl.style.setProperty("--seek-rot", `${deg}deg`);
-  }
-  
+  // ---------- QUIZ ----------
   function renderQuestion() {
     const q = QUESTIONS[idx];
     if (!q) return;
@@ -241,12 +267,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
 
-    audio.pause();
-    audio.currentTime = 0;
+    // скидаємо плеєр/вініл
+    resetVinyl(audio, vinyl);
+    seekBar.value = "0";
+    playerTime.textContent = "0:00 / 0:00";
+
     audio.src = q.audio || "";
-    syncPlayIcon();
-    if (seekBar) seekBar.value = "0";
-    if (playerTime) playerTime.textContent = "0:00 / 0:00";
+    syncPlayUI();
 
     optionsEl.innerHTML = "";
     (q.options || ["A", "B", "C", "D"]).forEach((label, i) => {
@@ -263,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
       optionsEl.appendChild(btn);
     });
 
-    // ✅ HOME sync even when user просто стоїть на питанні
     saveProgressSong(idx, correct, answers);
   }
 
@@ -283,7 +309,6 @@ document.addEventListener("DOMContentLoaded", () => {
     idx++;
 
     if (idx < QUESTIONS.length) {
-      // ✅ now we moved to next question, HOME must show new Question N
       saveProgressSong(idx, correct, answers);
       renderQuestion();
       return;
