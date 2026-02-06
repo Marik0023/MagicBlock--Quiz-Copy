@@ -1215,7 +1215,7 @@ body.mbQuiz .cardActions{
   margin: 0 0 14px 0;
 }
 
-/* ===== Answer Review (Result panel) ===== */
+/* ===== Answer Review (Result panel) — FINAL ===== */
 .mbQuiz .reviewBox{
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(0,0,0,.18);
@@ -1229,7 +1229,7 @@ body.mbQuiz .cardActions{
 }
 
 .mbQuiz .reviewBox h3{
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
   font-weight: 900;
   font-size: 16px;
   letter-spacing: .2px;
@@ -1239,39 +1239,60 @@ body.mbQuiz .cardActions{
 .mbQuiz .reviewList{
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-/* один рядок відповіді */
+/* один рядок */
 .mbQuiz .reviewItem{
   display: grid;
-  grid-template-columns: 86px 1fr;
-  gap: 12px;
+  grid-template-columns: 140px 1fr;  /* ширше, щоб не ламало */
+  gap: 14px;
   align-items: start;
 
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: 12px 14px;
+  border-radius: 16px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(255,255,255,.06);
 }
 
+/* лівий "pill" */
 .mbQuiz .reviewQ{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 34px;
+  padding: 0 12px;
+
+  border-radius: 999px;
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.10);
+
   font-weight: 900;
   font-size: 12px;
-  color: rgba(255,255,255,.70);
-  text-transform: uppercase;
+  color: rgba(255,255,255,.78);
   letter-spacing: .6px;
-  padding-top: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
+/* правильна відповідь */
 .mbQuiz .reviewA{
-  font-weight: 800;
+  font-weight: 900;
   font-size: 14px;
   line-height: 1.35;
   color: rgba(255,255,255,.92);
 }
 
-/* Fade out (не займає місце тільки після isGone) */
+/* текст питання під відповіддю */
+.mbQuiz .reviewHint{
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255,255,255,.68);
+}
+
+/* Fade out */
 .mbQuiz .reviewBox.isHidden{
   opacity: 0;
   transform: translateY(-6px);
@@ -1281,4 +1302,15 @@ body.mbQuiz .cardActions{
 /* реально прибрати місце */
 .mbQuiz .reviewBox.isGone{
   display: none !important;
+}
+
+/* mobile */
+@media (max-width: 720px){
+  .mbQuiz .reviewItem{
+    grid-template-columns: 1fr;
+  }
+  .mbQuiz .reviewQ{
+    justify-content: flex-start;
+    width: fit-content;
+  }
 }
