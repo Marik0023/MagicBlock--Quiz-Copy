@@ -398,14 +398,6 @@ function updateBadges(){
 }
 
 function initHomeButtons(){
-  // ✅ Seasons button (back to season picker)
-  const seasonsBtn = document.getElementById("seasonsBtn");
-  if (seasonsBtn){
-    seasonsBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      location.href = "../../index.html"; // from /seasons/s1/ -> /index.html
-    });
-  }
 
   const pill = document.getElementById("profilePill");
   const hasModal = !!document.getElementById("profileModal");
