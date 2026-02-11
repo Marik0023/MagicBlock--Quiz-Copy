@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Song Quiz — MagicBlock</title>
+  <link rel="icon" href="../../../assets/faviconlogo/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../../assets/faviconlogo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../../assets/faviconlogo/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="../../../assets/faviconlogo/apple-touch-icon.png">
+  <link rel="manifest" href="../../../assets/faviconlogo/site.webmanifest">
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="song.js" defer></script>
+</head>
+
+<body class="mbQuiz">
+  <div class="bg">
+    <video class="bg__video" autoplay muted loop playsinline>
+      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
+    </video>
+    <div class="bg__vignette"></div>
+    <div class="bg__grain"></div>
+  </div>
+
+  <div class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="../../../index.html" aria-label="Seasons">
+        <video class="brand__logo" autoplay muted loop playsinline>
+          <source src="../../../assets/logo.webm" type="video/webm" />
+        </video>
+      </a>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="seasonsBtn" class="btn btn--ghost" type="button">Seasons</button>
+        <button id="achievementsBtn" class="btn btn--ghost" type="button">Achievements</button>
+
+        <div id="profilePill" class="profilePill" title="Profile">
+        <div class="profilePill__avatar"><img alt="" /></div>
+        <div>
+          <div class="profilePill__name" data-profile-name>Player</div>
+          <div class="profilePill__hint" data-profile-hint>Edit</div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="quizHero">
+      <h1>Guess the Song by the Melody</h1>
+      <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="quizPanel" class="panel">
+      <!-- ✅ qTitle stays top-left -->
+      <div class="questionTitle questionTitle--top" id="qTitle">Question 1 of 10</div>
+
+      <!-- ✅ only these two columns are centered vertically -->
+      <div class="quizLayout">
+        <!-- LEFT -->
+        <div>
+          <div class="mbPlayer">
+            <div class="mbPlayer__row">
+              <div class="mbPlayer__cover">
+                <img id="vinyl" class="vinyl" src="../../../assets/vinilmb.png" alt="Vinyl" />
+              </div>
+
+              <div class="mbPlayer__meta">
+                <div class="mbPlayer__title" id="playerName">Guess the song</div>
+                <div class="mbPlayer__time" id="playerTime">0:00 / 0:00</div>
+              </div>
+
+              <button class="mbPlayer__btn" id="playBtn" aria-label="Play/Pause" type="button">▶</button>
+            </div>
+
+            <div class="mbPlayer__bar">
+              <input class="range" id="seekBar" type="range" min="0" max="100" value="0" />
+              <input class="range range--vol vol__range" id="volBar" type="range" min="0" max="100" value="80" />
+            </div>
+          </div>
+
+          <audio id="audio" preload="metadata"></audio>
+        </div>
+
+        <!-- RIGHT -->
+        <div>
+          <div class="options" id="options"></div>
+
+          <div class="nextWrap">
+            <button class="btn nextBtn" id="nextBtn" disabled type="button">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="resultPanel" class="panel" style="display:none; margin-top:18px;">
+      <div class="resultBox">
+        <h2>Result</h2>
+
+        <div class="kv"><div class="k">Name</div><div class="v" id="rName">—</div></div>
+        <div class="kv"><div class="k">Total</div><div class="v" id="rTotal">—</div></div>
+        <div class="kv"><div class="k">Correct</div><div class="v" id="rCorrect">—</div></div>
+        <div class="kv"><div class="k">Accuracy</div><div class="v" id="rAcc">—</div></div>
+
+        <div class="btnRow">
+          <button id="genBtn" class="btn" type="button">Generate Result Card</button>
+          <a class="btn btn--ghost" href="../index.html">Back to Home</a>
+        </div>
+
+        <!-- Answer Review (visible until Generate Result Card) -->
+        <div class="reviewBox" id="reviewBox" style="margin-top:18px;">
+          <h3 style="margin:0 0 10px 0;">Correct answers</h3>
+          <div id="reviewList" class="reviewList"></div>
+        </div>
+
+        <div id="cardZone" class="cardZone">
+          <div class="cardPreview">
+            <canvas id="cardCanvas" width="1600" height="900"></canvas>
+          </div>
+          <div class="cardActions">
+            <button id="dlBtn" class="btn btn--ghost" type="button">Download PNG</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
