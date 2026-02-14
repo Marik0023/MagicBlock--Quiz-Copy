@@ -188,6 +188,27 @@ function initSeasonButtons(){
   });
 }
 
+
+function updateSeasonCompletedBadges(){
+  const map = {
+    s1: { pngKey: "mb_champ_png", readyKey: "mb_champ_ready" },
+    s2: { pngKey: "mb_champ_png_s2", readyKey: "mb_champ_ready_s2" },
+    s3: { pngKey: "mb_champ_png_s3", readyKey: "mb_champ_ready_s3" },
+  };
+
+  Object.entries(map).forEach(([sid, keys]) => {
+    const badge = document.querySelector(`[data-season-badge="${sid}"]`);
+    if (!badge) return;
+
+    const png = localStorage.getItem(keys.pngKey);
+    const ready = localStorage.getItem(keys.readyKey);
+
+    const done = (png && png.startsWith("data:image/")) || ready === "1";
+    badge.style.display = done ? "inline-flex" : "none";
+  });
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   forcePlayAll(".bg__video");
   forcePlayAll(".brand__logo");
@@ -199,7 +220,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Achievements on Season picker: show ONLY Champion cards per season
   initAchievementsModal();
 
-  const pill = document.getElementById("profilePill");
+  
+  updateSeasonCompletedBadges();
+const pill = document.getElementById("profilePill");
   if (pill) pill.addEventListener("click", () => openProfileModal(false));
 
   const mustCreate = document.body.getAttribute("data-require-profile") === "1";
