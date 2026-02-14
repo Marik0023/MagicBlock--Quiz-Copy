@@ -3,15 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>MagicBlock Quiz</title>
+  <title>MagicBlock Quiz — Season 2</title>
+
   <link rel="icon" href="../../assets/faviconlogo/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="../../assets/faviconlogo/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="../../assets/faviconlogo/favicon-16x16.png">
   <link rel="apple-touch-icon" href="../../assets/faviconlogo/apple-touch-icon.png">
   <link rel="manifest" href="../../assets/faviconlogo/site.webmanifest">
   <meta name="theme-color" content="#0b0b0f">
-  <link rel="stylesheet" href="styles.css?v=20260203" />
-  <script src="app.js?v=20260203" defer></script>
+
+  <!-- IMPORTANT: без ?v=... -->
+  <link rel="stylesheet" href="styles.css" />
+  <script src="app.js" defer></script>
 </head>
 
 <body data-require-profile="1">
@@ -34,8 +37,8 @@
       </a>
 
       <div style="display:flex; gap:10px; align-items:center;">
-        <a id="seasonsBtn" class="btn btn--ghost" href="../../index.html" aria-label="Back to seasons">Seasons</a>
-        <button id="rewardsBtn" class="btn btn--ghost">Achievements</button>
+        <a id="seasonsBtn" class="btn btn--ghost" href="../../index.html">Seasons</a>
+        <button id="rewardsBtn" class="btn btn--ghost" type="button">Achievements</button>
 
         <div id="profilePill" class="profilePill" title="Profile">
           <div class="profilePill__avatar"><img alt="" /></div>
@@ -67,7 +70,7 @@
           <p class="quizCard__desc">Look at a frame and pick the correct movie</p>
 
           <div class="quizCard__footer">
-            <button class="btn" data-start="movieframe">Start</button>
+            <button class="btn" data-start="movieframe" type="button">Start</button>
             <div class="miniProg" data-prog="movieframe" style="display:none;">
               <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
               <div class="miniProg__text">0%</div>
@@ -88,7 +91,7 @@
           <p class="quizCard__desc">Decode the emoji clue and choose the correct movie</p>
 
           <div class="quizCard__footer">
-            <button class="btn" data-start="movieemoji">Start</button>
+            <button class="btn" data-start="movieemoji" type="button">Start</button>
             <div class="miniProg" data-prog="movieemoji" style="display:none;">
               <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
               <div class="miniProg__text">0%</div>
@@ -109,7 +112,7 @@
           <p class="quizCard__desc">Listen to a short melody and choose the correct song</p>
 
           <div class="quizCard__footer">
-            <button class="btn" data-start="song">Start</button>
+            <button class="btn" data-start="song" type="button">Start</button>
             <div class="miniProg" data-prog="song" style="display:none;">
               <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
               <div class="miniProg__text">0%</div>
@@ -127,10 +130,10 @@
           </div>
           <div class="quizCard__meta">QUIZ 4</div>
           <div class="quizCard__title">True or False</div>
-          <p class="quizCard__desc">Read the statement and decide if it&#39;s true or false</p>
+          <p class="quizCard__desc">Read the statement and decide: true or false</p>
 
           <div class="quizCard__footer">
-            <button class="btn" data-start="truefalse">Start</button>
+            <button class="btn" data-start="truefalse" type="button">Start</button>
             <div class="miniProg" data-prog="truefalse" style="display:none;">
               <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
               <div class="miniProg__text">0%</div>
@@ -147,11 +150,11 @@
             <img src="../../assets/tiles/silhouette.png" alt="Silhouette quiz cover" />
           </div>
           <div class="quizCard__meta">QUIZ 5</div>
-          <div class="quizCard__title">Guess the Character by the Silhouette</div>
-          <p class="quizCard__desc">Look at the silhouette and choose the correct character</p>
+          <div class="quizCard__title">Guess the Character by Silhouette</div>
+          <p class="quizCard__desc">Look at the silhouette and pick the correct character</p>
 
           <div class="quizCard__footer">
-            <button class="btn" data-start="silhouette">Start</button>
+            <button class="btn" data-start="silhouette" type="button">Start</button>
             <div class="miniProg" data-prog="silhouette" style="display:none;">
               <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
               <div class="miniProg__text">0%</div>
@@ -168,11 +171,11 @@
             <img src="../../assets/tiles/learn.png" alt="MagicBlock quiz cover" />
           </div>
           <div class="quizCard__meta">QUIZ 6</div>
-          <div class="quizCard__title">10 questions about MagicBlock</div>
+          <div class="quizCard__title">MagicBlock Knowledge</div>
           <p class="quizCard__desc">10 questions about MagicBlock — pick A/B/C/D</p>
 
           <div class="quizCard__footer">
-            <button class="btn" data-start="magicblock">Start</button>
+            <button class="btn" data-start="magicblock" type="button">Start</button>
             <div class="miniProg" data-prog="magicblock" style="display:none;">
               <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
               <div class="miniProg__text">0%</div>
@@ -180,31 +183,6 @@
           </div>
         </div>
       </article>
-    </section>
-
-    <!-- Champion -->
-    <section id="championWrap" class="champion" style="display:none;">
-      <div class="champion__inner">
-        <!-- LEFT -->
-        <div class="champion__left">
-          <div class="champion__title">Champion Card</div>
-          <p class="champion__desc">Congratulations on completing all 6 quests — your final Card is ready</p>
-
-          <button id="openChampionBtn" class="btn">Generate Champion Card</button>
-
-          <!-- ✅ hint (shows only after PNG exists) -->
-          <div id="championHint" class="champion__hint" style="display:none;">
-            Success! Your Champion Card is now ready ✅
-          </div>
-        </div>
-
-        <!-- RIGHT: preview (shows only after PNG exists) -->
-        <div id="championPreview" class="championPreview" style="display:none;">
-          <div class="cardPreview">
-            <img id="championPreviewImg" alt="Champion preview" />
-          </div>
-        </div>
-      </div>
     </section>
 
     <div class="footerSmall" id="footerHint"></div>
@@ -218,7 +196,7 @@
           <h2 class="modalCard__title">Create your profile</h2>
           <p class="modalCard__sub">This will appear on your result cards.</p>
         </div>
-        <button id="profileCloseBtn" class="modalClose" aria-label="Close">×</button>
+        <button id="profileCloseBtn" class="modalClose" aria-label="Close" type="button">×</button>
       </div>
 
       <div class="modalCard__body">
@@ -234,7 +212,7 @@
             <div class="help">Tip: you can click your profile later to change it.</div>
 
             <div class="btnRow">
-              <button id="profileSaveBtn" class="btn">Start</button>
+              <button id="profileSaveBtn" class="btn" type="button">Start</button>
             </div>
           </div>
         </div>
@@ -251,7 +229,7 @@
           <h2 class="modalCard__title">Your Achievements</h2>
           <p class="modalCard__sub">Quiz cards + Champion card.</p>
         </div>
-        <button id="rewardsCloseBtn" class="modalClose" aria-label="Close">×</button>
+        <button id="rewardsCloseBtn" class="modalClose" aria-label="Close" type="button">×</button>
       </div>
 
       <div class="modalCard__body">
