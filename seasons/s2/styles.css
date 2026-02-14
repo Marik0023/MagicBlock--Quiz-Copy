@@ -299,6 +299,17 @@ img{max-width:100%; display:block}
   display: none;
   z-index: 999;
 }
+
+/* Make hover dropdown easier to use (no "dead gap" between button and menu) */
+.seasonMenu__drop::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  height: 12px;
+  pointer-events: auto;
+}
 .seasonMenu:hover .seasonMenu__drop,
 .seasonMenu.isOpen .seasonMenu__drop{ display:block; }
 
