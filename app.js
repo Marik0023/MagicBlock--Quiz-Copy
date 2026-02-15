@@ -76,7 +76,14 @@ function forcePlayAll(selector){
   window.addEventListener("touchstart", tryPlay, { once:true });
 }
 
-const PLACEHOLDER_AVATAR = "assets/uploadavatar.jpg";
+const REPO_BASE = (() => {
+  const parts = (location.pathname || "").split("/").filter(Boolean);
+  // On GitHub Pages: /<repo>/... -> base = /<repo>/
+  if (!parts.length) return "/";
+  return "/" + parts[0] + "/";
+})();
+
+const PLACEHOLDER_AVATAR = REPO_BASE + "assets/uploadavatar.jpg";
 
 function renderTopProfile(){
   const pill = document.getElementById("profilePill");
