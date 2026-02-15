@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MagicBlock Quiz — Leaderboard</title>
+    <link rel="icon" href="../assets/faviconlogo/favicon.ico" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .lb-wrap { max-width: 1200px; margin: 0 auto; padding: 32px 20px 80px; }
+      .lb-title { font-size: clamp(40px, 5vw, 72px); font-weight: 800; letter-spacing: -0.03em; margin: 12px 0 8px; }
+      .lb-sub { opacity: 0.8; margin: 0 0 22px; }
+      .lb-card { border-radius: 28px; padding: 18px; }
+      .lb-toolbar { display:flex; align-items:center; gap:12px; margin: 12px 0 18px; flex-wrap: wrap; }
+      .lb-search { flex: 1 1 260px; }
+      .lb-search input { width:100%; }
+      .lb-meta { opacity: 0.8; font-size: 14px; }
+      .lb-table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 22px; }
+      .lb-table th, .lb-table td { padding: 14px 14px; text-align: left; vertical-align: middle; }
+      .lb-table thead th { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+      .lb-table tbody tr { border-top: 1px solid rgba(255,255,255,.08); }
+      .lb-rank { width: 58px; opacity: .8; }
+      .lb-user { display:flex; align-items:center; gap:12px; min-width: 240px; }
+      .lb-avatar { width: 42px; height: 42px; border-radius: 14px; object-fit: cover; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); }
+      .lb-nick { font-weight: 700; }
+      .lb-cards { display:flex; align-items:center; gap:12px; flex-wrap: wrap; }
+      .lb-cardimg { width: 240px; max-width: min(240px, 46vw); border-radius: 18px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
+      .lb-scorechip { display:inline-flex; align-items:center; gap:6px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); font-size: 12px; opacity: .92; }
+      .lb-empty { opacity: .85; padding: 20px; }
+      .lb-note { opacity: .7; font-size: 13px; margin-top: 14px; }
+      @media (max-width: 840px) {
+        .lb-table th:nth-child(4), .lb-table td:nth-child(4) { display: none; }
+      }
+    </style>
+  </head>
+  <body data-require-profile="1">
+    <div class="bg"></div>
+
+    <header class="topbar">
+      <div class="topbar__inner">
+        <a class="brand" href="../index.html">
+          <img class="brand__logo" src="../assets/faviconlogo/android-chrome-192x192.png" alt="MagicBlock" />
+          <div class="brand__text">
+            <div class="brand__title">MagicBlock</div>
+            <div class="brand__sub">Quiz</div>
+          </div>
+        </a>
+
+        <nav class="nav" aria-label="Primary">
+          <a class="nav__btn" href="../index.html">Seasons</a>
+          <a class="nav__btn" href="./index.html" aria-current="page">Leaderboard</a>
+          <a class="nav__btn" href="../achievements/">Achievements</a>
+        </nav>
+
+        <button id="profilePill" class="profile-pill" type="button" aria-label="Edit profile">
+          <img id="profilePillAvatar" class="profile-pill__avatar" src="../assets/images/avatar_placeholder.png" alt="" />
+          <div class="profile-pill__meta">
+            <div id="profilePillName" class="profile-pill__name">Profile</div>
+            <div class="profile-pill__edit">Edit</div>
+          </div>
+        </button>
+      </div>
+    </header>
+
+    <main class="lb-wrap">
+      <h1 class="lb-title">Leaderboard</h1>
+      <p class="lb-sub">Public ranking by total score (Season 1 + Season 2). Your score updates when you generate a Champion card.</p>
+
+      <section class="glass lb-card">
+        <div class="lb-toolbar">
+          <div class="lb-search">
+            <input id="lbSearch" class="input" type="text" placeholder="Search nickname…" autocomplete="off" />
+          </div>
+          <button id="lbRefresh" class="btn">Refresh</button>
+          <div id="lbMeta" class="lb-meta"></div>
+        </div>
+
+        <div style="overflow:auto">
+          <table class="lb-table">
+            <thead>
+              <tr>
+                <th class="lb-rank">#</th>
+                <th>User</th>
+                <th>Total</th>
+                <th>Season 1</th>
+                <th>Season 2</th>
+              </tr>
+            </thead>
+            <tbody id="lbBody">
+              <tr><td colspan="5" class="lb-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="lb-note">Tip: if you don’t see your row — open a season → generate your Champion card → come back here and refresh.</div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-config.js"></script>
+    <script src="../assets/js/leaderboard-client.js"></script>
+    <script src="./leaderboard.js"></script>
+    <script src="../app.js"></script>
+
+    <!-- Profile modal (re-used across pages) -->
+    <div class="modal" id="profileModal" aria-hidden="true">
+      <div class="modal__backdrop" data-close="profileModal"></div>
+      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+        <div class="modal__head">
+          <h2 id="profileTitle">Edit profile</h2>
+          <button class="iconbtn" data-close="profileModal" aria-label="Close">✕</button>
+        </div>
+
+        <div class="modal__body">
+          <label class="field">
+            <span class="field__label">Nickname</span>
+            <input id="profileNickname" class="input" maxlength="32" placeholder="Your name" />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Avatar (image URL)</span>
+            <input id="profileAvatarUrl" class="input" placeholder="https://..." />
+            <div class="field__hint">Tip: you can upload to the public bucket or paste a direct image URL.</div>
+          </label>
+
+          <div class="modal__actions">
+            <button id="profileSave" class="btn btn--primary">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

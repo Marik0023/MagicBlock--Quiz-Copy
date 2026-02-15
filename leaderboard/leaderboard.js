@@ -36,7 +36,7 @@
 
     $body.innerHTML = list.map((r, idx) => {
       const nick = safeText(r.nickname || 'Anonymous');
-      const avatar = r.avatar_url ? safeText(r.avatar_url) : '/assets/images/avatar_placeholder.png';
+      const avatar = r.avatar_url ? safeText(r.avatar_url) : '../assets/images/avatar_placeholder.png';
       const s1img = r.champ_s1_url ? `<img class="lb-cardimg" loading="lazy" src="${safeText(r.champ_s1_url)}" alt="Champion S1" />` : '<span class="lb-scorechip">No card</span>';
       const s2img = r.champ_s2_url ? `<img class="lb-cardimg" loading="lazy" src="${safeText(r.champ_s2_url)}" alt="Champion S2" />` : '<span class="lb-scorechip">No card</span>';
 
