@@ -15,6 +15,9 @@
     // Season 2 results (20+20+20 = 60)
     s2Song: "mb_s2_result_song",
     s2Movie: "mb_s2_result_movieframe",
+    s2MovieEmoji: "mb_s2_result_movieemoji",
+    s2Silhouette: "mb_s2_result_silhouette",
+    s2TrueFalse: "mb_s2_result_truefalse",
     s2Magic: "mb_s2_result_magicblock",
   };
 
@@ -85,8 +88,11 @@
     // s2
     const a = readJson(MB_KEYS.s2Song);
     const b = readJson(MB_KEYS.s2Movie);
-    const c = readJson(MB_KEYS.s2Magic);
-    const score = safeInt(a?.correct) + safeInt(b?.correct) + safeInt(c?.correct);
+    const c = readJson(MB_KEYS.s2MovieEmoji);
+    const d = readJson(MB_KEYS.s2Silhouette);
+    const e = readJson(MB_KEYS.s2TrueFalse);
+    const f = readJson(MB_KEYS.s2Magic);
+    const score = safeInt(a?.correct) + safeInt(b?.correct) + safeInt(c?.correct) + safeInt(d?.correct) + safeInt(e?.correct) + safeInt(f?.correct);
     return { score, total: 60 };
   }
 
