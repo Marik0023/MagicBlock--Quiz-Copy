@@ -87,12 +87,17 @@
     return typeof u === "string" && /^(https?:)?\/\//i.test(u);
   }
 
-  // Resolve relative asset paths (e.g. "assets/uploadavatar.jpg") to an absolute URL
+  // Resolve repo-relative asset paths (e.g. "assets/uploadavatar.jpg") to an absolute URL.
+  // IMPORTANT: when we're on a subpage like /leaderboard/, "assets/..." would resolve to
+  // /leaderboard/assets/... (404). This helper auto-prefixes "../" for known subpages.
   function toAbsoluteUrlMaybe(u) {
     if (!isNonEmpty(u)) return null;
     if (isAbsoluteUrl(u) || u.startsWith('data:')) return u;
     try {
-      return new URL(u, window.location.href).href;
+      const p = (window.location && window.location.pathname) ? window.location.pathname : "";
+      const onSubpage = p.includes("/leaderboard/") || p.includes("/seasons/") || p.includes("/achievements/");
+      const fixed = (onSubpage && u.startsWith("assets/")) ? ("../" + u) : u;
+      return new URL(fixed, window.location.href).href;
     } catch {
       return u;
     }
@@ -319,7 +324,11 @@
       throw new Error("Nickname missing. Please set your profile name first.");
     }
 
-    // Avatar upload (only if it's a data URL)
+    // Avatar handling:
+    // - If it's a data URL => upload to Supabase Storage as avatars/{deviceId}.png
+    // - If it's an URL:
+    //    - If it already points to avatars/{deviceId} => keep
+    //    - Otherwise try to fetch & re-upload under this deviceId (so Edge Function accepts it)
     let avatarUrl = null;
     if (isDataUrlImage(avatarVal)) {
       const blob = await dataUrlToBlob(avatarVal);
@@ -331,12 +340,27 @@
         localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
       } catch {}
     } else if (isNonEmpty(avatarVal)) {
-      // If user already has an uploaded avatar URL saved, keep it.
-      // IMPORTANT: the Edge Function validates avatar_url to prevent spoofing.
-      // So we only pass through URLs that look like they belong to THIS device id.
       const candidate = toAbsoluteUrlMaybe(String(avatarVal).trim());
-      const ok = typeof candidate === 'string' && candidate.includes(deviceId);
-      avatarUrl = ok ? candidate : null;
+      // Supabase public URLs may include either "/avatars/<id>" or encoded "avatars%2F<id>".
+      // The Edge Function validator expects the avatar URL to be tied to the device_id,
+      // so checking for the deviceId substring is the most robust.
+      const looksDeviceBound = typeof candidate === 'string' && candidate.includes(deviceId);
+      if (looksDeviceBound) {
+        avatarUrl = candidate;
+      } else {
+        // Try to fetch the image and re-upload as the device-bound avatar.
+        // (May fail due to CORS; if so we'll fall back to placeholder.)
+        try {
+          const blob = await fetchAsPngBlob(candidate);
+          if (blob) {
+            avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
+            try {
+              const nextProfile = { ...profile, avatar: avatarUrl };
+              localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
+            } catch {}
+          }
+        } catch {}
+      }
     }
 
 
@@ -344,7 +368,9 @@
     // upload the default placeholder under this device id so the Edge Function accepts it.
     if (!avatarUrl) {
       try {
-        const blob = await fetchAsPngBlob("assets/uploadavatar.jpg");
+        // IMPORTANT: on /leaderboard/ page, "assets/..." resolves to "/leaderboard/assets/..." (404).
+        // Always use repo-correct relative path.
+        const blob = await fetchAsPngBlob("../assets/uploadavatar.jpg");
         if (blob) {
           avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
           try {
