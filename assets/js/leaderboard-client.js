@@ -148,119 +148,52 @@
     return await res.blob();
   }
 
-  async function uploadPublic(bucket, path, blob, contentType) {
-    const client = await getAuthedClient();
-
-    const { error } = await client.storage.from(bucket).upload(path, blob, {
-      contentType: contentType || "application/octet-stream",
-      upsert: true,
-      cacheControl: "3600",
-    });
-    if (error) throw error;
-
-    const { data } = client.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl;
+  async function fetchToBlob(url) {
+    const res = await fetch(url, { cache: "no-cache" });
+    if (!res.ok) throw new Error("Failed to fetch: " + url);
+    return await res.blob();
   }
 
-  async function invokeEdgeSubmit(payload) {
-    const { url, key } = getConfig();
-    const endpoint = url.replace(/\/$/, "") + "/functions/v1/mbq-submit";
+  // Convert any image blob to PNG (for consistent filenames expected by Edge Function).
+  async function blobToPng(blob) {
+    // If it's already png, return as-is
+    if (blob && blob.type === "image/png") return blob;
 
-    // Prefer an authenticated JWT if available (after anonymous sign-in),
-    // otherwise fall back to the publishable key.
-    let bearer = key;
-    try {
-      const client = await getAuthedClient();
-      const { data } = await client.auth.getSession();
-      if (data?.session?.access_token) bearer = data.session.access_token;
-    } catch {}
-
-    const doRequest = () => fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": key,
-        "Authorization": "Bearer " + bearer,
-      },
-      body: JSON.stringify(payload),
+    const img = await createImageBitmap(blob);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((b) => {
+        if (!b) return reject(new Error("PNG conversion failed"));
+        resolve(b);
+      }, "image/png");
     });
-
-    let res = await doRequest();
-
-    // Supabase function has a 10s throttle; retry once after a short wait.
-    if (res.status === 429) {
-      await new Promise((r) => setTimeout(r, 11000));
-      res = await doRequest();
-    }
-
-    const text = await res.text();
-    let json;
-    try { json = JSON.parse(text); } catch { json = { raw: text }; }
-
-    if (!res.ok) {
-      const msg = json?.error || json?.raw || ("HTTP " + res.status);
-      throw new Error(msg);
-    }
-    return json;
   }
 
-  /**
-   * seasonId: "s1" | "s2"
-   * championPngDataUrl: data:image/png;base64,...
-   */
-  async function syncFromLocal(seasonId, championPngDataUrl) {
-    const deviceId = getOrCreateDeviceId();
-    const profile = getProfile() || {};
-    const nickname = String(profile?.name || "").trim();
-    const avatarVal = profile?.avatar || null; // can be data URL OR URL
+  async function ensureAvatarUploaded(deviceId, profile) {
+    const avatarVal = profile?.avatar || null; // kept for compatibility
 
-    if (!isNonEmpty(nickname)) {
-      throw new Error("Nickname missing. Please set your profile name first.");
-    }
-
-    // Avatar upload (only if it's a data URL)
+    // Ensure avatar_url always matches device_id (Edge Function validation)
     let avatarUrl = null;
-    if (isDataUrlImage(avatarVal)) {
-      const blob = await dataUrlToBlob(avatarVal);
-      avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
+    try {
+      const ensured = await ensureAvatarUploaded(deviceId, profile);
+      avatarUrl = ensured.avatarUrl;
 
-      // Replace saved avatar with URL (so we don't re-upload every time)
-      try {
-        const nextProfile = { ...profile, avatar: avatarUrl };
-        localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
-      } catch {}
-    } else if (isNonEmpty(avatarVal)) {
-      // If user already has an uploaded avatar URL saved, keep it.
-      // IMPORTANT: the Edge Function validates avatar_url to prevent spoofing.
-      // So we only pass through URLs that look like they belong to THIS device id.
-      const candidate = toAbsoluteUrlMaybe(String(avatarVal).trim());
-      const ok = typeof candidate === 'string' && candidate.includes(deviceId);
-      avatarUrl = ok ? candidate : null;
-    }
-
-
-    // If avatarUrl is still missing, upload a safe placeholder avatar tied to this device_id.
-    // The Edge Function requires avatar_url to "belong" to the device_id (anti-spoof).
-    if (!avatarUrl) {
-      try {
-        // Use the bundled placeholder image (keeps behavior consistent across pages)
-        const placeholderRel = (window.__MBQ_BASE_PATH__ || "") + "assets/uploadavatar.jpg";
-        const resp = await fetch(placeholderRel, { cache: "no-store" });
-        if (resp.ok) {
-          const phBlob = await resp.blob();
-          // Upload as JPG (matches source); device_id is in filename so validation passes
-          avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.jpg`, phBlob, phBlob.type || "image/jpeg");
-
-          // Persist URL into profile so we don't re-upload every sync
-          try {
-            const nextProfile = { ...profile, avatar: avatarUrl };
-            localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
-          } catch {}
-        }
-      } catch (e) {
-        // If placeholder upload fails, keep avatarUrl null and let the Edge Function decide.
-        console.warn("Placeholder avatar upload skipped:", e);
+      // Save back to profile so future submits don't need to re-upload
+      if (ensured.savedValue) {
+        try {
+          const nextProfile = { ...profile, avatar: ensured.savedValue };
+          localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
+        } catch {}
       }
+    } catch (e) {
+      // If avatar upload fails for any reason, fall back to null.
+      // (But note: mbq-submit may reject if avatar_url is required.)
+      console.warn("Avatar ensure/upload failed:", e);
+      avatarUrl = null;
     }
 
     // Champion upload (path must match Edge Function expectation)
@@ -275,17 +208,14 @@
     const seasonNum = seasonId === "s1" ? 1 : 2;
 
     // Submit update via Edge Function
-    const submitPayload = {
+    const resp = await invokeEdgeSubmit({
       device_id: deviceId,
       nickname,
-      // Only include avatar_url if we have a device-bound URL
-      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+      avatar_url: avatarUrl,
       season: seasonNum,
       champ_url: champUrl,
       score,
-    };
-
-    const resp = await invokeEdgeSubmit(submitPayload);
+    });
 
     return resp;
   }
