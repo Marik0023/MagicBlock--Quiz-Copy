@@ -113,7 +113,7 @@
     const { url, key } = getConfig();
     const endpoint = url.replace(/\/$/, "") + "/functions/v1/mbq-submit";
 
-    const res = await fetch(endpoint, {
+    const doRequest = () => fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -122,6 +122,14 @@
       },
       body: JSON.stringify(payload),
     });
+
+    let res = await doRequest();
+
+    // Supabase function has a 10s throttle; retry once after a short wait.
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 11000));
+      res = await doRequest();
+    }
 
     const text = await res.text();
     let json;
