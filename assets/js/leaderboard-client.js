@@ -47,6 +47,11 @@
     return window.MBQ_SUPABASE_CLIENT;
   }
 
+  // Back-compat alias (older code called getClient())
+  function getClient() {
+    return getClientSingleton();
+  }
+
   // Ensure we are authenticated (anonymous sign-in) before any Storage upload.
   async function getAuthedClient() {
     const client = getClientSingleton();
@@ -225,8 +230,12 @@
         localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
       } catch {}
     } else if (isNonEmpty(avatarVal)) {
-      // If it's a relative path, make it absolute so leaderboard can load it from any subpage.
-      avatarUrl = toAbsoluteUrlMaybe(String(avatarVal).trim());
+      // If user already has an uploaded avatar URL saved, keep it.
+      // IMPORTANT: the Edge Function validates avatar_url to prevent spoofing.
+      // So we only pass through URLs that look like they belong to THIS device id.
+      const candidate = toAbsoluteUrlMaybe(String(avatarVal).trim());
+      const ok = typeof candidate === 'string' && candidate.includes(deviceId);
+      avatarUrl = ok ? candidate : null;
     }
 
     // Champion upload (path must match Edge Function expectation)
