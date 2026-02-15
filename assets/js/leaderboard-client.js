@@ -49,6 +49,21 @@
     return typeof s === "string" && s.trim().length > 0;
   }
 
+  function isAbsoluteUrl(u) {
+    return typeof u === "string" && /^(https?:)?\/\//i.test(u);
+  }
+
+  // Resolve relative asset paths (e.g. "assets/uploadavatar.jpg") to an absolute URL
+  function toAbsoluteUrlMaybe(u) {
+    if (!isNonEmpty(u)) return null;
+    if (isAbsoluteUrl(u) || u.startsWith('data:')) return u;
+    try {
+      return new URL(u, window.location.href).href;
+    } catch {
+      return u;
+    }
+  }
+
   function getOrCreateDeviceId() {
     let id = localStorage.getItem(DEVICE_KEY);
     if (!id) {
@@ -174,7 +189,8 @@
         localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
       } catch {}
     } else if (isNonEmpty(avatarVal)) {
-      avatarUrl = String(avatarVal).trim();
+      // If it's a relative path, make it absolute so leaderboard can load it from any subpage.
+      avatarUrl = toAbsoluteUrlMaybe(String(avatarVal).trim());
     }
 
     // Champion upload (path must match Edge Function expectation)
