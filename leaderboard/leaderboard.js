@@ -1,6 +1,13 @@
 /* global MBQ_LEADERBOARD */
 
 (function () {
+  const REPO_BASE = (() => {
+    const parts = (location.pathname || "").split("/").filter(Boolean);
+    if (!parts.length) return "/";
+    return "/" + parts[0] + "/";
+  })();
+  const AVATAR_PLACEHOLDER = REPO_BASE + "assets/uploadavatar.jpg";
+
   const $body = document.getElementById('lbBody');
   const $meta = document.getElementById('lbMeta');
   const $search = document.getElementById('lbSearch');
@@ -36,7 +43,7 @@
 
     $body.innerHTML = list.map((r, idx) => {
       const nick = safeText(r.nickname || 'Anonymous');
-      const avatar = r.avatar_url ? safeText(r.avatar_url) : '../assets/images/avatar_placeholder.png';
+      const avatar = r.avatar_url ? safeText(r.avatar_url) : AVATAR_PLACEHOLDER;
       const s1img = r.champ_s1_url ? `<img class="lb-cardimg" loading="lazy" src="${safeText(r.champ_s1_url)}" alt="Champion S1" />` : '<span class="lb-scorechip">No card</span>';
       const s2img = r.champ_s2_url ? `<img class="lb-cardimg" loading="lazy" src="${safeText(r.champ_s2_url)}" alt="Champion S2" />` : '<span class="lb-scorechip">No card</span>';
 
@@ -85,6 +92,20 @@
     $meta.textContent = 'Loading…';
     $refresh.disabled = true;
     try {
+      // If you already have champion cards saved locally, re-sync your row before fetching.
+      try {
+        const s1png = localStorage.getItem('mb_champ_png') || '';
+        if (s1png.startsWith('data:image/')) {
+          await window.MBQ_LEADERBOARD.syncFromLocal('s1', s1png);
+        }
+        const s2png = localStorage.getItem('mb_s2_champ_png') || '';
+        if (s2png.startsWith('data:image/')) {
+          await window.MBQ_LEADERBOARD.syncFromLocal('s2', s2png);
+        }
+      } catch (e) {
+        console.warn('Sync skipped:', e);
+      }
+
       rows = await window.MBQ_LEADERBOARD.fetchLeaderboard();
       $meta.textContent = `${rows.length} players`;
       applySearch();

@@ -34,33 +34,38 @@
     </style>
   </head>
   <body data-require-profile="1">
-    <div class="bg"></div>
+    <!-- Background -->
+    <div class="bg">
+      <video class="bg__video" autoplay muted loop playsinline preload="auto">
+        <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
+      </video>
+      <div class="bg__vignette"></div>
+      <div class="bg__grain"></div>
+    </div>
 
-    <header class="topbar">
+    <!-- Topbar -->
+    <div class="topbar">
       <div class="topbar__inner">
-        <a class="brand" href="../index.html">
-          <img class="brand__logo" src="../assets/faviconlogo/android-chrome-192x192.png" alt="MagicBlock" />
-          <div class="brand__text">
-            <div class="brand__title">MagicBlock</div>
-            <div class="brand__sub">Quiz</div>
-          </div>
+        <a class="brand" href="../index.html" aria-label="Home">
+          <video class="brand__logo" autoplay muted loop playsinline>
+            <source src="../assets/logo.webm" type="video/webm" />
+          </video>
         </a>
 
-        <nav class="nav" aria-label="Primary">
-          <a class="nav__btn" href="../index.html">Seasons</a>
-          <a class="nav__btn" href="./index.html" aria-current="page">Leaderboard</a>
-          <a class="nav__btn" href="../achievements/">Achievements</a>
-        </nav>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <a class="btn btn--ghost" href="../index.html" style="text-decoration:none;">Seasons</a>
+          <a class="btn btn--ghost" href="./index.html" style="text-decoration:none;">Leaderboard</a>
 
-        <button id="profilePill" class="profile-pill" type="button" aria-label="Edit profile">
-          <img id="profilePillAvatar" class="profile-pill__avatar" src="../assets/images/avatar_placeholder.png" alt="" />
-          <div class="profile-pill__meta">
-            <div id="profilePillName" class="profile-pill__name">Profile</div>
-            <div class="profile-pill__edit">Edit</div>
+          <div id="profilePill" class="profilePill" title="Profile">
+            <div class="profilePill__avatar"><img alt="" /></div>
+            <div>
+              <div class="profilePill__name" data-profile-name>Player</div>
+              <div class="profilePill__hint" data-profile-hint>Click to set</div>
+            </div>
           </div>
-        </button>
+        </div>
       </div>
-    </header>
+    </div>
 
     <main class="lb-wrap">
       <h1 class="lb-title">Leaderboard</h1>
