@@ -94,11 +94,11 @@
     try {
       // If you already have champion cards saved locally, re-sync your row before fetching.
       try {
-        const s1png = localStorage.getItem('mb_champ_png') || '';
+        const s1png = localStorage.getItem('mb_champ_png_upload') || localStorage.getItem('mb_champ_png') || '';
         if (s1png.startsWith('data:image/')) {
           await window.MBQ_LEADERBOARD.syncFromLocal('s1', s1png);
         }
-        const s2png = localStorage.getItem('mb_s2_champ_png') || '';
+        const s2png = localStorage.getItem('mb_s2_champ_png_upload') || localStorage.getItem('mb_s2_champ_png') || '';
         if (s2png.startsWith('data:image/')) {
           await window.MBQ_LEADERBOARD.syncFromLocal('s2', s2png);
         }
