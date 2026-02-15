@@ -1,0 +1,1397 @@
+  :root{
+  --bg: #06070b;
+  --panel: rgba(10,12,16,.68);
+  --panel2: rgba(10,12,16,.52);
+  --stroke: rgba(255,255,255,.12);
+  --stroke2: rgba(255,255,255,.18);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.62);
+  --muted2: rgba(255,255,255,.42);
+  --shadow: 0 16px 60px rgba(0,0,0,.55);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --btn: rgba(255,255,255,.10);
+  --btn2: rgba(255,255,255,.14);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  color:var(--text);
+  background: var(--bg);
+  overflow-x:hidden;
+}
+
+a{color:inherit; text-decoration:none}
+img{max-width:100%; display:block}
+
+.container{
+  width:min(1120px, 92vw);
+  margin:0 auto;
+  padding: 22px 0 56px;
+}
+
+/* ===== Background video ===== */
+.bg{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  overflow:hidden;
+  background: #05060a;
+}
+.bg__video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transform: scale(1.04);
+  filter: blur(18px) saturate(1.05) contrast(1.02) brightness(.9);
+  opacity:.95;
+}
+.bg__vignette{
+  position:absolute;
+  inset:-2px;
+  background:
+    radial-gradient(1200px 700px at 18% 15%, rgba(0,0,0,.25), transparent 60%),
+    radial-gradient(1000px 700px at 90% 10%, rgba(0,0,0,.35), transparent 60%),
+    radial-gradient(1100px 800px at 60% 95%, rgba(0,0,0,.55), transparent 55%),
+    linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,.35) 38%, rgba(0,0,0,.60));
+  z-index:1;
+}
+.bg__grain{
+  position:absolute;
+  inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+  opacity:.10;
+  z-index:2;
+  mix-blend-mode: overlay;
+  pointer-events:none;
+}
+
+/* ===== Topbar ===== */
+.topbar{
+  position: sticky;
+  top:0;
+  z-index:50;
+  height: 70px;
+  display:flex;
+  align-items:center;
+  backdrop-filter: blur(18px);
+  background: linear-gradient(to bottom, rgba(0,0,0,.62), rgba(0,0,0,.28));
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.topbar__inner{
+  width:min(1120px, 92vw);
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  overflow:hidden;
+}
+.brand__logo{
+  height: 52px;
+  width:auto;
+  border-radius: 12px;
+  display:block;
+  filter: drop-shadow(0 10px 22px rgba(0,0,0,.45));
+}
+
+/* ===== Profile pill ===== */
+.profilePill{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.14);
+  cursor:pointer;
+  user-select:none;
+  transition: transform .15s ease, background .15s ease;
+}
+.profilePill:hover{ background: rgba(255,255,255,.14); transform: translateY(-1px);}
+.profilePill__avatar{
+  width:32px; height:32px;
+  border-radius: 999px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06);
+}
+.profilePill__avatar img{width:100%; height:100%; object-fit:cover}
+.profilePill__name{
+  max-width: 160px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-weight:700;
+  font-size:14px;
+}
+.profilePill__hint{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* ===== Headings ===== */
+.hero h1{
+  font-size: clamp(42px, 5vw, 68px);
+  line-height:1.02;
+  margin: 18px 0 8px;
+  letter-spacing:-.8px;
+}
+.hero p{
+  margin:0 0 20px;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+/* ===== Quiz cards grid ===== */
+.quizGrid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap:18px;
+}
+@media (max-width: 980px){
+  .quizGrid{ grid-template-columns:1fr; }
+}
+
+.quizCard{
+  position:relative;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(140deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+  min-height: 395px;
+  display:flex;
+  flex-direction:column;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+.quizCard:hover{
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.18);
+}
+.quizCard::before{
+  content:"";
+  position:absolute; inset:-2px;
+  background:
+    radial-gradient(700px 280px at 25% 10%, rgba(120,140,255,.16), transparent 60%),
+    radial-gradient(600px 260px at 85% 5%, rgba(255,120,200,.12), transparent 58%),
+    radial-gradient(700px 300px at 50% 115%, rgba(255,180,80,.10), transparent 60%);
+  pointer-events:none;
+}
+.quizCard__inner{ position:relative; padding:16px; display:flex; flex-direction:column; height:100%;}
+.quizCard__media{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.25);
+  overflow:hidden;
+  height: 170px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.quizCard__media img{
+  height: 140px;
+  width:auto;
+  filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
+  transition: filter .18s ease, transform .18s ease;
+}
+
+/* subtle media highlight on hover (seasons + quizzes) */
+.quizCard:hover .quizCard__media img{
+  transform: scale(1.015);
+  filter:
+    drop-shadow(0 18px 36px rgba(0,0,0,.62))
+    brightness(1.08)
+    contrast(1.05);
+}
+.quizCard__meta{
+  margin-top:14px;
+  font-size:13px;
+  letter-spacing: .22em;
+  color: rgba(255,255,255,.55);
+  font-weight:800;
+}
+.quizCard__title{
+  margin:8px 0 8px;
+  font-size: 18px;
+  line-height:1.1;
+  letter-spacing:-.3px;
+  font-weight: 800;
+}
+.quizCard__desc{
+  margin:0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.quizCard__footer{
+  margin-top:auto;
+  padding-top: 16px;
+
+  display:flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+/* щоб бар був нормальною шириною під кнопкою */
+.quizCard__footer .miniProg{
+  width: 100%;
+}
+
+.badgeDone{
+  position:absolute;
+  top: 14px;
+  right: 14px;
+  z-index:2;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.45);
+  border: 1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.75);
+  font-weight:700;
+  font-size: 13px;
+  backdrop-filter: blur(10px);
+}
+
+/* ===== Buttons ===== */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: var(--btn);
+  color: rgba(255,255,255,.92);
+  font-weight:800;
+  cursor:pointer;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  user-select:none;
+}
+.btn:hover{
+  transform: translateY(-1px);
+  background: var(--btn2);
+  border-color: rgba(255,255,255,.26);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.10) inset;
+}
+.btn:active{ transform: translateY(0px); }
+.btn--ghost{ background: rgba(0,0,0,.20); }
+.btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+.btnRow{ display:flex; gap:12px; flex-wrap:wrap; }
+
+/* ===== Dropdown Season menu (used on quiz pages) ===== */
+.seasonMenu{ position: relative; display: inline-flex; }
+.seasonMenu__drop{
+  position:absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(10,12,16,.88);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  backdrop-filter: blur(14px);
+  display: none;
+  z-index: 999;
+}
+
+/* hover-bridge so the menu doesn't close when moving cursor */
+.seasonMenu__drop::before{
+  content:"";
+  position:absolute;
+  left:0; right:0;
+  top:-10px;
+  height:10px;
+}
+.seasonMenu:hover .seasonMenu__drop,
+.seasonMenu.isOpen .seasonMenu__drop{ display:block; }
+
+.seasonMenu__item{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  color: rgba(255,255,255,.92);
+  font-weight: 850;
+  font-size: 13px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+.seasonMenu__item:hover{
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.10);
+}
+
+.seasonMenu__sep{
+  height: 1px;
+  background: rgba(255,255,255,.10);
+  margin: 6px 6px;
+}
+
+/* ===== Champion section ===== */
+.champion{
+  margin-top: 18px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(140deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+.champion__inner{ padding:18px; position:relative; }
+.champion__title{ font-size:24px; font-weight:900; margin:0 0 6px;}
+.champion__desc{ margin:0 0 14px; color: var(--muted); }
+
+/* ===== Modal ===== */
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:200;
+  padding: 22px;
+  background: rgba(0,0,0,.62);
+  backdrop-filter: blur(10px);
+}
+.modal.isOpen{ display:flex; }
+.modalCard{
+  width: min(920px, 96vw);
+  border-radius: 32px;
+  background: rgba(10,12,16,.78);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 24px 80px rgba(0,0,0,.65);
+  overflow:hidden;
+  position:relative;
+}
+.modalCard__head{
+  padding: 16px 18px 8px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.modalCard__title{ margin:0; font-size: 30px; font-weight:900; letter-spacing:-.4px;}
+.modalCard__sub{ margin:6px 0 0; color: var(--muted); }
+.modalClose{
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.9);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 22px;
+  line-height: 1;
+}
+.modalClose:hover{ background: rgba(255,255,255,.12); }
+
+.modalCard__body{ padding: 10px 18px 18px; }
+
+.profileForm{
+  border-radius: 26px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.22);
+  padding: 16px;
+  display:grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  align-items:center;
+}
+@media (max-width: 820px){
+  .profileForm{ grid-template-columns:1fr; }
+}
+.avatarBox{
+  width: 200px;
+  height: 200px;
+  border-radius: 24px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+}
+.avatarBox img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.avatarBox.isPlaceholder img{
+  filter: blur(10px) saturate(0) brightness(.9);
+  transform: scale(1.06);
+}
+
+.avatarPickBtn{
+  position:absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 12px 14px;
+  justify-content:center;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.input{
+  width:100%;
+  height: 58px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.30);
+  color: rgba(255,255,255,.92);
+  padding: 0 18px;
+  outline:none;
+  font-size:16px;
+  font-weight:700;
+}
+.help{ color: var(--muted); font-size: 14px; }
+
+/* ===== Quiz pages ===== */
+.quizHero{ padding-top: 12px; }
+.quizHero h1{
+  font-size: clamp(40px, 5vw, 70px);
+  margin: 16px 0 6px;
+  letter-spacing:-.9px;
+}
+.quizHero .sub{
+  margin:0 0 16px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.panel{
+  border-radius: var(--radius-xl);
+  background: linear-gradient(140deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  overflow:hidden;
+}
+
+.quizLayout{
+  display:grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap: 18px;
+  align-items:start;
+}
+@media (max-width: 980px){
+  .quizLayout{ grid-template-columns:1fr; }
+}
+
+.questionTitle{
+  font-weight:800;
+  color: rgba(255,255,255,.80);
+  margin: 0 0 10px;
+}
+.progressText{
+  margin: 14px 0 0;
+  color: var(--muted2);
+  font-size: 13px;
+  font-weight:700;
+}
+
+/* ===== Options ===== */
+.options{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.optionBtn{
+  text-align:left;
+  width:100%;
+  border-radius: 18px;
+  padding: 14px 14px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.28);
+  color: rgba(255,255,255,.92);
+  cursor:pointer;
+  font-weight:800;
+  transition: transform .14s ease, background .14s ease, border-color .14s ease, box-shadow .14s ease;
+}
+.optionBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.22);
+}
+.optionBtn:disabled{ opacity:.7; cursor:not-allowed; transform:none; }
+
+.optionBtn.isSelected{
+  border-color: rgba(255,255,255,.38);
+  background: rgba(255,255,255,.08);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.16) inset, 0 0 26px rgba(255,255,255,.10);
+}
+
+/* ===== Next button glow animation ===== */
+.nextWrap{
+  margin-top: 14px;
+  display:flex;
+  justify-content:flex-end;
+}
+.nextBtn{
+  display:none;
+  min-width: 150px;
+}
+.nextBtn.isShow{
+  display:inline-flex;
+  animation: glowIn .38s ease-out both;
+}
+@keyframes glowIn{
+  from{ transform: translateY(8px); opacity:0; box-shadow:none; }
+  to{ transform: translateY(0); opacity:1; box-shadow: 0 0 0 2px rgba(255,255,255,.14) inset, 0 0 24px rgba(255,255,255,.14); }
+}
+
+/* ===== Custom audio player ===== */
+.mbPlayer{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.30);
+  overflow:hidden;
+}
+.mbPlayer__row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding: 10px 12px;
+}
+.mbPlayer__cover{
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  flex: 0 0 auto;
+}
+.mbPlayer__cover img{ width:100%; height:100%; object-fit:cover; }
+.mbPlayer__meta{ flex: 1 1 auto; min-width: 0; }
+.mbPlayer__title{
+  font-weight:900;
+  font-size:14px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.mbPlayer__time{ color: var(--muted); font-size: 12px; margin-top:2px; }
+.mbPlayer__btn{
+  width: 44px; height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  cursor:pointer;
+  flex: 0 0 auto;
+}
+.mbPlayer__btn:hover{ background: rgba(255,255,255,.12); }
+
+.mbPlayer__bar{ padding: 0 12px 12px; }
+.range{
+  width:100%;
+  appearance:none;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  outline:none;
+}
+.range::-webkit-slider-thumb{
+  appearance:none;
+  width: 16px; height: 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.92);
+  border: 0;
+  box-shadow: 0 6px 18px rgba(0,0,0,.45);
+}
+
+/* ===== Movie frame box ===== */
+.frameBox{
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.30);
+  overflow:hidden;
+  aspect-ratio: 16/9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.frameBox img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* ===== Result area ===== */
+.resultBox{ display:grid; gap: 10px; }
+.resultBox h2{
+  margin: 0 0 4px;
+  font-size: 40px;
+  letter-spacing:-.6px;
+  font-weight: 950;
+}
+.kv{
+  display:grid;
+  grid-template-columns: 180px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.kv:last-child{ border-bottom:none; }
+.kv .k{ color: var(--muted); font-weight:800; }
+.kv .v{ font-weight:900; }
+
+/* ===== Card preview (canvas container) ===== */
+.cardZone{
+  margin-top: 14px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.22);
+  padding: 14px;
+  display:none;
+}
+.cardZone.isOpen{ display:block; }
+
+.cardActions{
+  margin-top: 12px;
+  display:flex;
+  justify-content:center;
+}
+
+/* ===== Footer small ===== */
+.footerSmall{
+  margin-top: 22px;
+  color: rgba(255,255,255,.42);
+  font-weight:700;
+  font-size: 13px;
+}
+
+/* =========================================================
+   CARD PREVIEW: Champion + Quiz (final)
+   - Champion/home: default .cardPreview (420px) + shine
+   - Quiz pages: #cardZone preview has NO panel/frame behind
+========================================================= */
+
+/* ===== Base preview (Champion / Home) ===== */
+.cardPreview{
+  position: relative;
+  width: min(420px, 100%);
+  margin: 0 auto;
+
+  border-radius: 22px;
+  overflow: hidden;
+  isolation: isolate;
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.35);
+
+  transform-origin: 50% 30%;
+}
+
+.cardPreview canvas{
+  width: 100%;
+  height: auto;
+  display: block;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* pop-in */
+.cardZone.isOpen .cardPreview{
+  animation: mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
+}
+
+@keyframes mbCardPopIn{
+  from{
+    opacity: 0;
+    transform: translateY(16px) scale(.985);
+    filter: blur(2px);
+  }
+  to{
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* actions pop */
+.cardZone.isOpen .cardActions{
+  animation: mbActionsPop .35s ease-out .12s both;
+}
+@keyframes mbActionsPop{
+  from{ opacity:0; transform: translateY(8px); }
+  to{ opacity:1; transform: translateY(0); }
+}
+
+/* ===== Champion shine (only for non-quiz areas) ===== */
+.cardZone.isOpen .cardPreview::before{
+  content:"";
+  position:absolute;
+  inset:-25%;
+  pointer-events:none;
+
+  background: radial-gradient(900px 520px at 28% 18%,
+    rgba(255,255,255,.18),
+    rgba(255,255,255,0) 60%);
+
+  mix-blend-mode: screen;
+  opacity: .16;
+  filter: blur(1px);
+
+  animation: mbGlowBreath 4s ease-in-out infinite;
+}
+@keyframes mbGlowBreath{
+  0%,100%{ opacity:.10; transform: scale(1); }
+  50%{ opacity:.20; transform: scale(1.015); }
+}
+
+.cardZone.isOpen .cardPreview::after{
+  content:"";
+  position:absolute;
+  inset:-90%;
+  pointer-events:none;
+
+  background: linear-gradient(120deg,
+    rgba(255,255,255,0)    0%,
+    rgba(255,255,255,0)   34%,
+    rgba(255,255,255,.10) 44%,
+    rgba(255,255,255,.48) 50%,
+    rgba(255,255,255,.10) 56%,
+    rgba(255,255,255,0)   66%,
+    rgba(255,255,255,0)  100%
+  );
+
+  mix-blend-mode: screen;
+  filter: blur(.9px);
+
+  transform: translateX(-110%) rotate(-8deg);
+  opacity: 0;
+
+  animation: mbShineEvery2s 2s ease-in-out infinite;
+}
+@keyframes mbShineEvery2s{
+  0%{ transform: translateX(-110%) rotate(-8deg); opacity: 0; }
+  10%{ transform: translateX(-110%) rotate(-8deg); opacity: 0; }
+  22%{ opacity: .55; }
+  50%{ transform: translateX(0%) rotate(-8deg); opacity: .75; }
+  78%{ opacity: .55; }
+  90%{ transform: translateX(110%) rotate(-8deg); opacity: 0; }
+  100%{ transform: translateX(110%) rotate(-8deg); opacity: 0; }
+}
+
+/* reduce motion */
+@media (prefers-reduced-motion: reduce){
+  .cardZone.isOpen .cardPreview,
+  .cardZone.isOpen .cardPreview::before,
+  .cardZone.isOpen .cardPreview::after,
+  .cardZone.isOpen .cardActions{
+    animation: none !important;
+  }
+}
+
+/* =========================================================
+   QUIZ RESULT CARD PREVIEW (NO panel behind, NO shine halo)
+========================================================= */
+
+/* IMPORTANT: прибираємо панель/рамку позаду (це був .cardZone) */
+body.mbQuiz #cardZone.cardZone{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* сам preview — менший і без чорного фону/бордера */
+body.mbQuiz #cardZone .cardPreview{
+  width: min(520px, 100%);
+  margin: 0 auto;
+
+  background: transparent !important;
+  border: 0 !important;
+
+  /* тінь тільки для прев’ю на сторінці */
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+
+  border-radius: 28px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+body.mbQuiz #cardZone .cardPreview canvas{
+  width: 100%;
+  height: auto;
+  display: block;
+
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 28px;
+}
+
+/* вимикаємо champion-shine для quiz preview (бо він виглядав як “рамка/ореол”) */
+body.mbQuiz #cardZone.isOpen .cardPreview::before,
+body.mbQuiz #cardZone.isOpen .cardPreview::after{
+  animation: none !important;
+  opacity: 0 !important;
+  display: none !important;
+  content: none !important;
+}
+
+/* ================================
+   QUIZ: remove big preview panel/frame behind result card
+   (only on quiz pages)
+================================ */
+body.mbQuiz .cardZone{
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* optional: keep spacing nice */
+body.mbQuiz .cardActions{
+  margin-top: 14px;
+}
+
+/* ============================
+   CHAMPION on HOME: preview + glow
+============================ */
+
+.champion__inner{
+  display:grid;
+  grid-template-columns: 1fr minmax(280px, 460px);
+  gap:18px;
+  align-items:center;
+}
+
+@media (max-width: 980px){
+  .champion__inner{ grid-template-columns:1fr; }
+}
+
+.champion__left{ min-width: 0; }
+
+.champion__hint{
+  margin-top: 12px;
+  color: rgba(255,255,255,.72);
+  font-weight: 800;
+}
+
+.championPreview{
+  display:block;
+}
+
+.championPreview .cardPreview{
+  width: min(460px, 100%);
+  margin: 0 auto;
+}
+
+.championPreview .cardPreview img{
+  width: 100%;
+  height: auto;
+  display:block;
+}
+
+/* glow state (set by JS) */
+.champion.champion--glow{
+  border-color: rgba(255,255,255,.18);
+}
+
+.champion.champion--glow .championPreview .cardPreview{
+  box-shadow:
+    0 18px 60px rgba(0,0,0,.55),
+    0 0 0 2px rgba(255,255,255,.08) inset,
+    0 0 60px rgba(255,255,255,.08);
+}
+
+/* reuse the same shine as cardZone but always on when ready */
+.champion.champion--glow .championPreview .cardPreview::before{
+  content:"";
+  position:absolute;
+  inset:-25%;
+  pointer-events:none;
+
+  background: radial-gradient(900px 520px at 28% 18%,
+    rgba(255,255,255,.18),
+    rgba(255,255,255,0) 60%);
+
+  mix-blend-mode: screen;
+  opacity: .16;
+  filter: blur(1px);
+  animation: mbGlowBreath 4s ease-in-out infinite;
+}
+
+.champion.champion--glow .championPreview .cardPreview::after{
+  content:"";
+  position:absolute;
+  inset:-90%;
+  pointer-events:none;
+
+  background: linear-gradient(120deg,
+    rgba(255,255,255,0)    0%,
+    rgba(255,255,255,0)   34%,
+    rgba(255,255,255,.10) 44%,
+    rgba(255,255,255,.48) 50%,
+    rgba(255,255,255,.10) 56%,
+    rgba(255,255,255,0)   66%,
+    rgba(255,255,255,0)  100%
+  );
+
+  mix-blend-mode: screen;
+  filter: blur(.9px);
+
+  transform: translateX(-110%) rotate(-8deg);
+  opacity: 0;
+
+  animation: mbShineEvery2s 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .champion.champion--glow .championPreview .cardPreview,
+  .champion.champion--glow .championPreview .cardPreview::before,
+  .champion.champion--glow .championPreview .cardPreview::after{
+    animation: none !important;
+  }
+}
+
+/* CHAMPION preview: make pseudo-elements work correctly */
+.championPreview .cardPreview{
+  position: relative;
+}
+
+/* Movie quiz: align answers top with video */
+.mbQuiz .quizLayout > div:last-child{
+  padding-top: 54px; 
+}
+
+/* ===== Rewards modal ===== */
+.rewardsGrid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap:14px;
+}
+@media (max-width: 820px){
+  .rewardsGrid{ grid-template-columns:1fr; }
+}
+
+.rewardCard{
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.22);
+  padding: 14px;
+  display:grid;
+  grid-template-columns: 140px 1fr;
+  gap:14px;
+  align-items:center;
+}
+.rewardThumb{
+  border-radius: 16px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  width: 140px;
+  height: 88px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: rgba(255,255,255,.65);
+  font-weight:800;
+  font-size: 12px;
+  text-align:center;
+  padding: 8px;
+}
+.rewardThumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.rewardMeta{
+  min-width:0;
+}
+.rewardTitle{
+  font-weight:900;
+  font-size:16px;
+  margin:0 0 6px;
+}
+.rewardSub{
+  margin:0 0 10px;
+  color: rgba(255,255,255,.62);
+  font-weight:700;
+  font-size:13px;
+}
+.rewardActions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.rewardActions .btn{
+  padding: 10px 14px;
+}
+
+.miniProg{
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.miniProg__bar{
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.miniProg__fill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: rgba(255,255,255,.75);
+}
+
+.miniProg__text{
+  min-width: 44px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255,255,255,.75);
+}
+
+.quizProg{
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 520px;
+}
+
+.quizProg__bar{
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.quizProg__fill{
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: rgba(255,255,255,.80);
+}
+
+.quizProg__text{
+  min-width: 48px;
+  text-align: right;
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(255,255,255,.80);
+}
+
+/* ===== VINYL (Song quiz) — smooth via JS (no CSS animation) ===== */
+.mbQuiz .mbPlayer__cover{
+  width: 112px;   
+  height: 112px;
+  flex: 0 0 112px;
+
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  border-radius: 999px;
+}
+
+/* сам диск */
+.vinyl{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 999px;
+  display: block;
+
+  transform: rotate(0deg);
+  will-change: transform;
+
+  /* легка “живість” */
+  filter: drop-shadow(0 16px 30px rgba(0,0,0,.55));
+}
+
+/* під час програвання вимикаємо transition (JS крутить кожен кадр) */
+.vinyl.isPlaying{
+  transition: none;
+}
+
+/* ===== Volume slider inside bar (Song quiz) ===== */
+.mbQuiz .mbPlayer__bar{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mbQuiz .mbPlayer__bar #seekBar{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* volume right side */
+.mbQuiz .mbPlayer__bar .vol__range{
+  width: 120px;             
+  flex: 0 0 auto;
+
+  padding-left: 12px;
+  border-left: 1px solid rgba(255,255,255,.12);
+  opacity: .92;
+}
+
+/* =========================================================
+   Movie quiz — Custom Play Overlay
+========================================================= */
+
+.mbQuiz .mbVideoWrap{
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.25);
+}
+
+.mbQuiz .mbVideoWrap > video{
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* overlay button (covers whole video) */
+.mbQuiz .videoPlayBtn{
+  position: absolute;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+
+  /* look */
+  background: radial-gradient(ellipse at center,
+    rgba(255,255,255,.10) 0%,
+    rgba(0,0,0,.32) 55%,
+    rgba(0,0,0,.52) 100%
+  );
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  /* smooth show/hide */
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+
+  transition:
+    opacity .22s ease,
+    visibility .22s ease,
+    background .18s ease;
+}
+
+/* hidden state (fade out) */
+.mbQuiz .videoPlayBtn.isHidden{
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* play icon */
+.mbQuiz .videoPlayBtn img{
+  width: 56px;   /* змінюй якщо треба */
+  height: 56px;
+  display: block;
+
+  transform: translateZ(0) scale(1);
+  filter:
+    drop-shadow(0 14px 28px rgba(0,0,0,.55));
+
+  transition: transform .18s ease, filter .18s ease;
+}
+
+/* hover glow */
+.mbQuiz .videoPlayBtn:hover{
+  background: radial-gradient(ellipse at center,
+    rgba(255,255,255,.14) 0%,
+    rgba(0,0,0,.34) 55%,
+    rgba(0,0,0,.56) 100%
+  );
+}
+
+.mbQuiz .videoPlayBtn:hover img{
+  transform: translateZ(0) scale(1.06);
+  filter:
+    drop-shadow(0 18px 34px rgba(0,0,0,.60))
+    drop-shadow(0 0 16px rgba(255,255,255,.22));
+}
+
+/* press */
+.mbQuiz .videoPlayBtn:active img{
+  transform: translateZ(0) scale(0.98);
+}
+
+/* ===== Song quiz: center (player + answers) vertically inside panel ===== */
+.mbQuiz #quizPanel .quizLayout{
+  align-items: center; /* вертикально по центру */
+}
+
+/* прибираємо “фейковий” заголовок справа, який зсуває варіанти вниз */
+.mbQuiz #quizPanel .ghostTitle{
+  display: none;
+}
+
+/* щоб права колонка не мала зайвого top-space (на всякий) */
+.mbQuiz #quizPanel .quizLayout > div:last-child{
+  margin-top: 0;
+}
+
+/* qTitle зверху зліва (коли ти виніс його над quizLayout) */
+.mbQuiz #quizPanel .questionTitle--top{
+  margin: 0 0 14px 0;
+}
+
+/* ===== Answer Review (Result panel) ===== */
+
+.mbQuiz .reviewBox{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  border-radius: 18px;
+  padding: 14px 14px 12px;
+  margin-top: 18px;
+
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.mbQuiz .reviewBox h3{
+  margin: 0 0 12px 0;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: .2px;
+  color: rgba(255,255,255,.92);
+}
+
+.mbQuiz .reviewList{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* один рядок */
+.mbQuiz .reviewItem{
+  display: grid;
+  grid-template-columns: 140px 1fr; /* ✅ рівний лівий бейдж */
+  gap: 14px;
+  align-items: center;
+
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.06);
+}
+
+/* wrong answer highlight */
+.mbQuiz .reviewItem.isWrong{
+  border-color: rgba(255,80,80,.30);
+  background: rgba(255,80,80,.08);
+  box-shadow: inset 0 0 0 1px rgba(255,80,80,.10);
+}
+.mbQuiz .reviewItem.isWrong .reviewQ{
+  border-color: rgba(255,80,80,.30);
+  color: rgba(255,190,190,.92);
+}
+
+/* лівий "pill" */
+.mbQuiz .reviewQ{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 140px;        /* ✅ фіксована ширина = рівно як у movie */
+  height: 36px;
+
+  border-radius: 999px;
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.10);
+
+  font-weight: 900;
+  font-size: 12px;
+  color: rgba(255,255,255,.78);
+  letter-spacing: .9px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* правильна відповідь */
+.mbQuiz .reviewA{
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1.35;
+  color: rgba(255,255,255,.92);
+}
+
+/* текст питання під відповіддю (якщо будеш додавати) */
+.mbQuiz .reviewHint{
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255,255,255,.68);
+}
+
+/* Fade out */
+.mbQuiz .reviewBox.isHidden{
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+/* реально прибрати місце */
+.mbQuiz .reviewBox.isGone{
+  display: none !important;
+}
+
+/* mobile */
+@media (max-width: 720px){
+  .mbQuiz .reviewItem{
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .mbQuiz .reviewQ{
+    width: fit-content;     /* ✅ на мобілці не тягнемо на всю ширину */
+    justify-content: flex-start;
+    padding: 0 12px;        /* ✅ щоб pill виглядав норм */
+  }
+}
+
+
+.crumbs{font-size:12px; opacity:.75; margin-bottom:10px;}
+.crumbs a{color:inherit; text-decoration:none; opacity:.9;}
+.crumbs a:hover{text-decoration:underline;}
