@@ -98,12 +98,97 @@
     }
   }
 
-  function getOrCreateDeviceId() {
-    let id = localStorage.getItem(DEVICE_KEY);
-    if (!id) {
-      id = (crypto?.randomUUID?.() || ("dev_" + Math.random().toString(36).slice(2) + Date.now()));
-      localStorage.setItem(DEVICE_KEY, id);
+    const DEVICE_COOKIE = "mbq_device_id";
+  const IDB_DB = "mbq";
+  const IDB_STORE = "kv";
+  const IDB_KEY = "mb_device_id";
+
+  function getCookie(name) {
+    const v = document.cookie || "";
+    const parts = v.split(";").map(s => s.trim());
+    for (const p of parts) {
+      if (p.startsWith(name + "=")) return decodeURIComponent(p.slice(name.length + 1));
     }
+    return "";
+  }
+  function setCookie(name, value) {
+    // 10 years
+    document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=315360000; Path=/; SameSite=Lax`;
+  }
+
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IDB_DB, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGet(key) {
+    try {
+      const db = await idbOpen();
+      return await new Promise((resolve) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const store = tx.objectStore(IDB_STORE);
+        const r = store.get(key);
+        r.onsuccess = () => resolve(r.result || "");
+        r.onerror = () => resolve("");
+      });
+    } catch {
+      return "";
+    }
+  }
+
+  async function idbSet(key, value) {
+    try {
+      const db = await idbOpen();
+      await new Promise((resolve) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    } catch {}
+  }
+
+  async function getOrCreateDeviceId() {
+    // 1) localStorage (fastest)
+    let id = localStorage.getItem(DEVICE_KEY) || "";
+    if (id) {
+      // keep cookie/idb in sync (best effort)
+      try { setCookie(DEVICE_COOKIE, id); } catch {}
+      idbSet(IDB_KEY, id);
+      return id;
+    }
+
+    // 2) cookie (survives accidental LS wipes sometimes)
+    id = getCookie(DEVICE_COOKIE);
+    if (id) {
+      try { localStorage.setItem(DEVICE_KEY, id); } catch {}
+      idbSet(IDB_KEY, id);
+      return id;
+    }
+
+    // 3) IndexedDB (survives some browser cleanups depending on settings)
+    id = await idbGet(IDB_KEY);
+    if (id) {
+      try { localStorage.setItem(DEVICE_KEY, id); } catch {}
+      try { setCookie(DEVICE_COOKIE, id); } catch {}
+      return id;
+    }
+
+    // 4) brand new
+    id = (crypto?.randomUUID?.() || ("dev_" + Math.random().toString(36).slice(2) + Date.now()));
+    try { localStorage.setItem(DEVICE_KEY, id); } catch {}
+    try { setCookie(DEVICE_COOKIE, id); } catch {}
+    idbSet(IDB_KEY, id);
+    return id;
+  }
+
     return id;
   }
 
@@ -211,7 +296,7 @@
    * championPngDataUrl: data:image/png;base64,...
    */
   syncFromLocal = async function(seasonId, championPngDataUrl) {
-    const deviceId = getOrCreateDeviceId();
+    const deviceId = await getOrCreateDeviceId();
     const profile = getProfile() || {};
     const nickname = String(profile?.name || "").trim();
     const avatarVal = profile?.avatar || null; // can be data URL OR URL
@@ -273,11 +358,6 @@
     const seasonNum = seasonId === "s1" ? 1 : 2;
 
     // Submit update via Edge Function
-    // IMPORTANT:
-    // Your Edge Function currently rejects requests when `avatar_url` is present unless it matches
-    // its internal rule (it seems to be stricter than a simple `includes(device_id)` check).
-    // To keep the submit reliable, we DO NOT send `avatar_url` at all.
-    // The leaderboard UI will derive avatar URLs client-side from `device_id`.
     const payload = {
       device_id: deviceId,
       nickname,
@@ -285,9 +365,9 @@
       champ_url: champUrl,
       score,
     };
-
-    // Still upload avatar so it exists in Storage, but don't pass it to the function.
-    // (avatarUrl is kept in localStorage for profile UI)
+    if (typeof avatarUrl === "string" && avatarUrl.length) {
+      payload.avatar_url = avatarUrl;
+    }
 
     const resp = await invokeEdgeSubmit(payload);
 
