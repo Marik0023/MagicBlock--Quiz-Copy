@@ -8,6 +8,7 @@ const MB_KEYS = {
   resMagic: "mb_result_magicblock",
   champId: "mb_champ_id",
   champPng: "mb_champ_png",      // stores SMALL preview jpeg
+  champPngUpload: "mb_champ_png_upload", // stores PNG (scaled) for leaderboard sync
   champReady: "mb_champ_ready",
 };
 
@@ -204,13 +205,18 @@ function saveChampionPreview() {
   if (!cardCanvas) return;
   try {
     const preview = exportPreviewDataURL(cardCanvas, 520, 0.85);
+    const uploadPng = exportPreviewPNG(cardCanvas, 1400);
     if (preview && preview.startsWith("data:image/")) {
       localStorage.setItem(MB_KEYS.champPng, preview);
+      if (uploadPng && uploadPng.startsWith("data:image/png")) {
+        localStorage.setItem(MB_KEYS.champPngUpload, uploadPng);
+      }
       localStorage.setItem(MB_KEYS.champReady, "1");
     }
   } catch (e) {
     console.warn("preview save failed:", e);
     try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
+    try { localStorage.removeItem(MB_KEYS.champPngUpload); } catch {}
     try { localStorage.removeItem(MB_KEYS.champReady); } catch {}
     alert("Storage full. Preview cleared. Try Generate again (or use smaller avatar).");
   }
@@ -235,7 +241,7 @@ genBtn?.addEventListener("click", async () => {
   // --- Public leaderboard sync (Supabase) ---
   // Upload a reasonably-sized image (not full-res canvas) to keep file size sane.
   try {
-    const uploadDataUrl = exportPreviewDataURL(cardCanvas, 1400, 0.92);
+    const uploadDataUrl = exportPreviewPNG(cardCanvas, 1400);
     if (window.MBQ_LEADERBOARD?.syncFromLocal) {
       await window.MBQ_LEADERBOARD.syncFromLocal('s1', uploadDataUrl);
     }
@@ -680,6 +686,24 @@ function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
   ctx.drawImage(srcCanvas, 0, 0, tw, th);
 
   return t.toDataURL("image/jpeg", quality);
+}
+
+// PNG export for leaderboard sync (Supabase client expects PNG)
+function exportPreviewPNG(srcCanvas, maxW = 1400) {
+  const w = srcCanvas.width;
+  const h = srcCanvas.height;
+  const scale = Math.min(1, maxW / w);
+
+  const tw = Math.round(w * scale);
+  const th = Math.round(h * scale);
+
+  const t = document.createElement("canvas");
+  t.width = tw;
+  t.height = th;
+
+  const ctx = t.getContext("2d");
+  ctx.drawImage(srcCanvas, 0, 0, tw, th);
+  return t.toDataURL("image/png");
 }
 
 // ===== INIT =====
