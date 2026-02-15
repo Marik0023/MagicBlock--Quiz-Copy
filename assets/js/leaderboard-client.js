@@ -189,8 +189,6 @@
     return id;
   }
 
-    return id;
-  }
 
   function readJson(key) {
     try {
