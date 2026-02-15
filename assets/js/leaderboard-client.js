@@ -31,14 +31,41 @@
     return { url, key };
   }
 
-  function getClient() {
+  // Create ONE Supabase client per page (prevents "Multiple GoTrueClient instances" warnings)
+  function getClientSingleton() {
     const { url, key } = getConfig();
     if (!window.supabase?.createClient) {
       throw new Error("Supabase JS not loaded. Include it before leaderboard-client.js");
     }
-    return window.supabase.createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    if (window.MBQ_SUPABASE_CLIENT) return window.MBQ_SUPABASE_CLIENT;
+
+    // IMPORTANT: persistSession must be TRUE so anonymous auth is remembered
+    // and Storage RLS checks (owner = auth.uid()) can pass.
+    window.MBQ_SUPABASE_CLIENT = window.supabase.createClient(url, key, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
     });
+    return window.MBQ_SUPABASE_CLIENT;
+  }
+
+  // Ensure we are authenticated (anonymous sign-in) before any Storage upload.
+  async function getAuthedClient() {
+    const client = getClientSingleton();
+    if (window.MBQ_SUPABASE_AUTH_PROMISE) {
+      await window.MBQ_SUPABASE_AUTH_PROMISE;
+      return client;
+    }
+
+    window.MBQ_SUPABASE_AUTH_PROMISE = (async () => {
+      const { data, error } = await client.auth.getSession();
+      if (error) console.warn("Supabase getSession error:", error);
+      if (!data?.session) {
+        const { error: signErr } = await client.auth.signInAnonymously();
+        if (signErr) throw signErr;
+      }
+    })();
+
+    await window.MBQ_SUPABASE_AUTH_PROMISE;
+    return client;
   }
 
   function isDataUrlImage(s) {
@@ -117,7 +144,7 @@
   }
 
   async function uploadPublic(bucket, path, blob, contentType) {
-    const client = getClient();
+    const client = await getAuthedClient();
 
     const { error } = await client.storage.from(bucket).upload(path, blob, {
       contentType: contentType || "application/octet-stream",
@@ -134,12 +161,21 @@
     const { url, key } = getConfig();
     const endpoint = url.replace(/\/$/, "") + "/functions/v1/mbq-submit";
 
+    // Prefer an authenticated JWT if available (after anonymous sign-in),
+    // otherwise fall back to the publishable key.
+    let bearer = key;
+    try {
+      const client = await getAuthedClient();
+      const { data } = await client.auth.getSession();
+      if (data?.session?.access_token) bearer = data.session.access_token;
+    } catch {}
+
     const doRequest = () => fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "apikey": key,
-        "Authorization": "Bearer " + key,
+        "Authorization": "Bearer " + bearer,
       },
       body: JSON.stringify(payload),
     });
