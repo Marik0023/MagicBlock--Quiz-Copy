@@ -21,6 +21,18 @@
     s2Magic: "mb_s2_result_magicblock",
   };
 
+
+  // GitHub Pages repo base, e.g. /<repo>/
+  const REPO_BASE = (() => {
+    const parts = (location.pathname || "").split("/").filter(Boolean);
+    if (!parts.length) return "/";
+    return "/" + parts[0] + "/";
+  })();
+
+  // Used when we need to upload a placeholder avatar (to satisfy Edge validation)
+  window.MBQ_PLACEHOLDER_AVATAR = REPO_BASE + "assets/uploadavatar.jpg";
+
+
   // Our stable per-browser device id (used as filename in Storage + upsert key)
   const DEVICE_KEY = "mb_device_id";
 
@@ -238,6 +250,26 @@
       avatarUrl = ok ? candidate : null;
     }
 
+
+    // If avatarUrl is still null, upload the built-in placeholder once so Edge Function validation passes.
+    if (!avatarUrl) {
+      try {
+        const placeholderUrl = toAbsoluteUrlMaybe(String(window.MBQ_PLACEHOLDER_AVATAR || "assets/uploadavatar.jpg"));
+        const resp = await fetch(placeholderUrl, { cache: "no-store" });
+        if (resp.ok) {
+          const blob = await resp.blob();
+          // store under this device id so avatar_url contains deviceId
+          avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, blob.type || "image/jpeg");
+          try {
+            const nextProfile = { ...profile, avatar: avatarUrl };
+            localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
+          } catch {}
+        }
+      } catch (e) {
+        console.warn("Placeholder avatar upload failed:", e);
+      }
+    }
+
     // Champion upload (path must match Edge Function expectation)
     if (!isDataUrlImage(championPngDataUrl)) {
       throw new Error("Champion image is not a valid PNG data URL.");
@@ -250,14 +282,17 @@
     const seasonNum = seasonId === "s1" ? 1 : 2;
 
     // Submit update via Edge Function
-    const resp = await invokeEdgeSubmit({
+    // Build payload. Only include avatar_url if it is a valid non-empty string.
+    const payload = {
       device_id: deviceId,
       nickname,
-      avatar_url: avatarUrl,
       season: seasonNum,
       champ_url: champUrl,
       score,
-    });
+    };
+    if (typeof avatarUrl === "string" && avatarUrl.length > 0) payload.avatar_url = avatarUrl;
+
+    const resp = await invokeEdgeSubmit(payload);
 
     return resp;
   }
