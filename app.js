@@ -348,33 +348,33 @@ function applySeasonPickerUI(){
     if (label) label.textContent = `${pct}%`;
 
     const btn = document.querySelector(`[data-season="${seasonId}"]`);
-    if (!btn) return;
+    if (btn){
+      const hasProg = seasonHasAnyProgress(seasonId);
+      const open = seasonAllQuizzesDone(seasonId) && seasonChampionReady(seasonId);
+      btn.textContent = open ? "Open" : (hasProg ? "Continue" : "Start");
+      btn.disabled = false;
+    }
 
-    const hasProg = seasonHasAnyProgress(seasonId);
-    const open = seasonAllQuizzesDone(seasonId) && seasonChampionReady(seasonId);
-    btn.textContent = open ? "Open" : (hasProg ? "Continue" : "Start");
-    btn.disabled = false;
+    // last played hint (S1/S2 only)
+    const last = localStorage.getItem(`mb_last_${seasonId}`);
+    const lastEl = document.querySelector(`[data-season-last="${seasonId}"]`);
+    if (lastEl){
+      if (last){
+        lastEl.style.display = "block";
+        lastEl.textContent = `Last played: ${last}`;
+      } else {
+        lastEl.style.display = "none";
+        lastEl.textContent = "";
+      }
+    }
   });
 
-  // S3 stays disabled
+  // S3 stays disabled (and no progress/last played)
   const s3Btn = document.querySelector('[data-season="s3"]');
   if (s3Btn){
     s3Btn.textContent = "Coming soon";
     s3Btn.disabled = true;
   }
-  // last played hint
-  const last = localStorage.getItem(`mb_last_${seasonId}`);
-  const lastEl = document.querySelector(`[data-season-last="${seasonId}"]`);
-  if (lastEl){
-    if (last){
-      lastEl.style.display = "block";
-      lastEl.textContent = `Last played: ${last}`;
-    } else {
-      lastEl.style.display = "none";
-      lastEl.textContent = "";
-    }
-  }
-
 }
 
 
