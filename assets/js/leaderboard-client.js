@@ -273,6 +273,11 @@
     const seasonNum = seasonId === "s1" ? 1 : 2;
 
     // Submit update via Edge Function
+    // IMPORTANT:
+    // Your Edge Function currently rejects requests when `avatar_url` is present unless it matches
+    // its internal rule (it seems to be stricter than a simple `includes(device_id)` check).
+    // To keep the submit reliable, we DO NOT send `avatar_url` at all.
+    // The leaderboard UI will derive avatar URLs client-side from `device_id`.
     const payload = {
       device_id: deviceId,
       nickname,
@@ -280,9 +285,9 @@
       champ_url: champUrl,
       score,
     };
-    if (typeof avatarUrl === "string" && avatarUrl.length) {
-      payload.avatar_url = avatarUrl;
-    }
+
+    // Still upload avatar so it exists in Storage, but don't pass it to the function.
+    // (avatarUrl is kept in localStorage for profile UI)
 
     const resp = await invokeEdgeSubmit(payload);
 
