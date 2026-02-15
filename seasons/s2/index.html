@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MagicBlock Quiz — Season 2</title>
+
+  <link rel="icon" href="../../assets/faviconlogo/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="../../assets/faviconlogo/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../../assets/faviconlogo/favicon-16x16.png">
+  <link rel="apple-touch-icon" href="../../assets/faviconlogo/apple-touch-icon.png">
+  <link rel="manifest" href="../../assets/faviconlogo/site.webmanifest">
+  <meta name="theme-color" content="#0b0b0f">
+
+  <!-- IMPORTANT: без ?v=... -->
+  <link rel="stylesheet" href="styles.css" />
+  <script src="app.js" defer></script>
+</head>
+
+<body data-require-profile="1">
+  <!-- Background -->
+  <div class="bg">
+    <video class="bg__video" autoplay muted loop playsinline preload="auto">
+      <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
+    </video>
+    <div class="bg__vignette"></div>
+    <div class="bg__grain"></div>
+  </div>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="../../index.html" aria-label="Seasons">
+        <video class="brand__logo" autoplay muted loop playsinline>
+          <source src="../../assets/logo.webm" type="video/webm" />
+        </video>
+      </a>
+
+      <div style="display:flex; gap:10px; align-items:center;">
+        <a id="seasonsBtn" class="btn btn--ghost" href="../../index.html">Seasons</a>
+        <button id="rewardsBtn" class="btn btn--ghost" type="button">Achievements</button>
+
+        <div id="profilePill" class="profilePill" title="Profile">
+          <div class="profilePill__avatar"><img alt="" /></div>
+          <div>
+            <div class="profilePill__name" data-profile-name>Player</div>
+            <div class="profilePill__hint" data-profile-hint>Click to set</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Season 2 — Pick a quiz</h1>
+      <p>Each quiz can be completed once, good luck</p>
+    </section>
+
+    <section class="quizGrid">
+      <!-- Quiz 1 -->
+      <article class="quizCard">
+        <div class="badgeDone" data-badge="movieframe" style="display:none;">✓ Completed</div>
+        <div class="quizCard__inner">
+          <div class="quizCard__media">
+            <img src="../../assets/tiles/cinema.png" alt="Movie frame quiz cover" />
+          </div>
+          <div class="quizCard__meta">QUIZ 1</div>
+          <div class="quizCard__title">Guess the Movie by the Frame</div>
+          <p class="quizCard__desc">Look at a frame and pick the correct movie</p>
+
+          <div class="quizCard__footer">
+            <button class="btn" data-start="movieframe" type="button">Start</button>
+            <div class="miniProg" data-prog="movieframe" style="display:none;">
+              <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
+              <div class="miniProg__text">0%</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Quiz 2 -->
+      <article class="quizCard">
+        <div class="badgeDone" data-badge="movieemoji" style="display:none;">✓ Completed</div>
+        <div class="quizCard__inner">
+          <div class="quizCard__media">
+            <img src="../../assets/tiles/emoji.png" alt="Movie emoji quiz cover" />
+          </div>
+          <div class="quizCard__meta">QUIZ 2</div>
+          <div class="quizCard__title">Guess the Movie by Emojis</div>
+          <p class="quizCard__desc">Decode the emoji clue and choose the correct movie</p>
+
+          <div class="quizCard__footer">
+            <button class="btn" data-start="movieemoji" type="button">Start</button>
+            <div class="miniProg" data-prog="movieemoji" style="display:none;">
+              <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
+              <div class="miniProg__text">0%</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Quiz 3 -->
+      <article class="quizCard">
+        <div class="badgeDone" data-badge="song" style="display:none;">✓ Completed</div>
+        <div class="quizCard__inner">
+          <div class="quizCard__media">
+            <img src="../../assets/tiles/song.png" alt="Song quiz cover" />
+          </div>
+          <div class="quizCard__meta">QUIZ 3</div>
+          <div class="quizCard__title">Guess the Song by the Melody</div>
+          <p class="quizCard__desc">Listen to a short melody and choose the correct song</p>
+
+          <div class="quizCard__footer">
+            <button class="btn" data-start="song" type="button">Start</button>
+            <div class="miniProg" data-prog="song" style="display:none;">
+              <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
+              <div class="miniProg__text">0%</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Quiz 4 -->
+      <article class="quizCard">
+        <div class="badgeDone" data-badge="truefalse" style="display:none;">✓ Completed</div>
+        <div class="quizCard__inner">
+          <div class="quizCard__media">
+            <img src="../../assets/tiles/truefalse.png" alt="True or false quiz cover" />
+          </div>
+          <div class="quizCard__meta">QUIZ 4</div>
+          <div class="quizCard__title">True or False</div>
+          <p class="quizCard__desc">Read the statement and decide: true or false</p>
+
+          <div class="quizCard__footer">
+            <button class="btn" data-start="truefalse" type="button">Start</button>
+            <div class="miniProg" data-prog="truefalse" style="display:none;">
+              <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
+              <div class="miniProg__text">0%</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Quiz 5 -->
+      <article class="quizCard">
+        <div class="badgeDone" data-badge="silhouette" style="display:none;">✓ Completed</div>
+        <div class="quizCard__inner">
+          <div class="quizCard__media">
+            <img src="../../assets/tiles/silhouette.png" alt="Silhouette quiz cover" />
+          </div>
+          <div class="quizCard__meta">QUIZ 5</div>
+          <div class="quizCard__title">Guess the Character by Silhouette</div>
+          <p class="quizCard__desc">Look at the silhouette and pick the correct character</p>
+
+          <div class="quizCard__footer">
+            <button class="btn" data-start="silhouette" type="button">Start</button>
+            <div class="miniProg" data-prog="silhouette" style="display:none;">
+              <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
+              <div class="miniProg__text">0%</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Quiz 6 -->
+      <article class="quizCard">
+        <div class="badgeDone" data-badge="magicblock" style="display:none;">✓ Completed</div>
+        <div class="quizCard__inner">
+          <div class="quizCard__media">
+            <img src="../../assets/tiles/learn.png" alt="MagicBlock quiz cover" />
+          </div>
+          <div class="quizCard__meta">QUIZ 6</div>
+          <div class="quizCard__title">MagicBlock Knowledge</div>
+          <p class="quizCard__desc">10 questions about MagicBlock — pick A/B/C/D</p>
+
+          <div class="quizCard__footer">
+            <button class="btn" data-start="magicblock" type="button">Start</button>
+            <div class="miniProg" data-prog="magicblock" style="display:none;">
+              <div class="miniProg__bar"><div class="miniProg__fill" style="width:0%"></div></div>
+              <div class="miniProg__text">0%</div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <div class="footerSmall" id="footerHint"></div>
+  </main>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalCard__head">
+        <div>
+          <h2 class="modalCard__title">Create your profile</h2>
+          <p class="modalCard__sub">This will appear on your result cards.</p>
+        </div>
+        <button id="profileCloseBtn" class="modalClose" aria-label="Close" type="button">×</button>
+      </div>
+
+      <div class="modalCard__body">
+        <div class="profileForm">
+          <div class="avatarBox" id="avatarBox">
+            <img id="profilePreview" alt="" />
+            <button id="avatarPickBtn" class="btn btn--ghost avatarPickBtn" type="button">Upload Avatar</button>
+            <input id="profileFile" type="file" accept="image/*" hidden>
+          </div>
+
+          <div class="field">
+            <input id="profileName" class="input" placeholder="Enter your name" />
+            <div class="help">Tip: you can click your profile later to change it.</div>
+
+            <div class="btnRow">
+              <button id="profileSaveBtn" class="btn" type="button">Start</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Rewards Modal -->
+  <div id="rewardsModal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalCard__head">
+        <div>
+          <h2 class="modalCard__title">Season 2 — Achievements</h2>
+          <p class="modalCard__sub">Quiz cards + Champion card.</p>
+        </div>
+        <button id="rewardsCloseBtn" class="modalClose" aria-label="Close" type="button">×</button>
+      </div>
+
+      <div class="modalCard__body">
+        <div class="rewardsGrid" id="rewardsGrid"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
