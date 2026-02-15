@@ -156,33 +156,28 @@
   }
 
   async function getOrCreateDeviceId() {
-    // 1) localStorage (fastest)
-    let id = localStorage.getItem(DEVICE_KEY) || "";
-    if (id) {
-      // keep cookie/idb in sync (best effort)
-      try { setCookie(DEVICE_COOKIE, id); } catch {}
-      idbSet(IDB_KEY, id);
-      return id;
+    // Best variant: use Supabase anonymous auth uid as our stable id.
+    // This prevents easy spoofing and keeps Storage ownership aligned with RLS.
+    const client = await getAuthedClient();
+    let id = "";
+    try {
+      const { data, error } = await client.auth.getUser();
+      if (error) console.warn("Supabase getUser error:", error);
+      id = data?.user?.id || "";
+    } catch (e) {
+      console.warn("Supabase getUser exception:", e);
     }
-
-    // 2) cookie (survives accidental LS wipes sometimes)
-    id = getCookie(DEVICE_COOKIE);
-    if (id) {
-      try { localStorage.setItem(DEVICE_KEY, id); } catch {}
-      idbSet(IDB_KEY, id);
-      return id;
+    if (!id) {
+      try {
+        const { data } = await client.auth.getSession();
+        id = data?.session?.user?.id || "";
+      } catch {}
     }
-
-    // 3) IndexedDB (survives some browser cleanups depending on settings)
-    id = await idbGet(IDB_KEY);
-    if (id) {
-      try { localStorage.setItem(DEVICE_KEY, id); } catch {}
-      try { setCookie(DEVICE_COOKIE, id); } catch {}
-      return id;
+    // As a last-resort fallback (should be rare), keep old behavior, but this id will NOT have Storage ownership.
+    if (!id) {
+      id = (crypto?.randomUUID?.() || ("dev_" + Math.random().toString(36).slice(2) + Date.now()));
     }
-
-    // 4) brand new
-    id = (crypto?.randomUUID?.() || ("dev_" + Math.random().toString(36).slice(2) + Date.now()));
+    // Mirror into browser stores for convenience (non-authoritative).
     try { localStorage.setItem(DEVICE_KEY, id); } catch {}
     try { setCookie(DEVICE_COOKIE, id); } catch {}
     idbSet(IDB_KEY, id);
@@ -232,6 +227,27 @@
     const res = await fetch(dataUrl);
     return await res.blob();
   }
+
+  async function fetchAsPngBlob(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if ((blob.type || "").includes("png")) return blob;
+    // Convert jpg/webp/etc -> png to satisfy strict backend validators
+    try {
+      const bmp = await createImageBitmap(blob);
+      const canvas = document.createElement("canvas");
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bmp, 0, 0);
+      return await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    } catch (e) {
+      console.warn("fetchAsPngBlob convert failed:", e);
+      return null;
+    }
+  }
+
 
   async function uploadPublic(bucket, path, blob, contentType) {
     const client = await getAuthedClient();
@@ -328,12 +344,9 @@
     // upload the default placeholder under this device id so the Edge Function accepts it.
     if (!avatarUrl) {
       try {
-        const res = await fetch("assets/uploadavatar.jpg", { cache: "no-store" });
-        if (res.ok) {
-          const blob = await res.blob();
-          const ct = blob.type || "image/jpeg";
-          const ext = ct.includes("png") ? "png" : "jpg";
-          avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.${ext}`, blob, ct);
+        const blob = await fetchAsPngBlob("assets/uploadavatar.jpg");
+        if (blob) {
+          avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
           try {
             const nextProfile = { ...profile, avatar: avatarUrl };
             localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
