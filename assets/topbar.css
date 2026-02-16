@@ -1,20 +1,25 @@
-/* MagicBlock Quiz — unified topbar */
+/* MagicBlock Quiz — unified topbar (short oval height, big animated logo) */
 
 .mbqTopbar{
   position: sticky;
   top: 0;
   z-index: 9999;
-  padding: 14px 18px;
+  padding: 10px 16px;        /* outer spacing around the oval */
   pointer-events: auto;
 }
 
 .mbqTopbar__inner{
   max-width: 1200px;
   margin: 0 auto;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+
+  /* THE OVAL HEIGHT (main thing you wanted) */
+  height: 74px;              /* change: 64 / 70 / 74 */
+  padding: 0 14px;           /* no vertical padding -> oval won't get taller */
 
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.12);
@@ -22,7 +27,6 @@
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   box-shadow: 0 8px 30px rgba(0,0,0,.35);
-  padding: 10px 12px;
 }
 
 .mbqTopbar__brand{
@@ -33,31 +37,38 @@
   text-decoration: none;
   font-weight: 800;
   letter-spacing: -0.01em;
+  min-width: 0;
 }
 
+/* Big logo, but it will NOT stretch the oval height */
 .mbqTopbar__logo{
-  /* Logo should be free (no frame) and keep animating */
-  width: 160px;
-  height: 160px;
+  width: 160px;              /* your big logo width */
+  height: 160px;             /* can stay big */
   border-radius: 0;
   background: transparent;
   border: none;
   overflow: visible;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .mbqTopbar__logo video,
 .mbqTopbar__logo img{
-  width: 100%;
-  height: 100%;
+  /* constrain inside the oval height */
+  max-height: 62px;          /* must be < .mbqTopbar__inner height */
+  width: auto;
+  height: auto;
   object-fit: contain;
+  display: block;
 }
 
 .mbqTopbar__nav{
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
 }
 
 .mbqTopbar__nav a,
@@ -69,10 +80,11 @@
   color: rgba(255,255,255,.92);
   text-decoration: none;
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 9px 14px;         /* slightly shorter */
   font-weight: 800;
   font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .mbqTopbar__nav a:hover,
@@ -87,41 +99,90 @@
 }
 
 .mbqTopbar__profile{
-  display:flex;
-  align-items:center;
+  display: flex;
+  align-items: center;
   gap: 10px;
+
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(0,0,0,.20);
   color: rgba(255,255,255,.92);
   border-radius: 999px;
-  padding: 10px 12px;
-  cursor:pointer;
+
+  padding: 8px 12px;         /* shorter */
+  cursor: pointer;
+  white-space: nowrap;
 }
+
 .mbqTopbar__profile:hover{
   border-color: rgba(255,255,255,.22);
   background: rgba(255,255,255,.08);
 }
 
 .mbqTopbar__avatar{
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 14px;
-  overflow:hidden;
+  overflow: hidden;
   border: 1px solid rgba(255,255,255,.12);
   background: rgba(255,255,255,.06);
+  flex: 0 0 auto;
 }
-.mbqTopbar__avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
 
-.mbqTopbar__ptext{ line-height: 1.05; text-align:left; }
-.mbqTopbar__pname{ font-weight: 900; font-size: 14px; }
-.mbqTopbar__pedit{ opacity: .7; font-weight: 700; font-size: 12px; }
+.mbqTopbar__avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mbqTopbar__ptext{
+  line-height: 1.05;
+  text-align: left;
+}
+
+.mbqTopbar__pname{
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.mbqTopbar__pedit{
+  opacity: .7;
+  font-weight: 700;
+  font-size: 12px;
+}
 
 @media (max-width: 860px){
-  .mbqTopbar__inner{ border-radius: 22px; }
-  .mbqTopbar__brand span{ display:none; }
+  .mbqTopbar__inner{
+    border-radius: 22px;
+    height: 70px;            /* slightly smaller on mobile */
+  }
+  .mbqTopbar__logo video,
+  .mbqTopbar__logo img{
+    max-height: 58px;
+  }
 }
 
 @media (max-width: 560px){
-  .mbqTopbar__nav a, .mbqTopbar__nav button{ padding: 9px 10px; font-size: 13px; }
-  .mbqTopbar__ptext{ display:none; }
+  .mbqTopbar{
+    padding: 8px 12px;
+  }
+  .mbqTopbar__inner{
+    height: 64px;
+    padding: 0 10px;
+  }
+  .mbqTopbar__nav a,
+  .mbqTopbar__nav button{
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .mbqTopbar__ptext{
+    display: none;
+  }
+  .mbqTopbar__logo{
+    width: 120px;            /* a bit smaller so nav fits */
+  }
+  .mbqTopbar__logo video,
+  .mbqTopbar__logo img{
+    max-height: 52px;
+  }
 }
