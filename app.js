@@ -53,15 +53,17 @@ function ensureDeviceIdInProfile(){
   try{
     const p = getProfile();
     if (!p) return;
-    if (p.device_id) return;
 
     const did = (localStorage.getItem("mb_device_id") || "").trim();
     if (!did) return;
 
-    // Keep everything else intact; just inject device_id for stable leaderboard matching.
+    // If profile already has a different id (old builds / migrations), keep it in sync.
+    if (p.device_id === did) return;
+
     setProfile({ ...p, device_id: did });
   } catch {}
 }
+
 
 
 /**
