@@ -192,17 +192,23 @@
       }
 
       rows = await window.MBQ_LEADERBOARD.fetchLeaderboard();
-
-      // Dedupe by nickname (case-insensitive): keep most recent updated row.
-      const byNick = new Map();
-      for (const r of (Array.isArray(rows) ? rows : [])) {
-        const key = String(r.nickname || '').trim().toLowerCase() || '__anon__';
-        const prev = byNick.get(key);
-        const t = Date.parse(r.updated_at || r.created_at || '') || 0;
-        const pt = prev ? (Date.parse(prev.updated_at || prev.created_at || '') || 0) : -1;
-        if (!prev || t > pt) byNick.set(key, r);
-      }
-      rows = Array.from(byNick.values());
+// Dedupe by device_id: keep most recent updated row per device.
+// (Nickname can change; multiple people can share the same nickname.)
+const byId = new Map();
+const arr = (Array.isArray(rows) ? rows : []);
+for (let i = 0; i < arr.length; i++) {
+  const r = arr[i];
+  const id = String(r.device_id || "").trim();
+  const nickKey = String(r.nickname || "").trim().toLowerCase();
+  // Fallback for legacy rows without device_id (should be rare):
+  // keep them separate unless they truly match.
+  const key = id || (nickKey ? `legacy:${nickKey}` : `legacy:__anon__:${i}`);
+  const prev = byId.get(key);
+  const t = Date.parse(r.updated_at || r.created_at || "") || 0;
+  const pt = prev ? (Date.parse(prev.updated_at || prev.created_at || "") || 0) : -1;
+  if (!prev || t > pt) byId.set(key, r);
+}
+rows = Array.from(byId.values());
 
       $meta.textContent = `${rows.length} players`;
       applySearch();
