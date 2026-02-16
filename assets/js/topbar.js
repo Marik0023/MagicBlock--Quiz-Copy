@@ -19,12 +19,11 @@
       <div class="mbqTopbar__left">
         <a class="mbqTopbar__brand" href="${prefix}index.html" aria-label="MagicBlock Quiz Home">
           <span class="mbqTopbar__logo" aria-hidden="true">
-            <video autoplay muted loop playsinline>
+            <video autoplay muted loop playsinline preload="auto">
               <source src="${prefix}assets/logo.webm" type="video/webm" />
             </video>
             <img src="${prefix}assets/faviconlogo/favicon-32x32.png" alt="" />
           </span>
-          <span>MagicBlock Quiz</span>
         </a>
       </div>
 
@@ -47,21 +46,36 @@
     </div>
   `;
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function initTopbar(){
+    // Insert once
+    if (!document.body || document.querySelector('header.mbqTopbar')) return;
     document.body.insertBefore(header, document.body.firstChild);
+
+    // Logo: show animated webm by default; show fallback image only if video fails.
+    const logo = header.querySelector('.mbqTopbar__logo');
+    const vid = logo?.querySelector('video');
+    const img = logo?.querySelector('img');
+    if (img) img.style.display = 'none';
+    if (vid) {
+      vid.addEventListener('error', () => { if (img) img.style.display = 'block'; });
+      // Some browsers need an explicit play call.
+      setTimeout(() => { try { vid.play(); } catch(_){} }, 50);
+    }
 
     // Always keep topbar actions working on every page.
     // If the current page doesn't have the modals wired (e.g. leaderboard),
     // redirect to Home with a hash that will auto-open.
     const homeHref = `${prefix}index.html`;
+    // True only for the project root Home page, not for /leaderboard/index.html or other index pages.
+    const isHome = /\/index\.html$/i.test(pathLower) && !pathLower.includes('/leaderboard/') && !pathLower.includes('/seasons/');
     const achBtn = document.getElementById('achievementsBtn');
     if (achBtn){
       achBtn.addEventListener('click', (e) => {
+        // Always work everywhere:
+        // - On Home: open the modal if present
+        // - Else: redirect to Home hash that will auto-open
         const hasModal = !!document.getElementById('rewardsModal');
-        if (!hasModal){
-          e.preventDefault();
-          window.location.href = `${homeHref}#achievements`;
-        }
+        if (!isHome || !hasModal){ e.preventDefault(); window.location.href = `${homeHref}#achievements`; return; }
       });
     }
 
@@ -69,10 +83,7 @@
     if (pill){
       pill.addEventListener('click', (e) => {
         const hasModal = !!document.getElementById('profileModal');
-        if (!hasModal){
-          e.preventDefault();
-          window.location.href = `${homeHref}#edit-profile`;
-        }
+        if (!isHome || !hasModal){ e.preventDefault(); window.location.href = `${homeHref}#edit-profile`; return; }
       });
     }
 
@@ -102,5 +113,12 @@
       const pill = document.getElementById('profilePill');
       if (pill) setTimeout(() => pill.click(), 80);
     }
-  });
+  }
+
+  // Init whether the script is loaded with defer or after DOMContentLoaded.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTopbar);
+  } else {
+    initTopbar();
+  }
 })();
