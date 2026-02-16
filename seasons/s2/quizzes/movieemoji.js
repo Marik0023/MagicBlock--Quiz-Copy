@@ -32,12 +32,26 @@ const MB_KEYS = {
 const PNG_KEY = "mb_s2_png_movieemoji";
 
 const QUIZ_CARD = {
-  title: "How well do you know MagicBlock?",
-  idPrefix: "MagicStudent",
+  title: "Guess the Movie by Emojis",
+  idPrefix: "MovieEmoji",
 };
 
 function safeJSONParse(v, fallback = null) {
   try { return JSON.parse(v); } catch { return fallback; }
+}
+
+function formatEmojiString(s){
+  if (!s) return "";
+  // If the author already added spaces, keep as-is
+  if (/\s/.test(s)) return s;
+  try {
+    if (typeof Intl !== "undefined" && Intl.Segmenter) {
+      const seg = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+      return Array.from(seg.segment(s), x => x.segment).join(" ");
+    }
+  } catch {}
+  // Fallback: split by code points (not perfect for ZWJ sequences, but ok)
+  return Array.from(s).join(" ");
 }
 
 function freeStorageSpaceS2(){
@@ -165,19 +179,19 @@ document.addEventListener("DOMContentLoaded", () => {
   if (achievementsBtn) achievementsBtn.addEventListener("click", () => (location.href = "../index.html#achievements"));
 
   const QUESTIONS = [
-  { q: "🧙‍♂️⚡️🏰", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🦁👑🌅", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🕷️🧑‍🎓🏙️", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🚢🧊💔", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🤖🌌👦", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🧟‍♂️🏃‍♂️🌆", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🕵️‍♂️🔍🎩", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🐉⚔️🏔️", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "👽🚲🌙", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] },
-  { q: "🧠💊🟩", a: "Coming soon", options: ["Coming soon","Coming soon","Coming soon","Coming soon"] }
+  { text: "🚢🧊💔🌊", options: ["Jaws", "Titanic", "Poseidon", "Pearl Harbor"], correctIndex: 1 },
+  { text: "🤵🌹🔫🍝", options: ["The Godfather", "Goodfellas", "Scarface", "The Irishman"], correctIndex: 0 },
+  { text: "🌌🤖⚔️🚀", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars: A New Hope", "Dune"], correctIndex: 2 },
+  { text: "🧙‍♂️⚡️🦉🚂", options: ["The Chronicles of Narnia", "Percy Jackson", "Fantastic Beasts", "Harry Potter"], correctIndex: 3 },
+  { text: "💍🧝‍♂️🧙‍♂️👁️", options: ["The Lord of the Rings", "The Hobbit", "The Two Towers", "Willow"], correctIndex: 0 },
+  { text: "🦖🏝️🧬🚙", options: ["Kong: Skull Island", "Godzilla", "Jurassic Park", "Jumanji"], correctIndex: 2 },
+  { text: "🕶️💊🟩💻", options: ["Tron: Legacy", "The Matrix", "Ready Player One", "Inception"], correctIndex: 1 },
+  { text: "🦁👑🌅🎶", options: ["Madagascar", "The Jungle Book", "Tarzan", "The Lion King"], correctIndex: 3 },
+  { text: "⚡️🚗⏳🔙", options: ["Back to the Future", "Looper", "Tenet", "The Time Machine"], correctIndex: 0 },
+  { text: "🏠👦🎄🪤", options: ["Elf", "Home Alone", "The Grinch", "Jingle All the Way"], correctIndex: 1 },
 ];
 
-  const quizPanel = document.getElementById("quizPanel");
+const quizPanel = document.getElementById("quizPanel");
   const resultPanel = document.getElementById("resultPanel");
 
   const qTitle = document.getElementById("qTitle");
@@ -247,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const hint = document.createElement("div");
       hint.className = "reviewHint";
-      hint.textContent = question;
+      hint.textContent = formatEmojiString(question);
 
       right.appendChild(aEl);
       right.appendChild(hint);
@@ -306,7 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBtn.classList.remove("isShow");
 
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
-    questionText.textContent = q.text || "—";
+    questionText.textContent = formatEmojiString(q.text || "—");
 
     optionsEl.innerHTML = "";
     (q.options || ["A", "B", "C", "D"]).forEach((label, i) => {

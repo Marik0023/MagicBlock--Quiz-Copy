@@ -16,7 +16,7 @@
 
 </head>
 
-<body class="mbQuiz">
+<body class="mbQuiz mbQuiz--movieemoji">
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
       <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
@@ -28,7 +28,7 @@
   <main class="container">
     <section class="quizHero">
       <h1>Guess the Movie by Emojis</h1>
-      <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
+      <p class="sub">10 questions • A/B/C/D • Tap an answer, then press Next.</p>
     </section>
 
     <!-- QUIZ -->
@@ -39,11 +39,13 @@
       <div class="quizLayout">
         <!-- LEFT -->
         <div>
-          <div class="mbPlayer" style="padding:16px;">
-            <div style="font-weight:900; font-size:18px; line-height:1.25;" id="questionText">
-              Question text…
-            </div>
-          </div>
+          <div class="emojiCard">
+  <div class="emojiCard__meta">
+    <span class="emojiTag">EMOJIS</span>
+    <span class="emojiSmall">Pick the movie title</span>
+  </div>
+  <div id="questionText" class="emojiText" aria-live="polite">Question…</div>
+</div>
         </div>
 
         <!-- RIGHT -->
