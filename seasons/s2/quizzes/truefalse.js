@@ -758,29 +758,6 @@ function injectBreadcrumb(){
   hero.insertBefore(crumbs, hero.firstChild);
 }
 
-function injectResultNavButtons(){
-  const actions = document.querySelector(".cardActions");
-  if (!actions) return;
-  if (!document.getElementById("backSeasonBtn")){
-    const a = document.createElement("a");
-    a.id = "backSeasonBtn";
-    a.className = "btn btn--ghost";
-    a.href = "../index.html";
-    a.textContent = "Back to Season 2";
-    actions.appendChild(a);
-  }
-  if (!document.getElementById("allSeasonsBtn")){
-    const b = document.createElement("a");
-    b.id = "allSeasonsBtn";
-    b.className = "btn btn--ghost";
-    b.href = "../../../index.html";
-    b.textContent = "All Seasons";
-    actions.appendChild(b);
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
-  injectBreadcrumb();
-  injectResultNavButtons();
-});
+  injectBreadcrumb();});
 
