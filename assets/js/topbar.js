@@ -18,7 +18,12 @@
     <div class="mbqTopbar__inner">
       <div class="mbqTopbar__left">
         <a class="mbqTopbar__brand" href="${prefix}index.html" aria-label="MagicBlock Quiz Home">
-          <img src="${prefix}assets/faviconlogo/favicon-32x32.png" alt="MagicBlock">
+          <span class="mbqTopbar__logo" aria-hidden="true">
+            <video autoplay muted loop playsinline>
+              <source src="${prefix}assets/logo.webm" type="video/webm" />
+            </video>
+            <img src="${prefix}assets/faviconlogo/favicon-32x32.png" alt="" />
+          </span>
           <span>MagicBlock Quiz</span>
         </a>
       </div>
@@ -44,6 +49,49 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     document.body.insertBefore(header, document.body.firstChild);
+
+    // Always keep topbar actions working on every page.
+    // If the current page doesn't have the modals wired (e.g. leaderboard),
+    // redirect to Home with a hash that will auto-open.
+    const homeHref = `${prefix}index.html`;
+    const achBtn = document.getElementById('achievementsBtn');
+    if (achBtn){
+      achBtn.addEventListener('click', (e) => {
+        const hasModal = !!document.getElementById('rewardsModal');
+        if (!hasModal){
+          e.preventDefault();
+          window.location.href = `${homeHref}#achievements`;
+        }
+      });
+    }
+
+    const pill = document.getElementById('profilePill');
+    if (pill){
+      pill.addEventListener('click', (e) => {
+        const hasModal = !!document.getElementById('profileModal');
+        if (!hasModal){
+          e.preventDefault();
+          window.location.href = `${homeHref}#edit-profile`;
+        }
+      });
+    }
+
+    // Render basic profile display (name + avatar) even without app.js.
+    try{
+      const raw = localStorage.getItem('mb_profile');
+      if (raw){
+        const p = JSON.parse(raw);
+        const nameEl = document.querySelector('[data-profile-name]');
+        if (nameEl && p.nickname) nameEl.textContent = p.nickname;
+        const hint = document.querySelector('[data-profile-hint]');
+        if (hint) hint.textContent = 'Edit';
+        const img = document.querySelector('.mbqTopbar__avatar img');
+        if (img){
+          img.src = p.avatar_url || '';
+          img.referrerPolicy = 'no-referrer';
+        }
+      }
+    }catch(_){/* ignore */}
 
     // Optional deep-link behavior
     if (window.location.hash === '#achievements') {
