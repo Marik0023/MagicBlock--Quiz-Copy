@@ -1395,3 +1395,90 @@ body.mbQuiz .cardActions{
 .crumbs{font-size:12px; opacity:.75; margin-bottom:10px;}
 .crumbs a{color:inherit; text-decoration:none; opacity:.9;}
 .crumbs a:hover{text-decoration:underline;}
+
+
+
+/* ===== Movie Emoji quiz (Season 2) ===== */
+.mbQuiz--movieemoji #quizPanel .quizLayout{
+  align-items: stretch;
+}
+
+.mbQuiz--movieemoji .emojiCard{
+  border-radius: 22px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.30);
+  padding: 18px 18px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.mbQuiz--movieemoji .emojiCard::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  background: radial-gradient(ellipse at 30% 20%,
+    rgba(255,255,255,.18) 0%,
+    rgba(0,0,0,0) 55%
+  );
+  pointer-events:none;
+  opacity: .9;
+}
+.mbQuiz--movieemoji .emojiCard__meta{
+  position: relative;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.mbQuiz--movieemoji .emojiTag{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.9);
+  white-space: nowrap;
+}
+.mbQuiz--movieemoji .emojiSmall{
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,.72);
+  white-space: nowrap;
+  overflow:hidden;
+  text-overflow: ellipsis;
+  max-width: 40ch;
+  text-align:right;
+}
+.mbQuiz--movieemoji .emojiText{
+  position: relative;
+  text-align:center;
+  font-size: clamp(38px, 5vw, 66px);
+  line-height: 1.12;
+  letter-spacing: .08em;
+  padding: 18px 10px 14px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  user-select: none;
+}
+
+/* Options: 2x2 grid on desktop, 1 column on mobile */
+.mbQuiz--movieemoji .options{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.mbQuiz--movieemoji .optionBtn{
+  min-height: 58px;
+  line-height: 1.18;
+}
+@media (max-width: 720px){
+  .mbQuiz--movieemoji .options{ grid-template-columns: 1fr; }
+  .mbQuiz--movieemoji .emojiSmall{ max-width: 26ch; }
+}
