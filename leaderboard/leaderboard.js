@@ -8,12 +8,15 @@
   })();
   const AVATAR_PLACEHOLDER = REPO_BASE + "assets/uploadavatar.jpg";
 
-    const SUPABASE_URL = (window.MBQ_SUPABASE_URL || "").replace(/\/$/, "");
+  const SUPABASE_URL = (window.MBQ_SUPABASE_URL || "").replace(/\/$/, "");
 
-  function derivedAvatarUrl(deviceId) {
-    if (!SUPABASE_URL || !deviceId) return "";
-    // Prefer root-path avatar URL; some backends validate this strictly.
-    return `${SUPABASE_URL}/storage/v1/object/public/mbq-avatars/${deviceId}.png`;
+  function derivedAvatarUrls(deviceId) {
+    if (!SUPABASE_URL || !deviceId) return { primary: "", legacy: "" };
+    // Some backends validate root-path strictly, but older uploads may live under /avatars/
+    return {
+      primary: `${SUPABASE_URL}/storage/v1/object/public/mbq-avatars/${deviceId}.png`,
+      legacy: `${SUPABASE_URL}/storage/v1/object/public/mbq-avatars/avatars/${deviceId}.png`,
+    };
   }
   function derivedChampUrl(seasonId, deviceId) {
     if (!SUPABASE_URL || !deviceId) return "";
@@ -56,11 +59,16 @@ const $body = document.getElementById('lbBody');
 
     $body.innerHTML = list.map((r, idx) => {
       const nick = safeText(r.nickname || 'Anonymous');
-      const avatarResolved = r.avatar_url || derivedAvatarUrl(r.device_id) || '';
+      const av = derivedAvatarUrls(r.device_id);
+      const avatarResolved = r.avatar_url || av.primary || '';
       const avatar = avatarResolved ? safeText(avatarResolved) : AVATAR_PLACEHOLDER;
+      const avatarLegacy = av.legacy ? safeText(av.legacy) : '';
 
-      const s1Url = r.champ_s1_url || derivedChampUrl(1, r.device_id);
-      const s2Url = r.champ_s2_url || derivedChampUrl(2, r.device_id);
+      // Don't render a broken image icon when the card doesn't exist yet.
+      const hasS1 = !!r.champ_s1_url || Number(r.champ_s1_score || 0) > 0;
+      const hasS2 = !!r.champ_s2_url || Number(r.champ_s2_score || 0) > 0;
+      const s1Url = r.champ_s1_url || (hasS1 ? derivedChampUrl(1, r.device_id) : '');
+      const s2Url = r.champ_s2_url || (hasS2 ? derivedChampUrl(2, r.device_id) : '');
 
       const s1img = s1Url ? `<img class="lb-cardimg" loading="lazy" src="${safeText(s1Url)}" alt="Champion S1" />` : '<span class="lb-scorechip">No card</span>';
       const s2img = s2Url ? `<img class="lb-cardimg" loading="lazy" src="${safeText(s2Url)}" alt="Champion S2" />` : '<span class="lb-scorechip">No card</span>';
@@ -74,7 +82,7 @@ const $body = document.getElementById('lbBody');
           <td class="lb-rank">${idx + 1}</td>
           <td>
             <div class="lb-user">
-              <img class="lb-avatar" src="${avatar}" alt="${nick}" />
+              <img class="lb-avatar" src="${avatar}" alt="${nick}" onerror="if(!this.dataset.try2 && '${avatarLegacy}') { this.dataset.try2='1'; this.src='${avatarLegacy}'; } else { this.onerror=null; this.src='${AVATAR_PLACEHOLDER}'; }" />
               <div>
                 <div class="lb-nick">${nick}</div>
                 <div class="lb-meta" style="opacity:.7">${safeText((r.device_id || '').slice(0, 10))}</div>
