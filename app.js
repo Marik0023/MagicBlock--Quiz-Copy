@@ -49,6 +49,21 @@ function getProfile(){
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
 
+function ensureDeviceIdInProfile(){
+  try{
+    const p = getProfile();
+    if (!p) return;
+    if (p.device_id) return;
+
+    const did = (localStorage.getItem("mb_device_id") || "").trim();
+    if (!did) return;
+
+    // Keep everything else intact; just inject device_id for stable leaderboard matching.
+    setProfile({ ...p, device_id: did });
+  } catch {}
+}
+
+
 /**
  * If storage full -> clear champion PNG and retry later
  */
@@ -399,6 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTopProfile();
   initProfileModal();
   initSeasonButtons();
+  ensureDeviceIdInProfile();
 
   // Achievements on Season picker: show ONLY Champion cards per season
   initAchievementsModal();
@@ -442,12 +458,31 @@ function initAchievementsModal(){
     { id:"s3", title:"Season 3 — Champion Card", subLocked:"Not available yet",          pngKey:"mb_champ_png_s3", readyKey:"mb_champ_ready_s3", openHref:"#", active:false },
   ];
 
-  function open(){ render(); modal.classList.add("isOpen"); }
-  function close(){ modal.classList.remove("isOpen"); }
+const HASH = "#achievements";
+function setHash(){
+  try {
+    if (location.hash !== HASH) history.replaceState(null, "", location.pathname + location.search + HASH);
+  } catch {}
+}
+function clearHash(){
+  try {
+    if (location.hash === HASH) history.replaceState(null, "", location.pathname + location.search);
+  } catch {}
+}
+
+function open(){ render(); modal.classList.add("isOpen"); setHash(); }
+function close(){ modal.classList.remove("isOpen"); clearHash(); }
 
   btn.addEventListener("click", open);
   closeBtn.addEventListener("click", close);
   modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+
+// Deep-link support: index.html#achievements should open this modal.
+if (location.hash === HASH) open();
+window.addEventListener("hashchange", () => {
+  if (location.hash === HASH) open();
+  else if (modal.classList.contains("isOpen")) close();
+});
 
   function render(){
     grid.innerHTML = "";
