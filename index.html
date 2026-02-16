@@ -18,6 +18,9 @@
   <script src="./assets/js/leaderboard-client.js" defer></script>
   <script src="app.js?v=20260211" defer></script>
 
+<link rel="stylesheet" href="assets/topbar.css" />
+  <script src="assets/js/topbar.js" defer></script>
+
 </head>
 
 <body data-require-profile="1">
@@ -28,31 +31,6 @@
     </video>
     <div class="bg__vignette"></div>
     <div class="bg__grain"></div>
-  </div>
-
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="index.html" aria-label="Home">
-        <video class="brand__logo" autoplay muted loop playsinline>
-          <source src="assets/logo.webm" type="video/webm" />
-        </video>
-      </a>
-
-      <div style="display:flex; gap:10px; align-items:center;">
-        <!-- Achievements modal exists inside Season 1 (we deep-link there) -->
-        <a class="btn btn--ghost" href="./leaderboard/" style="text-decoration:none;">Leaderboard</a>
-        <button id="achievementsBtn" class="btn btn--ghost" type="button">Achievements</button>
-
-        <div id="profilePill" class="profilePill" title="Profile">
-          <div class="profilePill__avatar"><img alt="" /></div>
-          <div>
-            <div class="profilePill__name" data-profile-name>Player</div>
-            <div class="profilePill__hint" data-profile-hint>Click to set</div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <main class="container">

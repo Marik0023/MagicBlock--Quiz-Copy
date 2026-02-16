@@ -182,11 +182,18 @@ function initProfileModal(){
     let avatar = old.avatar || "";
     if ((preview?.src || "").startsWith("data:")) avatar = preview.src;
 
-    const ok = setProfile({ name, avatar });
+    // Keep any extra fields (e.g. saved device_id) to avoid breaking leaderboard matching.
+    const ok = setProfile({ ...old, name, avatar });
     if (!ok) return;
 
     renderTopProfile();
     closeProfileModal();
+
+    // Notify subpages (e.g. /leaderboard/) that profile/avatar changed,
+    // so they can re-render immediately.
+    try {
+      window.dispatchEvent(new CustomEvent('mbq:profile-updated', { detail: { name, avatar } }));
+    } catch {}
   });
 
   function fileToCompressedDataURL(file, maxSize = 512, quality = 0.85){
