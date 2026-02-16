@@ -268,6 +268,25 @@
     return data.publicUrl;
   }
 
+  async function uploadDeviceBoundAvatar(deviceId, blob) {
+    // Upload to both locations for compatibility with different validators.
+    // We return the URL that is most likely to satisfy strict checks.
+    // (Many validators expect the public URL to end with `/<deviceId>.png`.)
+    const legacyPath = `avatars/${deviceId}.png`;
+    const strictPath = `${deviceId}.png`;
+
+    // Best-effort: try both, but don't fail the whole flow if one path errors.
+    let strictUrl = null;
+    try { await uploadPublic("mbq-avatars", legacyPath, blob, "image/png"); } catch (e) {}
+    try { strictUrl = await uploadPublic("mbq-avatars", strictPath, blob, "image/png"); } catch (e) {}
+
+    // Fallback to legacy URL if strict upload failed.
+    if (!strictUrl) {
+      strictUrl = await uploadPublic("mbq-avatars", legacyPath, blob, "image/png");
+    }
+    return strictUrl;
+  }
+
   async function invokeEdgeSubmit(payload) {
     const { url, key } = getConfig();
     const endpoint = url.replace(/\/$/, "") + "/functions/v1/mbq-submit";
@@ -332,7 +351,7 @@
     let avatarUrl = null;
     if (isDataUrlImage(avatarVal)) {
       const blob = await dataUrlToBlob(avatarVal);
-      avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
+      avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
 
       // Replace saved avatar with URL (so we don't re-upload every time)
       try {
@@ -353,7 +372,7 @@
         try {
           const blob = await fetchAsPngBlob(candidate);
           if (blob) {
-            avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
+            avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
             try {
               const nextProfile = { ...profile, avatar: avatarUrl };
               localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
@@ -372,7 +391,7 @@
         // Always use repo-correct relative path.
         const blob = await fetchAsPngBlob("../assets/uploadavatar.jpg");
         if (blob) {
-          avatarUrl = await uploadPublic("mbq-avatars", `avatars/${deviceId}.png`, blob, "image/png");
+          avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
           try {
             const nextProfile = { ...profile, avatar: avatarUrl };
             localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
