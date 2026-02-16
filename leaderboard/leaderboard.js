@@ -22,18 +22,25 @@
   }
 
   function getLocalDeviceId() {
+    const isBad = (v) => {
+      const s = String(v || '').trim().toLowerCase();
+      return !s || s === 'dev_test' || s === 'devtest' || s === 'test' || s.startsWith('dev_');
+    };
     try {
       const p = readLocalProfile();
-      if (p?.device_id) return String(p.device_id);
+      if (p?.device_id && !isBad(p.device_id)) return String(p.device_id);
     } catch {}
     try {
       const v = localStorage.getItem('mb_device_id');
-      if (v) return v;
+      if (v && !isBad(v)) return v;
     } catch {}
     try {
       const parts = (document.cookie || '').split(';').map(s => s.trim());
       for (const p of parts) {
-        if (p.startsWith('mbq_device_id=')) return decodeURIComponent(p.slice('mbq_device_id='.length));
+        if (p.startsWith('mbq_device_id=')) {
+          const id = decodeURIComponent(p.slice('mbq_device_id='.length));
+          if (!isBad(id)) return id;
+        }
       }
     } catch {}
     return '';
@@ -71,6 +78,7 @@
   }
 
   let rows = [];
+  let myStatus = { missing: false, deviceId: "" };
 
   function safeText(s) {
     return String(s || '').replace(/[&<>"']/g, (c) => ({
@@ -106,7 +114,11 @@
     const localDeviceId = getLocalDeviceId();
     const localProfile = readLocalProfile();
 
-    $list.innerHTML = list.map((r, idx) => {
+    const banner = myStatus?.missing
+      ? `<div class="lb-empty" style="text-align:left; margin-bottom:12px;">Your profile on this device isn\'t published to the leaderboard yet. Open a season and generate your Champion card, then come back and press Refresh.</div>`
+      : '';
+
+    $list.innerHTML = banner + list.map((r, idx) => {
       const nick = safeText(r.nickname || 'Anonymous');
       const av = derivedAvatarUrls(r.device_id);
 
@@ -145,6 +157,8 @@
 
       const rowCls = `lb-row ${isMe ? 'lb-me' : ''}`;
 
+      const youBadge = isMe ? `<span class="lb-chip" style="margin-left:8px; padding:4px 10px; font-size:12px;">You</span>` : '';
+
       // Card previews/badges are intentionally removed (clean table).
 
       return `
@@ -155,7 +169,7 @@
             <img class="lb-avatar" src="${avatar}" alt="${nick}"
               onerror="if(!this.dataset.try2 && '${avatarLegacy}') { this.dataset.try2='1'; this.src='${avatarLegacy}'; } else { this.onerror=null; this.src='${AVATAR_PLACEHOLDER}'; }" />
             <div class="lb-nameWrap">
-              <div class="lb-nick">${nick}</div>
+              <div class="lb-nick">${nick}${youBadge}</div>
               ${idLine}
             </div>
           </div>
@@ -198,34 +212,60 @@
         console.warn('Sync skipped:', e);
       }
 
-      rows = await window.MBQ_LEADERBOARD.fetchLeaderboard();
-// Dedupe behavior:
-      // - Default (SHOW_ALL=false): group by nickname and keep the best row.
-      //   This avoids showing multiple test/dev devices for the same person.
+      // Resolve the current device id (used to mark/pin "You").
+      let localDeviceId = getLocalDeviceId();
+      if (!localDeviceId && typeof window.MBQ_LEADERBOARD.getDeviceId === 'function') {
+        try { localDeviceId = await window.MBQ_LEADERBOARD.getDeviceId(); } catch {}
+      }
+
+      const fetched = await window.MBQ_LEADERBOARD.fetchLeaderboard();
+      const allRows = Array.isArray(fetched) ? fetched : [];
+      const myRow = localDeviceId ? allRows.find(r => r && r.device_id === localDeviceId) : null;
+
+      rows = allRows;
+
+      // Dedupe behavior:
+      // - Default: group by nickname and keep the best row (prevents many test devices for same nickname).
+      // - IMPORTANT: if your current device has a row, we always prefer that row inside your nickname group.
       // - Debug: add ?all=1 to show every raw row.
       if (!SHOW_ALL) {
         const byNick = new Map();
-        const arr = (Array.isArray(rows) ? rows : []);
-        for (let i = 0; i < arr.length; i++) {
-          const r = arr[i];
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          if (!r) continue;
           const nickKeyRaw = String(r.nickname || "").trim().toLowerCase();
           const key = nickKeyRaw || (`__anon__:${String(r.device_id || "").slice(0, 8)}:${i}`);
           const prev = byNick.get(key);
 
+          const isLocal = !!localDeviceId && r.device_id === localDeviceId;
+          const prevIsLocal = !!localDeviceId && prev && prev.device_id === localDeviceId;
+          if (isLocal && !prevIsLocal) { byNick.set(key, r); continue; }
+          if (!isLocal && prevIsLocal) continue;
+
           const score = Number(r.total_score || 0);
           const pScore = prev ? Number(prev.total_score || 0) : -1;
+
+          const hasAvatar = !!(r.avatar_url && String(r.avatar_url).trim());
+          const prevHasAvatar = !!(prev && prev.avatar_url && String(prev.avatar_url).trim());
 
           const t = Date.parse(r.updated_at || r.created_at || "") || 0;
           const pt = prev ? (Date.parse(prev.updated_at || prev.created_at || "") || 0) : -1;
 
-          // Prefer higher score; if tied, prefer the most recently updated.
-          if (!prev || score > pScore || (score === pScore && t > pt)) {
+          // Prefer higher score; if tied, prefer row with avatar; if still tied, prefer most recently updated.
+          if (!prev || score > pScore || (score === pScore && hasAvatar && !prevHasAvatar) || (score === pScore && hasAvatar === prevHasAvatar && t > pt)) {
             byNick.set(key, r);
           }
         }
         rows = Array.from(byNick.values());
       }
-$meta.textContent = `${rows.length} players`;
+
+      // Track whether the current device is present in the fetched rows.
+      myStatus = {
+        deviceId: localDeviceId || "",
+        missing: !!localDeviceId && !rows.some(r => r && r.device_id === localDeviceId),
+      };
+
+      $meta.textContent = `${rows.length} players${myStatus.missing ? ' · your profile is not published yet' : ''}`;
       applySearch();
     } catch (e) {
       console.error(e);
