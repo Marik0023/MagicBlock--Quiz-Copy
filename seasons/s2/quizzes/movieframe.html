@@ -11,6 +11,9 @@
   <link rel="manifest" href="../../../assets/faviconlogo/site.webmanifest">
   <link rel="stylesheet" href="../styles.css" />
   <script src="movieframe.js" defer></script>
+<link rel="stylesheet" href="../../../assets/topbar.css" />
+  <script src="../../../assets/js/topbar.js" defer></script>
+
 </head>
 
 <body class="mbQuiz">
@@ -20,37 +23,6 @@
     </video>
     <div class="bg__vignette"></div>
     <div class="bg__grain"></div>
-  </div>
-
-  <div class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="../../../index.html" aria-label="Seasons">
-        <video class="brand__logo" autoplay muted loop playsinline>
-          <source src="../../../assets/logo.webm" type="video/webm" />
-        </video>
-      </a>
-
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="seasonMenu" id="seasonMenu">
-          <button class="btn btn--ghost" type="button" aria-haspopup="menu" aria-expanded="false">Seasons ▾</button>
-          <div class="seasonMenu__drop" role="menu" aria-label="Seasons menu">
-            <a class="seasonMenu__item" role="menuitem" href="../index.html">Back to Season 2</a>
-            <div class="seasonMenu__divider"></div>
-            <a class="seasonMenu__item" role="menuitem" href="../../../index.html">All Seasons</a>
-          </div>
-        </div>
-
-        <button id="achievementsBtn" class="btn btn--ghost" type="button">Achievements</button>
-
-        <div id="profilePill" class="profilePill" title="Profile">
-        <div class="profilePill__avatar"><img alt="" /></div>
-        <div>
-          <div class="profilePill__name" data-profile-name>Player</div>
-          <div class="profilePill__hint" data-profile-hint>Edit</div>
-        </div>
-      </div>
-      </div>
-    </div>
   </div>
 
   <main class="container">
@@ -106,7 +78,7 @@
 
         <div class="btnRow">
           <button id="genBtn" class="btn" type="button">Generate Result Card</button>
-          <a class="btn btn--ghost" href="../index.html">Back to Home</a>
+          <a class="btn btn--ghost" href="../index.html">Back to Season</a>
         </div>
 
         <!-- Answer Review (visible until Generate Result Card) -->

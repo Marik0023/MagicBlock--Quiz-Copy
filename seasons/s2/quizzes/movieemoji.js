@@ -635,9 +635,11 @@ async function drawAvatarRounded(ctx, dataUrl, x, y, w, h, r) {
   ctx.fillStyle = "rgba(255,255,255,.18)";
   ctx.fillRect(x, y, w, h);
 
-  if (dataUrl && dataUrl.startsWith("data:")) {
-    const img = await loadImage(dataUrl);
-    drawCoverImage(ctx, img, x, y, w, h);
+  if (dataUrl) {
+    try {
+      const img = await loadImage(dataUrl);
+      drawCoverImage(ctx, img, x, y, w, h);
+    } catch {}
   }
   ctx.restore();
 }
@@ -670,6 +672,7 @@ function drawContainBitmap(ctx, bmp, x, y, w, h) {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    if (typeof src === "string" && src && !src.startsWith("data:")) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
