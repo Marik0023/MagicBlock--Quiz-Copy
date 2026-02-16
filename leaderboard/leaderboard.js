@@ -19,13 +19,15 @@
   }
 
   function getLocalDeviceId() {
+    // Authoritative id is mb_device_id (written by leaderboard-client).
+    // Profile can lag behind (old builds), so don't trust it first.
+    try {
+      const v = (localStorage.getItem('mb_device_id') || '').trim();
+      if (v) return v;
+    } catch {}
     try {
       const p = readLocalProfile();
       if (p?.device_id) return String(p.device_id);
-    } catch {}
-    try {
-      const v = localStorage.getItem('mb_device_id');
-      if (v) return v;
     } catch {}
     try {
       const parts = (document.cookie || '').split(';').map(s => s.trim());
@@ -35,6 +37,7 @@
     } catch {}
     return '';
   }
+
 
   function toAbsoluteUrlMaybe(u) {
     if (!u) return '';
