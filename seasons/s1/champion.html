@@ -18,6 +18,9 @@
   <script src="../../assets/js/leaderboard-client.js?v=20260215"></script>
 
   <script src="champion.js?v=20260215" defer></script>
+<link rel="stylesheet" href="../../assets/topbar.css" />
+  <script src="../../assets/js/topbar.js" defer></script>
+
 </head>
 
 <body>
@@ -27,36 +30,6 @@
     </video>
     <div class="bg__vignette"></div>
     <div class="bg__grain"></div>
-  </div>
-
-  <div class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="../../index.html" aria-label="Seasons">
-        <video class="brand__logo" autoplay muted loop playsinline>
-          <source src="../../assets/logo.webm" type="video/webm" />
-        </video>
-      </a>
-
-      <div style="display:flex; gap:10px; align-items:center;">
-        <div class="seasonMenu" id="seasonMenu">
-          <button class="btn btn--ghost" type="button" aria-haspopup="menu" aria-expanded="false">Seasons ▾</button>
-          <div class="seasonMenu__drop" role="menu">
-            <a class="seasonMenu__item" role="menuitem" href="index.html">Back to Season 1</a>
-            <div class="seasonMenu__sep"></div>
-            <a class="seasonMenu__item" role="menuitem" href="../../index.html">All seasons</a>
-          </div>
-        </div>
-        <button id="achievementsBtn" class="btn btn--ghost" type="button">Achievements</button>
-
-        <div id="profilePill" class="profilePill" title="Profile">
-        <div class="profilePill__avatar"><img alt="" /></div>
-        <div>
-          <div class="profilePill__name" data-profile-name>Player</div>
-          <div class="profilePill__hint" data-profile-hint>Edit</div>
-        </div>
-      </div>
-      </div>
-    </div>
   </div>
 
   <main class="container">

@@ -613,7 +613,17 @@ async function drawAvatarRounded(ctx, src, x, y, w, h, r) {
   roundedRectPath(ctx, x, y, w, h, r);
   ctx.clip();
 
-  if (!src || !src.startsWith("data:")) {
+  // Accept both data URLs and normal URLs (e.g. Supabase public URLs).
+  // If loading fails, fall back to placeholder.
+  if (!src) {
+    src = "";
+  }
+
+  try {
+    const img = await loadImage(src);
+    ctx.filter = "none";
+    drawCover(ctx, img, x, y, w, h);
+  } catch {
     try {
       const fallback = await loadImage("../../assets/uploadavatar.jpg");
       ctx.filter = "blur(7px)";
@@ -625,17 +635,6 @@ async function drawAvatarRounded(ctx, src, x, y, w, h, r) {
       ctx.fillStyle = "rgba(0,0,0,0.25)";
       ctx.fillRect(x, y, w, h);
     }
-    ctx.restore();
-    return;
-  }
-
-  try {
-    const img = await loadImage(src);
-    ctx.filter = "none";
-    drawCover(ctx, img, x, y, w, h);
-  } catch {
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.fillRect(x, y, w, h);
   }
   ctx.restore();
 }
@@ -664,6 +663,10 @@ function drawCover(ctx, img, x, y, w, h) {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    // Helps when avatar is hosted on another domain (Supabase public URL)
+    if (typeof src === "string" && src && !src.startsWith("data:")) {
+      img.crossOrigin = "anonymous";
+    }
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
