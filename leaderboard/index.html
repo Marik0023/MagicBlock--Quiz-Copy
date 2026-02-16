@@ -6,34 +6,99 @@
     <title>MagicBlock Quiz — Leaderboard</title>
     <link rel="icon" href="../assets/faviconlogo/favicon.ico" />
     <link rel="stylesheet" href="../styles.css" />
+    
     <style>
-      .lb-wrap { max-width: 1200px; margin: 0 auto; padding: 32px 20px 80px; }
-      .lb-title { font-size: clamp(40px, 5vw, 72px); font-weight: 800; letter-spacing: -0.03em; margin: 12px 0 8px; }
-      .lb-sub { opacity: 0.8; margin: 0 0 22px; }
-      .lb-card { border-radius: 28px; padding: 18px; }
+      .lb-wrap { max-width: 1200px; margin: 0 auto; padding: 34px 20px 90px; }
+      .lb-title { font-size: clamp(42px, 5vw, 74px); font-weight: 900; letter-spacing: -0.04em; margin: 14px 0 8px; }
+      .lb-sub { opacity: 0.82; margin: 0 0 22px; max-width: 70ch; }
+      .lb-shell { border-radius: 28px; padding: 18px; }
       .lb-toolbar { display:flex; align-items:center; gap:12px; margin: 12px 0 18px; flex-wrap: wrap; }
-      .lb-search { flex: 1 1 260px; }
+      .lb-search { flex: 1 1 280px; }
       .lb-search input { width:100%; }
       .lb-meta { opacity: 0.8; font-size: 14px; }
-      .lb-table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 22px; }
-      .lb-table th, .lb-table td { padding: 14px 14px; text-align: left; vertical-align: middle; }
-      .lb-table thead th { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
-      .lb-table tbody tr { border-top: 1px solid rgba(255,255,255,.08); }
-      .lb-rank { width: 58px; opacity: .8; }
-      .lb-user { display:flex; align-items:center; gap:12px; min-width: 240px; }
-      .lb-avatar { width: 42px; height: 42px; border-radius: 14px; object-fit: cover; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); }
-      .lb-nick { font-weight: 700; }
-      .lb-cards { display:flex; align-items:center; gap:12px; flex-wrap: wrap; }
-      /* Smaller thumbnails so the leaderboard stays compact */
-      .lb-cardimg { width: 70px; max-width: min(70px, 34vw); border-radius: 12px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
-      .lb-scorechip { display:inline-flex; align-items:center; gap:6px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); font-size: 12px; opacity: .92; }
+      .lb-sort { min-width: 170px; }
+      .lb-sort select { width:100%; }
+
+      .lb-head { 
+        display:grid;
+        grid-template-columns: 56px minmax(230px, 1.25fr) 110px minmax(220px, 1fr) minmax(220px, 1fr);
+        gap: 12px;
+        padding: 10px 12px;
+        font-size: 12px;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        opacity: .72;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+        margin-bottom: 10px;
+      }
+
+      .lb-list { display:flex; flex-direction:column; gap: 10px; }
+      .lb-row {
+        display:grid;
+        grid-template-columns: 56px minmax(230px, 1.25fr) 110px minmax(220px, 1fr) minmax(220px, 1fr);
+        gap: 12px;
+        align-items:center;
+        padding: 12px;
+        border-radius: 22px;
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(255,255,255,.05);
+      }
+      .lb-row:hover{
+        background: rgba(255,255,255,.07);
+        border-color: rgba(255,255,255,.16);
+      }
+      .lb-rank { opacity: .85; font-weight: 800; }
+      .lb-me { border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.08); }
+
+      .lb-user { display:flex; align-items:center; gap:12px; min-width: 0; }
+      .lb-avatar { width: 44px; height: 44px; border-radius: 16px; object-fit: cover; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); }
+      .lb-nameWrap { min-width:0; }
+      .lb-nick { font-weight: 900; letter-spacing: -0.01em; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; }
+      .lb-id { opacity:.65; font-size: 12px; white-space: nowrap; overflow:hidden; text-overflow: ellipsis; max-width: 18ch; }
+
+      .lb-total { display:flex; justify-content:flex-start; }
+      .lb-chip { display:inline-flex; align-items:center; gap:8px; padding: 7px 12px; border-radius: 999px; background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.10); font-size: 12px; font-weight: 800; }
+      .lb-chip strong{ font-size: 13px; }
+
+      .lb-season { display:flex; align-items:center; gap: 10px; min-width:0; }
+      .lb-score { flex: 0 0 auto; }
+      .lb-preview {
+        width: 70px; height: auto;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.04);
+        cursor: pointer;
+        transition: transform .12s ease;
+      }
+      .lb-preview:hover{ transform: translateY(-1px) scale(1.02); }
+      .lb-none { opacity:.70; font-size: 12px; border: 1px dashed rgba(255,255,255,.18); padding: 7px 12px; border-radius: 999px; }
+
       .lb-empty { opacity: .85; padding: 20px; }
       .lb-note { opacity: .7; font-size: 13px; margin-top: 14px; }
-      @media (max-width: 840px) {
-        .lb-table th:nth-child(4), .lb-table td:nth-child(4) { display: none; }
+
+      @media (max-width: 980px){
+        .lb-head, .lb-row{
+          grid-template-columns: 48px minmax(200px, 1fr) 100px minmax(220px, 1fr);
+        }
+        .lb-head .col-s2, .lb-row .col-s2{ display:none; }
+      }
+      @media (max-width: 680px){
+        .lb-head{ display:none; }
+        .lb-row{
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .lb-rank{ display:none; }
+        .lb-total{ justify-content:flex-start; }
+        .lb-season{ justify-content:flex-start; }
+        .lb-row .col-s2{ display:flex; }
       }
     </style>
-  </head>
+
+  <link rel="stylesheet" href="../assets/topbar.css" />
+  <script src="../assets/js/topbar.js" defer></script>
+
+</head>
   <body data-require-profile="1">
     <!-- Background -->
     <div class="bg">
@@ -44,59 +109,31 @@
       <div class="bg__grain"></div>
     </div>
 
-    <!-- Topbar -->
-    <div class="topbar">
-      <div class="topbar__inner">
-        <a class="brand" href="../index.html" aria-label="Home">
-          <video class="brand__logo" autoplay muted loop playsinline>
-            <source src="../assets/logo.webm" type="video/webm" />
-          </video>
-        </a>
-
-        <div style="display:flex; gap:10px; align-items:center;">
-          <a class="btn btn--ghost" href="../index.html" style="text-decoration:none;">Seasons</a>
-          <a class="btn btn--ghost" href="./index.html" style="text-decoration:none;">Leaderboard</a>
-
-          <div id="profilePill" class="profilePill" title="Profile">
-            <div class="profilePill__avatar"><img alt="" /></div>
-            <div>
-              <div class="profilePill__name" data-profile-name>Player</div>
-              <div class="profilePill__hint" data-profile-hint>Click to set</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <main class="lb-wrap">
       <h1 class="lb-title">Leaderboard</h1>
       <p class="lb-sub">Public ranking by total score (Season 1 + Season 2). Your score updates when you generate a Champion card.</p>
 
-      <section class="glass lb-card">
+      <section class="glass lb-shell">
         <div class="lb-toolbar">
           <div class="lb-search">
             <input id="lbSearch" class="input" type="text" placeholder="Search nickname…" autocomplete="off" />
           </div>
+          <div class="lb-sort"><select id="lbSort" class="input"><option value="total">Sort: Total</option><option value="s1">Sort: Season 1</option><option value="s2">Sort: Season 2</option><option value="new">Sort: Newest</option></select></div>
           <button id="lbRefresh" class="btn">Refresh</button>
           <div id="lbMeta" class="lb-meta"></div>
         </div>
 
-        <div style="overflow:auto">
-          <table class="lb-table">
-            <thead>
-              <tr>
-                <th class="lb-rank">#</th>
-                <th>User</th>
-                <th>Total</th>
-                <th>Season 1</th>
-                <th>Season 2</th>
-              </tr>
-            </thead>
-            <tbody id="lbBody">
-              <tr><td colspan="5" class="lb-empty">Loading…</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="lb-head">
+            <div>#</div>
+            <div>User</div>
+            <div>Total</div>
+            <div class="col-s1">Season 1</div>
+            <div class="col-s2">Season 2</div>
+          </div>
+
+          <div id="lbList" class="lb-list">
+            <div class="lb-empty">Loading…</div>
+          </div>
         <div class="lb-note">Tip: if you don’t see your row — open a season → generate your Champion card → come back here and refresh.</div>
       </section>
     </main>
