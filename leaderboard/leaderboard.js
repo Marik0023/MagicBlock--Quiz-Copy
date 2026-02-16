@@ -138,14 +138,7 @@
 
       const rowCls = `lb-row ${isMe ? 'lb-me' : ''}`;
 
-      // Champion card previews looked bad in a dense table, so we show a clean badge instead.
-      const s1Preview = s1Url
-        ? `<span class="lb-cardBadge">Card</span>`
-        : `<span class="lb-none">No card</span>`;
-
-      const s2Preview = s2Url
-        ? `<span class="lb-cardBadge">Card</span>`
-        : `<span class="lb-none">No card</span>`;
+      // Card previews/badges are intentionally removed (clean table).
 
       return `
         <div class="${rowCls}">
@@ -166,12 +159,10 @@
 
           <div class="lb-season col-s1">
             <span class="lb-chip lb-score">${fmtScore(s1Score, s1Total)}</span>
-            ${s1Preview}
           </div>
 
           <div class="lb-season col-s2">
             <span class="lb-chip lb-score">${fmtScore(s2Score, s2Total)}</span>
-            ${s2Preview}
           </div>
         </div>
       `;
