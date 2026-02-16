@@ -16,8 +16,6 @@
       .lb-search { flex: 1 1 280px; }
       .lb-search input { width:100%; }
       .lb-meta { opacity: 0.8; font-size: 14px; }
-      .lb-sort { min-width: 170px; }
-      .lb-sort select { width:100%; }
 
       .lb-head { 
         display:grid;
@@ -62,13 +60,25 @@
 
       .lb-season { display:flex; align-items:center; gap: 10px; min-width:0; }
       .lb-score { flex: 0 0 auto; }
-      .lb-preview {
-        width: 70px; height: auto;
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,.12);
-        background: rgba(255,255,255,.04);
-        cursor: default;
-        transition: transform .12s ease;
+      .lb-cardBadge{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(255,255,255,.06);
+        font-size: 12px;
+        font-weight: 800;
+        opacity: .92;
+        white-space: nowrap;
+      }
+      .lb-cardBadge::before{
+        content:"";
+        width: 8px; height: 8px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.85);
+        box-shadow: 0 0 0 2px rgba(0,0,0,.25);
       }
       
       .lb-none { opacity:.70; font-size: 12px; border: 1px dashed rgba(255,255,255,.18); padding: 7px 12px; border-radius: 999px; }
@@ -118,7 +128,7 @@
           <div class="lb-search">
             <input id="lbSearch" class="input" type="text" placeholder="Search nickname…" autocomplete="off" />
           </div>
-          <div class="lb-sort"><select id="lbSort" class="input"><option value="total">Sort: Total</option><option value="s1">Sort: Season 1</option><option value="s2">Sort: Season 2</option><option value="new">Sort: Newest</option></select></div>
+          <!-- sort removed -->
           <button id="lbRefresh" class="btn">Refresh</button>
           <div id="lbMeta" class="lb-meta"></div>
         </div>

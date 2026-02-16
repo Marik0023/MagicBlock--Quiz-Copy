@@ -60,7 +60,7 @@
   const $meta = document.getElementById('lbMeta');
   const $search = document.getElementById('lbSearch');
   const $refresh = document.getElementById('lbRefresh');
-  const $sort = document.getElementById('lbSort');
+  // Sort UI removed by design — leaderboard is always sorted by Total.
 
   if (!window.MBQ_LEADERBOARD) {
     $list.innerHTML = '<div class="lb-empty">Leaderboard client is not loaded.</div>';
@@ -85,29 +85,7 @@
   }
 
   function sortRows(list) {
-    const mode = ($sort?.value || 'total');
     const byUpdated = (a, b) => (Date.parse(b.updated_at || b.created_at || '') || 0) - (Date.parse(a.updated_at || a.created_at || '') || 0);
-
-    if (mode === 's1') {
-      return list.sort((a,b) => {
-        const sa = Number(a.champ_s1_score || 0);
-        const sb = Number(b.champ_s1_score || 0);
-        if (sb !== sa) return sb - sa;
-        return byUpdated(a,b);
-      });
-    }
-    if (mode === 's2') {
-      return list.sort((a,b) => {
-        const sa = Number(a.champ_s2_score || 0);
-        const sb = Number(b.champ_s2_score || 0);
-        if (sb !== sa) return sb - sa;
-        return byUpdated(a,b);
-      });
-    }
-    if (mode === 'new') {
-      return list.sort(byUpdated);
-    }
-    // total
     return list.sort((a,b) => {
       const ta = Number(a.total_score || 0);
       const tb = Number(b.total_score || 0);
@@ -160,12 +138,13 @@
 
       const rowCls = `lb-row ${isMe ? 'lb-me' : ''}`;
 
+      // Champion card previews looked bad in a dense table, so we show a clean badge instead.
       const s1Preview = s1Url
-        ? `<img class="lb-preview" loading="lazy" src="${safeText(s1Url)}" alt="Champion S1">`
+        ? `<span class="lb-cardBadge">Card</span>`
         : `<span class="lb-none">No card</span>`;
 
       const s2Preview = s2Url
-        ? `<img class="lb-preview" loading="lazy" src="${safeText(s2Url)}" alt="Champion S2">`
+        ? `<span class="lb-cardBadge">Card</span>`
         : `<span class="lb-none">No card</span>`;
 
       return `
@@ -247,7 +226,7 @@
 
   $refresh.addEventListener('click', load);
   $search.addEventListener('input', applySearch);
-  $sort?.addEventListener('change', applySearch);
+  // Sort UI removed
 
   window.addEventListener('mbq:profile-updated', () => { try { applySearch(); } catch {} });
 
