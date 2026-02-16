@@ -19,7 +19,7 @@
 
       .lb-head { 
         display:grid;
-        grid-template-columns: 56px minmax(230px, 1.25fr) 110px minmax(220px, 1fr) minmax(220px, 1fr);
+        grid-template-columns: 56px minmax(230px, 1.25fr) minmax(220px, 1fr) minmax(220px, 1fr) 110px;
         gap: 12px;
         padding: 10px 12px;
         font-size: 12px;
@@ -39,7 +39,7 @@
       .lb-list { display:flex; flex-direction:column; gap: 10px; }
       .lb-row {
         display:grid;
-        grid-template-columns: 56px minmax(230px, 1.25fr) 110px minmax(220px, 1fr) minmax(220px, 1fr);
+        grid-template-columns: 56px minmax(230px, 1.25fr) minmax(220px, 1fr) minmax(220px, 1fr) 110px;
         gap: 12px;
         align-items:center;
         padding: 12px;
@@ -97,7 +97,7 @@
 
       @media (max-width: 980px){
         .lb-head, .lb-row{
-          grid-template-columns: 48px minmax(200px, 1fr) 100px minmax(220px, 1fr);
+          grid-template-columns: 48px minmax(200px, 1fr) minmax(220px, 1fr) 100px;
         }
         .lb-head .col-s2, .lb-row .col-s2{ display:none; }
       }
@@ -145,9 +145,9 @@
         <div class="lb-head">
             <div>#</div>
             <div>User</div>
-            <div>Total</div>
             <div class="col-s1">Season 1</div>
             <div class="col-s2">Season 2</div>
+            <div>Total</div>
           </div>
 
           <div id="lbList" class="lb-list">

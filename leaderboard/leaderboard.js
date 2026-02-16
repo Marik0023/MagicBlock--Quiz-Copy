@@ -174,16 +174,16 @@
             </div>
           </div>
 
-          <div class="lb-total">
-            <span class="lb-chip"><strong>${totalScore}</strong> pts</span>
-          </div>
-
           <div class="lb-season col-s1">
             <span class="lb-chip lb-score">${fmtScore(s1Score, s1Total)}</span>
           </div>
 
           <div class="lb-season col-s2">
             <span class="lb-chip lb-score">${fmtScore(s2Score, s2Total)}</span>
+          </div>
+
+          <div class="lb-total">
+            <span class="lb-chip"><strong>${totalScore}</strong> pts</span>
           </div>
         </div>
       `;
