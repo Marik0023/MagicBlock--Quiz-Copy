@@ -169,9 +169,13 @@
     if (!id) id = (getCookie(DEVICE_COOKIE) || "").trim();
     if (!id) id = String(await idbGet(IDB_KEY) || "").trim();
 
-    // Some older builds used a hard-coded test id like "dev_test".
-    // Treat it as invalid so real users don't share the same leaderboard identity.
-    if (id && String(id).trim().toLowerCase() === "dev_test") id = "";
+    // Older dev builds sometimes stored a fixed test id (e.g. "dev_test") or fallback "dev_*".
+    // Treat those as invalid so you don't get stuck with a non-unique identity or fail Storage ownership checks.
+    const badId = String(id || "").trim().toLowerCase();
+    if (badId === "dev_test" || badId === "devtest" || badId === "test" || badId.startsWith("dev_")) {
+      id = "";
+    }
+
 
     if (!id) {
       const client = await getAuthedClient();
