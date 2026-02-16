@@ -169,6 +169,10 @@
     if (!id) id = (getCookie(DEVICE_COOKIE) || "").trim();
     if (!id) id = String(await idbGet(IDB_KEY) || "").trim();
 
+    // Some older builds used a hard-coded test id like "dev_test".
+    // Treat it as invalid so real users don't share the same leaderboard identity.
+    if (id && String(id).trim().toLowerCase() === "dev_test") id = "";
+
     if (!id) {
       const client = await getAuthedClient();
       try {
