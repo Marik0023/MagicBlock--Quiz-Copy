@@ -12,7 +12,8 @@
 
   function derivedAvatarUrl(deviceId) {
     if (!SUPABASE_URL || !deviceId) return "";
-    return `${SUPABASE_URL}/storage/v1/object/public/mbq-avatars/avatars/${deviceId}.png`;
+    // Prefer root-path avatar URL; some backends validate this strictly.
+    return `${SUPABASE_URL}/storage/v1/object/public/mbq-avatars/${deviceId}.png`;
   }
   function derivedChampUrl(seasonId, deviceId) {
     if (!SUPABASE_URL || !deviceId) return "";

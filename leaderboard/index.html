@@ -25,7 +25,7 @@
       .lb-nick { font-weight: 700; }
       .lb-cards { display:flex; align-items:center; gap:12px; flex-wrap: wrap; }
       /* Smaller thumbnails so the leaderboard stays compact */
-      .lb-cardimg { width: 150px; max-width: min(150px, 40vw); border-radius: 14px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
+      .lb-cardimg { width: 110px; max-width: min(110px, 34vw); border-radius: 12px; border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
       .lb-scorechip { display:inline-flex; align-items:center; gap:6px; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); font-size: 12px; opacity: .92; }
       .lb-empty { opacity: .85; padding: 20px; }
       .lb-note { opacity: .7; font-size: 13px; margin-top: 14px; }
@@ -107,31 +107,36 @@
     <script src="./leaderboard.js"></script>
     <script src="../app.js"></script>
 
-    <!-- Profile modal (re-used across pages) -->
-    <div class="modal" id="profileModal" aria-hidden="true">
-      <div class="modal__backdrop" data-close="profileModal"></div>
-      <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
-        <div class="modal__head">
-          <h2 id="profileTitle">Edit profile</h2>
-          <button class="iconbtn" data-close="profileModal" aria-label="Close">✕</button>
+    <!-- Profile Modal (same as the main page, so app.js controls it consistently) -->
+    <div id="profileModal" class="modal" aria-hidden="true">
+      <div class="modalCard">
+        <div class="modalCard__head">
+          <div>
+            <h2 class="modalCard__title">Create your profile</h2>
+            <p class="modalCard__sub">This will appear on your result cards</p>
+          </div>
+          <button id="profileCloseBtn" class="modalClose" aria-label="Close">×</button>
         </div>
 
-        <div class="modal__body">
-          <label class="field">
-            <span class="field__label">Nickname</span>
-            <input id="profileNickname" class="input" maxlength="32" placeholder="Your name" />
-          </label>
+        <div class="modalCard__body">
+          <div class="profileForm">
+            <div class="avatarBox" id="avatarBox">
+              <img id="profilePreview" alt="" />
+              <button id="avatarPickBtn" class="btn btn--ghost avatarPickBtn" type="button">Upload Avatar</button>
+              <input id="profileFile" type="file" accept="image/*" hidden>
+            </div>
 
-          <label class="field">
-            <span class="field__label">Avatar (image URL)</span>
-            <input id="profileAvatarUrl" class="input" placeholder="https://..." />
-            <div class="field__hint">Tip: you can upload to the public bucket or paste a direct image URL.</div>
-          </label>
+            <div class="field">
+              <input id="profileName" class="input" placeholder="Enter your name" />
+              <div class="help">Tip: you can click your profile later to change it</div>
 
-          <div class="modal__actions">
-            <button id="profileSave" class="btn btn--primary">Save</button>
+              <div class="btnRow">
+                <button id="profileSaveBtn" class="btn">Start</button>
+              </div>
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   </body>
