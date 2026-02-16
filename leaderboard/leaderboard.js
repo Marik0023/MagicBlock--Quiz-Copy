@@ -60,7 +60,6 @@
   const $meta = document.getElementById('lbMeta');
   const $search = document.getElementById('lbSearch');
   const $refresh = document.getElementById('lbRefresh');
-  const $sort = document.getElementById('lbSort');
 
   if (!window.MBQ_LEADERBOARD) {
     $list.innerHTML = '<div class="lb-empty">Leaderboard client is not loaded.</div>';
@@ -85,29 +84,7 @@
   }
 
   function sortRows(list) {
-    const mode = ($sort?.value || 'total');
     const byUpdated = (a, b) => (Date.parse(b.updated_at || b.created_at || '') || 0) - (Date.parse(a.updated_at || a.created_at || '') || 0);
-
-    if (mode === 's1') {
-      return list.sort((a,b) => {
-        const sa = Number(a.champ_s1_score || 0);
-        const sb = Number(b.champ_s1_score || 0);
-        if (sb !== sa) return sb - sa;
-        return byUpdated(a,b);
-      });
-    }
-    if (mode === 's2') {
-      return list.sort((a,b) => {
-        const sa = Number(a.champ_s2_score || 0);
-        const sb = Number(b.champ_s2_score || 0);
-        if (sb !== sa) return sb - sa;
-        return byUpdated(a,b);
-      });
-    }
-    if (mode === 'new') {
-      return list.sort(byUpdated);
-    }
-    // total
     return list.sort((a,b) => {
       const ta = Number(a.total_score || 0);
       const tb = Number(b.total_score || 0);
@@ -255,9 +232,7 @@
 
   $refresh.addEventListener('click', load);
   $search.addEventListener('input', applySearch);
-  $sort?.addEventListener('change', applySearch);
-
-  window.addEventListener('mbq:profile-updated', () => { try { applySearch(); } catch {} });
+window.addEventListener('mbq:profile-updated', () => { try { applySearch(); } catch {} });
 
   load();
 })();

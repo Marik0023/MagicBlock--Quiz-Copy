@@ -16,8 +16,6 @@
       .lb-search { flex: 1 1 280px; }
       .lb-search input { width:100%; }
       .lb-meta { opacity: 0.8; font-size: 14px; }
-      .lb-sort { min-width: 170px; }
-      .lb-sort select { width:100%; }
 
       .lb-head { 
         display:grid;
@@ -63,14 +61,17 @@
       .lb-season { display:flex; align-items:center; gap: 10px; min-width:0; }
       .lb-score { flex: 0 0 auto; }
       .lb-preview {
-        width: 70px; height: auto;
-        border-radius: 14px;
-        border: 1px solid rgba(255,255,255,.12);
+        width: 70px;
+        height: 44px;
+        display: block;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,.14);
         background: rgba(255,255,255,.04);
         cursor: pointer;
-        transition: transform .12s ease;
+        image-rendering: -webkit-optimize-contrast;
       }
-      .lb-preview:hover{ transform: translateY(-1px) scale(1.02); }
+      .lb-preview:hover{ transform: translateY(-1px); }
       .lb-none { opacity:.70; font-size: 12px; border: 1px dashed rgba(255,255,255,.18); padding: 7px 12px; border-radius: 999px; }
 
       .lb-empty { opacity: .85; padding: 20px; }
@@ -118,7 +119,6 @@
           <div class="lb-search">
             <input id="lbSearch" class="input" type="text" placeholder="Search nickname…" autocomplete="off" />
           </div>
-          <div class="lb-sort"><select id="lbSort" class="input"><option value="total">Sort: Total</option><option value="s1">Sort: Season 1</option><option value="s2">Sort: Season 2</option><option value="new">Sort: Newest</option></select></div>
           <button id="lbRefresh" class="btn">Refresh</button>
           <div id="lbMeta" class="lb-meta"></div>
         </div>
