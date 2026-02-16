@@ -157,7 +157,7 @@
 
       const rowCls = `lb-row ${isMe ? 'lb-me' : ''}`;
 
-      const youBadge = isMe ? `<span class="lb-chip" style="margin-left:8px; padding:4px 10px; font-size:12px;">You</span>` : '';
+      const youBadge = isMe ? `<span class="lb-chip" style="padding:4px 10px; font-size:12px;">You</span>` : '';
 
       // Card previews/badges are intentionally removed (clean table).
 
@@ -169,7 +169,7 @@
             <img class="lb-avatar" src="${avatar}" alt="${nick}"
               onerror="if(!this.dataset.try2 && '${avatarLegacy}') { this.dataset.try2='1'; this.src='${avatarLegacy}'; } else { this.onerror=null; this.src='${AVATAR_PLACEHOLDER}'; }" />
             <div class="lb-nameWrap">
-              <div class="lb-nick">${nick}${youBadge}</div>
+              <div class="lb-nick"><span class="lb-nickText">${nick}</span>${youBadge}</div>
               ${idLine}
             </div>
           </div>
