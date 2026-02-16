@@ -161,22 +161,29 @@
   }
 
   async function getOrCreateDeviceId() {
-    // Best variant: use Supabase anonymous auth uid as our stable id.
-    // This prevents easy spoofing and keeps Storage ownership aligned with RLS.
-    const client = await getAuthedClient();
+    // Prefer a previously-known device id from cookie/IDB/localStorage.
+    // This keeps leaderboard identity stable across reloads and many "clear cache" flows.
+    // If nothing is found, fall back to Supabase anonymous uid.
     let id = "";
-    try {
-      const { data, error } = await client.auth.getUser();
-      if (error) console.warn("Supabase getUser error:", error);
-      id = data?.user?.id || "";
-    } catch (e) {
-      console.warn("Supabase getUser exception:", e);
-    }
+    try { id = (localStorage.getItem(DEVICE_KEY) || "").trim(); } catch {}
+    if (!id) id = (getCookie(DEVICE_COOKIE) || "").trim();
+    if (!id) id = String(await idbGet(IDB_KEY) || "").trim();
+
     if (!id) {
+      const client = await getAuthedClient();
       try {
-        const { data } = await client.auth.getSession();
-        id = data?.session?.user?.id || "";
-      } catch {}
+        const { data, error } = await client.auth.getUser();
+        if (error) console.warn("Supabase getUser error:", error);
+        id = data?.user?.id || "";
+      } catch (e) {
+        console.warn("Supabase getUser exception:", e);
+      }
+      if (!id) {
+        try {
+          const { data } = await client.auth.getSession();
+          id = data?.session?.user?.id || "";
+        } catch {}
+      }
     }
     // As a last-resort fallback (should be rare), keep old behavior, but this id will NOT have Storage ownership.
     if (!id) {
@@ -336,6 +343,14 @@
   syncFromLocal = async function(seasonId, championPngDataUrl) {
     const deviceId = await getOrCreateDeviceId();
     const profile = getProfile() || {};
+
+    // Persist device_id into the local profile so UI pages can reliably match "my row"
+    // even if localStorage/cookies are cleared.
+    try {
+      const nextProfile = { ...profile, device_id: deviceId };
+      localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
+    } catch {}
+
     const nickname = String(profile?.name || "").trim();
     const avatarVal = profile?.avatar || null; // can be data URL OR URL
 
@@ -353,9 +368,10 @@
       const blob = await dataUrlToBlob(avatarVal);
       avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
 
-      // Replace saved avatar with URL (so we don't re-upload every time)
+      // Keep the original avatar (data URL) for in-app rendering (cards/canvas),
+      // but store the uploaded public URL separately.
       try {
-        const nextProfile = { ...profile, avatar: avatarUrl };
+        const nextProfile = { ...profile, device_id: deviceId, avatar_url: avatarUrl };
         localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
       } catch {}
     } else if (isNonEmpty(avatarVal)) {
@@ -374,7 +390,7 @@
           if (blob) {
             avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
             try {
-              const nextProfile = { ...profile, avatar: avatarUrl };
+              const nextProfile = { ...profile, device_id: deviceId, avatar_url: avatarUrl };
               localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
             } catch {}
           }
@@ -393,7 +409,7 @@
         if (blob) {
           avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
           try {
-            const nextProfile = { ...profile, avatar: avatarUrl };
+            const nextProfile = { ...profile, device_id: deviceId, avatar_url: avatarUrl };
             localStorage.setItem(MB_KEYS.profile, JSON.stringify(nextProfile));
           } catch {}
         }
