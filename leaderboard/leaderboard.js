@@ -192,23 +192,50 @@
       }
 
       rows = await window.MBQ_LEADERBOARD.fetchLeaderboard();
-// Dedupe by device_id: keep most recent updated row per device.
-// (Nickname can change; multiple people can share the same nickname.)
-const byId = new Map();
-const arr = (Array.isArray(rows) ? rows : []);
-for (let i = 0; i < arr.length; i++) {
-  const r = arr[i];
-  const id = String(r.device_id || "").trim();
-  const nickKey = String(r.nickname || "").trim().toLowerCase();
-  // Fallback for legacy rows without device_id (should be rare):
-  // keep them separate unless they truly match.
-  const key = id || (nickKey ? `legacy:${nickKey}` : `legacy:__anon__:${i}`);
-  const prev = byId.get(key);
-  const t = Date.parse(r.updated_at || r.created_at || "") || 0;
-  const pt = prev ? (Date.parse(prev.updated_at || prev.created_at || "") || 0) : -1;
-  if (!prev || t > pt) byId.set(key, r);
-}
-rows = Array.from(byId.values());
+
+      // By default, we collapse duplicates that have the same nickname.
+      // Reason: many "test / reset" devices can create multiple rows for the same person.
+      // If you want to see every device entry, open: leaderboard/?all=1
+      const params = new URLSearchParams(location.search || "");
+      const showAll = params.get("all") === "1";
+
+      if (!showAll) {
+        const bestByKey = new Map();
+        const arr = (Array.isArray(rows) ? rows : []);
+
+        const norm = (s) => String(s || "").trim().toLowerCase();
+
+        const pickBetter = (a, b) => {
+          // Prefer higher total_score, then newer updated_at, then richer data (avatar/champ urls)
+          const as = Number(a.total_score || 0), bs = Number(b.total_score || 0);
+          if (bs !== as) return bs > as ? b : a;
+
+          const at = Date.parse(a.updated_at || a.created_at || "") || 0;
+          const bt = Date.parse(b.updated_at || b.created_at || "") || 0;
+          if (bt !== at) return bt > at ? b : a;
+
+          const arich = (a.avatar_url ? 1 : 0) + (a.champ_s1_url ? 1 : 0) + (a.champ_s2_url ? 1 : 0);
+          const brich = (b.avatar_url ? 1 : 0) + (b.champ_s1_url ? 1 : 0) + (b.champ_s2_url ? 1 : 0);
+          if (brich !== arich) return brich > arich ? b : a;
+
+          return a;
+        };
+
+        for (let i = 0; i < arr.length; i++) {
+          const r = arr[i] || {};
+          const id = String(r.device_id || "").trim();
+          const nk = norm(r.nickname);
+
+          // If nickname is present -> group by nickname.
+          // If nickname missing -> keep separate per device_id (or index if missing).
+          const key = nk ? ("nick:" + nk) : ("id:" + (id || ("legacy_" + i)));
+
+          const prev = bestByKey.get(key);
+          if (!prev) bestByKey.set(key, r);
+          else bestByKey.set(key, pickBetter(prev, r));
+        }
+        rows = Array.from(bestByKey.values());
+      }
 
       $meta.textContent = `${rows.length} players`;
       applySearch();
