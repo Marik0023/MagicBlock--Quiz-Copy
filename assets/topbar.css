@@ -36,12 +36,13 @@
 }
 
 .mbqTopbar__logo{
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-  overflow: hidden;
+  /* Logo should be free (no frame) and keep animating */
+  width: 40px;
+  height: 40px;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  overflow: visible;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -50,7 +51,7 @@
 .mbqTopbar__logo img{
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .mbqTopbar__nav{
