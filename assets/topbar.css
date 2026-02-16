@@ -1,0 +1,126 @@
+/* MagicBlock Quiz — unified topbar */
+
+.mbqTopbar{
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  padding: 14px 18px;
+  pointer-events: auto;
+}
+
+.mbqTopbar__inner{
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(10,10,10,.35);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 30px rgba(0,0,0,.35);
+  padding: 10px 12px;
+}
+
+.mbqTopbar__brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,.92);
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.mbqTopbar__logo{
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  overflow: hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.mbqTopbar__logo video,
+.mbqTopbar__logo img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mbqTopbar__nav{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.mbqTopbar__nav a,
+.mbqTopbar__nav button{
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.20);
+  color: rgba(255,255,255,.92);
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mbqTopbar__nav a:hover,
+.mbqTopbar__nav button:hover{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08);
+}
+
+.mbqTopbar__nav a.is-active{
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.26);
+}
+
+.mbqTopbar__profile{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.20);
+  color: rgba(255,255,255,.92);
+  border-radius: 999px;
+  padding: 10px 12px;
+  cursor:pointer;
+}
+.mbqTopbar__profile:hover{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08);
+}
+
+.mbqTopbar__avatar{
+  width: 34px;
+  height: 34px;
+  border-radius: 14px;
+  overflow:hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+}
+.mbqTopbar__avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+.mbqTopbar__ptext{ line-height: 1.05; text-align:left; }
+.mbqTopbar__pname{ font-weight: 900; font-size: 14px; }
+.mbqTopbar__pedit{ opacity: .7; font-weight: 700; font-size: 12px; }
+
+@media (max-width: 860px){
+  .mbqTopbar__inner{ border-radius: 22px; }
+  .mbqTopbar__brand span{ display:none; }
+}
+
+@media (max-width: 560px){
+  .mbqTopbar__nav a, .mbqTopbar__nav button{ padding: 9px 10px; font-size: 13px; }
+  .mbqTopbar__ptext{ display:none; }
+}
