@@ -221,7 +221,7 @@ function initProfileModal(){
     let avatar = old.avatar || "";
     if ((preview?.src || "").startsWith("data:")) avatar = preview.src;
 
-    const ok = setProfile({ name, avatar });
+    const ok = setProfile({ ...old, name, avatar });
     if (!ok) return;
 
     renderTopProfile();
