@@ -168,6 +168,28 @@ function setItemWithRetryS2(key, value){
   }
 }
 
+function createSafeFilename(str){
+  return (str || "")
+    .toString()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9\-_.]/g, "")
+    .slice(0, 80) || "result";
+}
+
+function exportPreviewDataURL(canvas){
+  try {
+    return canvas.toDataURL("image/png", 1.0);
+  } catch {
+    try {
+      // Fallback for older browsers that throw when passing quality for PNG
+      return canvas.toDataURL("image/png");
+    } catch {
+      return null;
+    }
+  }
+}
+
 function getProfile() {
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
@@ -460,9 +482,9 @@ function showResult(result){
 
 function renderReviewList(){
   reviewList.innerHTML = '';
-  QUIZ.forEach((q, i) => {
+  QUESTIONS.forEach((q, i) => {
     const pickedIdx = answers[i];
-    const correctIdx = q.correct;
+    const correctIdx = q.correctIndex;
     const pickedText = Number.isInteger(pickedIdx) ? q.options[pickedIdx] : null;
     const correctText = q.options[correctIdx];
 
