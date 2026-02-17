@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Season 2 — Silhouette</title>
+  <title>Season 2 — Guess the Character by Silhouette</title>
   <link rel="icon" href="../../../assets/faviconlogo/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" sizes="32x32" href="../../../assets/faviconlogo/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="../../../assets/faviconlogo/favicon-16x16.png">
@@ -16,7 +16,7 @@
 
 </head>
 
-<body class="mbQuiz">
+<body class="mbQuiz mbQuiz--silhouette">
   <div class="bg">
     <video class="bg__video" autoplay muted loop playsinline>
       <source src="https://cdn.prod.website-files.com/67dd3f471f62a240dd544dd8%2F67dd41b5485dd4cf31eee3c0_Home_Beams-transcode.mp4" type="video/mp4" />
@@ -27,8 +27,8 @@
 
   <main class="container">
     <section class="quizHero">
-      <h1>Guess the Movie by the Frame</h1>
-      <p class="sub">10 questions • A/B/C/D • Press Next after each answer.</p>
+      <h1>Guess the Character by Silhouette</h1>
+      <p class="sub">10 questions • A/B/C/D • Pick an answer — the silhouette reveals, then the next question loads.</p>
     </section>
 
     <!-- QUIZ -->
@@ -40,25 +40,18 @@
         <!-- LEFT -->
         <div>
           <div class="mbPlayer" style="padding:12px;">
-            <div class="mbVideoWrap">
-              <video id="frameVideo" playsinline preload="metadata">
-                <source id="frameSource" src="../assets/movies/1.mp4" type="video/mp4" />
-              </video>
-
-              <!-- Custom play overlay -->
-              <button id="videoPlayBtn" class="videoPlayBtn" type="button" aria-label="Play / Pause video">
-              <!-- shared asset (root /assets) -->
-              <img src="../../../assets/customplay.png" alt="Play" />
-              </button>
+            <div class="mbSilWrap">
+              <img id="silImg" class="silImg" src="../assets/silhouettes/spongebob.png" alt="Silhouette" />
             </div>
           </div>
         </div>
 
         <!-- RIGHT -->
         <div>
-          <!-- ❌ ghostTitle прибрали (він тільки зсував варіанти) -->
+          <div id="feedback" class="quizFeedback"></div>
           <div class="options" id="options"></div>
 
+          <!-- Keep Next as a fallback (auto-advance is enabled in JS) -->
           <div class="nextWrap">
             <button class="btn nextBtn" id="nextBtn" disabled type="button">Next</button>
           </div>

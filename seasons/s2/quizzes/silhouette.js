@@ -1,19 +1,135 @@
+// Season 2 — Guess the Character by Silhouette
 localStorage.setItem("mb_last_s2", "Silhouette");
+
 const MB_KEYS = {
   profile: "mb_profile",
+
   // Season 2 keys (must match seasons/s2/app.js)
   doneMovie: "mb_s2_done_silhouette",
   resMovie: "mb_s2_result_silhouette",
   prevMovie: "mb_s2_prev_silhouette",
 
+  // Progress
   progMovie: "mb_s2_prog_silhouette",            // number (1..10)
   progMovieState: "mb_s2_prog_silhouette_state", // JSON { idx, correct, answers }
 
-  // ✅ Answer Review: hide forever after Generate
+  // Answer Review: hide forever after Generate
   reviewHiddenMovie: "mb_s2_review_hidden_silhouette",
 };
 
 const PNG_KEY = "mb_s2_png_silhouette";
+
+const QUIZ_META = {
+  title: "Guess the Character by Silhouette",
+  idPrefix: "MagicShadow",
+  total: 10,
+};
+
+const QUESTIONS = [
+  {
+    img: "../assets/silhouettes/spongebob.png",
+    options: [
+      "Finn (Adventure Time)",
+      "Stewie Griffin (Family Guy)",
+      "Gumball Watterson (The Amazing World of Gumball)",
+      "SpongeBob SquarePants (SpongeBob SquarePants)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/shrek.png",
+    options: [
+      "Sulley (Monsters, Inc.)",
+      "Gru (Despicable Me)",
+      "Po (Kung Fu Panda)",
+      "Shrek (Shrek)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/walle.png",
+    options: [
+      "Astro Boy (Astro Boy)",
+      "Gir (Invader Zim)",
+      "BMO (Adventure Time)",
+      "WALL·E (WALL·E)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/toothless.png",
+    options: [
+      "Charizard (Pokémon)",
+      "Spyro (Spyro)",
+      "Mushu (Mulan)",
+      "Toothless (How to Train Your Dragon)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/pikachu.png",
+    options: [
+      "Sonic the Hedgehog (Sonic)",
+      "Kirby (Kirby: Right Back at Ya!)",
+      "Doraemon (Doraemon)",
+      "Pikachu (Pokémon)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/homer.png",
+    options: [
+      "Peter Griffin (Family Guy)",
+      "Stan Smith (American Dad!)",
+      "Bob Belcher (Bob’s Burgers)",
+      "Homer Simpson (The Simpsons)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/rick.png",
+    options: [
+      "Professor Farnsworth (Futurama)",
+      "Dexter (Dexter’s Laboratory)",
+      "Dr. Doofenshmirtz (Phineas and Ferb)",
+      "Rick Sanchez (Rick and Morty)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/aang.png",
+    options: [
+      "Samurai Jack (Samurai Jack)",
+      "Naruto Uzumaki (Naruto)",
+      "Steven Universe (Steven Universe)",
+      "Aang (Avatar: The Last Airbender)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/tomjerry.png",
+    options: [
+      "Garfield (Garfield)",
+      "Sylvester (Looney Tunes)",
+      "The Cat in the Hat (The Cat in the Hat)",
+      "Tom and Jerry (Tom and Jerry)",
+    ],
+    correctIndex: 3,
+  },
+  {
+    img: "../assets/silhouettes/scooby.png",
+    options: [
+      "Brian Griffin (Family Guy)",
+      "Goofy (Disney)",
+      "Odie (Garfield)",
+      "Scooby-Doo (Scooby-Doo)",
+    ],
+    correctIndex: 3,
+  },
+];
+
+const AUTO_NEXT_MS = 1150; // reveal -> pause -> next
+const SWITCH_FADE_MS = 180;
 
 function safeJSONParse(v, fallback = null) {
   try { return JSON.parse(v); } catch { return fallback; }
@@ -40,36 +156,25 @@ function setItemWithRetryS2(key, value){
   try {
     localStorage.setItem(key, value);
     return true;
-  } catch (e){
-    // QuotaExceededError or similar
+  } catch {
     try { freeStorageSpaceS2(); } catch {}
     try {
       localStorage.setItem(key, value);
       return true;
-    } catch (e2){
+    } catch {
       return false;
     }
   }
 }
 
-
 function getProfile() {
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
 
-function forcePlayAll(selector) {
-  const vids = document.querySelectorAll(selector);
-  if (!vids.length) return;
-  const tryPlay = () => vids.forEach(v => v.play().catch(() => {}));
-  tryPlay();
-  window.addEventListener("click", tryPlay, { once: true });
-  window.addEventListener("touchstart", tryPlay, { once: true });
-}
-
-/* ===== Progress helpers (Movie) ===== */
-function saveProgressMovie(idx0, correct, answers) {
-  const idx = Math.max(0, Math.min(9, Number(idx0) || 0));
-  const qNum = Math.max(1, Math.min(10, idx + 1));
+/* ===== Progress helpers ===== */
+function saveProgress(idx0, correct, answers) {
+  const idx = Math.max(0, Math.min(QUESTIONS.length - 1, Number(idx0) || 0));
+  const qNum = Math.max(1, Math.min(QUESTIONS.length, idx + 1));
 
   localStorage.setItem(MB_KEYS.progMovie, String(qNum));
   localStorage.setItem(
@@ -81,21 +186,23 @@ function saveProgressMovie(idx0, correct, answers) {
     })
   );
 }
-function loadProgressMovie() {
+
+function loadProgress() {
   const n = Number(localStorage.getItem(MB_KEYS.progMovie) || "0");
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progMovieState), null);
   if (!Number.isFinite(n) || n <= 0) return null;
 
-  const fallbackIdx = Math.max(0, Math.min(9, n - 1));
+  const fallbackIdx = Math.max(0, Math.min(QUESTIONS.length - 1, n - 1));
   const idx = Number.isFinite(state?.idx) ? state.idx : fallbackIdx;
 
   return {
-    idx: Math.max(0, Math.min(9, idx)),
+    idx: Math.max(0, Math.min(QUESTIONS.length - 1, idx)),
     correct: Number.isFinite(state?.correct) ? state.correct : 0,
     answers: Array.isArray(state?.answers) ? state.answers : [],
   };
 }
-function clearProgressMovie() {
+
+function clearProgress() {
   localStorage.removeItem(MB_KEYS.progMovie);
   localStorage.removeItem(MB_KEYS.progMovieState);
 }
@@ -106,7 +213,7 @@ function buildId(prefix) {
   return `MB-${prefix}-${serial}`;
 }
 
-/* ===== Top profile ===== */
+/* ===== Top profile (from topbar.js) ===== */
 function renderTopProfile() {
   const pill = document.getElementById("profilePill");
   if (!pill) return;
@@ -119,437 +226,350 @@ function renderTopProfile() {
   if (!p) {
     if (img) img.src = "";
     if (nameEl) nameEl.textContent = "No profile";
-    if (hintEl) hintEl.textContent = "Go Home";
-    pill.addEventListener("click", () => location.href = "../index.html");
+    if (hintEl) hintEl.textContent = "Create one in the home page";
     return;
   }
-
-  if (img) img.src = p.avatar || "";
+  if (img && p.avatar) img.src = p.avatar;
   if (nameEl) nameEl.textContent = p.name || "Player";
-  if (hintEl) hintEl.textContent = "Edit on Home";
-  pill.addEventListener("click", () => location.href = "../index.html");
+  if (hintEl) hintEl.textContent = "Edit";
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  forcePlayAll(".bg__video");
-  forcePlayAll(".brand__logo");
-  renderTopProfile();
+/* =========================
+   QUIZ LOGIC
+========================= */
+let idx = 0;
+let correct = 0;
+let answers = [];
+let locked = false;
+let autoTimer = null;
 
-  // Topbar: Seasons dropdown (hover + tap)
-  (function initSeasonMenu(){
-    const menu = document.getElementById("seasonMenu");
-    if (!menu) return;
-    const btn = menu.querySelector("button");
-    const links = menu.querySelectorAll("a");
+let quizPanel, resultPanel, qTitle, silImg, optionsEl, feedbackEl, nextBtn;
+let rName, rTotal, rCorrect, rAcc, genBtn, dlBtn, cardZone, cardCanvas, reviewBox, reviewList;
 
-    btn?.addEventListener("click", (e) => {
-      e.preventDefault();
-      menu.classList.toggle("isOpen");
-    });
+function clearAutoTimer(){
+  if (autoTimer){
+    clearTimeout(autoTimer);
+    autoTimer = null;
+  }
+}
 
-    links.forEach(a => a.addEventListener("click", () => menu.classList.remove("isOpen")));
+function setSilhouetteState(revealed){
+  if (!silImg) return;
+  if (revealed) silImg.classList.add("isRevealed");
+  else silImg.classList.remove("isRevealed");
+}
 
-    document.addEventListener("click", (e) => {
-      if (!menu.contains(e.target)) menu.classList.remove("isOpen");
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") menu.classList.remove("isOpen");
-    });
-  })();
+function setImage(src){
+  if (!silImg) return;
+  setSilhouetteState(false);
 
-  const achievementsBtn = document.getElementById("achievementsBtn");
-  if (achievementsBtn) achievementsBtn.addEventListener("click", () => (location.href = "../index.html#achievements"));
+  // Fade-in per image load
+  silImg.style.opacity = "0";
+  silImg.style.transform = "scale(0.985)";
+  silImg.onload = () => {
+    silImg.style.opacity = "1";
+    silImg.style.transform = "scale(1)";
+  };
+  silImg.onerror = () => {
+    silImg.style.opacity = "1";
+    silImg.style.transform = "scale(1)";
+  };
+  silImg.src = src;
+}
 
-  const QUESTIONS = [
-    { frame: "../../../assets/movies/1.mp4",  options: ["The Social Network", "Steve Jobs", "The Imitation Game", "Moneyball"], correctIndex: 0 },
-    { frame: "../../../assets/movies/2.mp4",  options: ["The Internship", "We’re the Millers", "Grown Ups", "Daddy’s Home"], correctIndex: 2 },
-    { frame: "../../../assets/movies/3.mp4",  options: ["The Lord of the Rings", "Harry Potter", "Percy Jackson & the Olympians", "The Chronicles of Narnia"], correctIndex: 1 },
-    { frame: "../../../assets/movies/4.mp4",  options: ["The Gentlemen", "Layer Cake", "RocknRolla", "Snatch"], correctIndex: 0 },
-    { frame: "../../../assets/movies/5.mp4",  options: ["Wednesday", "The Umbrella Academy", "Riverdale", "Chilling Adventures of Sabrina"], correctIndex: 0 },
-    { frame: "../../../assets/movies/6.mp4",  options: ["Gravity", "Interstellar", "The Martian", "Arrival"], correctIndex: 1 },
-    { frame: "../../../assets/movies/7.mp4",  options: ["The OA", "The X-Files", "Dark", "Stranger Things"], correctIndex: 3 },
-    { frame: "../../../assets/movies/8.mp4",  options: ["Need for Speed", "Baby Driver", "Gone in 60 Seconds", "The Fast and the Furious"], correctIndex: 3 },
-    { frame: "../../../assets/movies/9.mp4",  options: ["The Hangover", "Superbad", "21 Jump Street", "Project X"], correctIndex: 0 },
-    { frame: "../../../assets/movies/10.mp4", options: ["1917", "Saving Private Ryan", "Hacksaw Ridge", "Fury"], correctIndex: 2 },
-  ];
+function renderOptions(opts){
+  optionsEl.innerHTML = "";
+  opts.forEach((txt, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "optionBtn";
+    b.textContent = `${String.fromCharCode(65 + i)}) ${txt}`;
+    b.addEventListener("click", () => submitAnswer(i));
+    optionsEl.appendChild(b);
+  });
+}
 
-  const quizPanel = document.getElementById("quizPanel");
-  const resultPanel = document.getElementById("resultPanel");
+function lockOptions(){
+  [...optionsEl.querySelectorAll("button")].forEach(b => b.disabled = true);
+}
 
-  const qTitle = document.getElementById("qTitle");
-  const frameVideo = document.getElementById("frameVideo");
-  const optionsEl = document.getElementById("options");
-  const nextBtn = document.getElementById("nextBtn");
-  const playOverlayBtn = document.getElementById("videoPlayBtn");
+function markAnswers(selectedIndex, correctIndex){
+  const btns = [...optionsEl.querySelectorAll("button")];
+  btns.forEach((b, i) => {
+    if (i === selectedIndex) b.classList.add("isSelected");
+    if (i === correctIndex) b.classList.add("isCorrect");
+    if (i === selectedIndex && selectedIndex !== correctIndex) b.classList.add("isWrong");
+  });
+}
 
-  const rName = document.getElementById("rName");
-  const rTotal = document.getElementById("rTotal");
-  const rCorrect = document.getElementById("rCorrect");
-  const rAcc = document.getElementById("rAcc");
+function renderQuestion(){
+  locked = false;
+  clearAutoTimer();
 
-  const genBtn = document.getElementById("genBtn");
-  const cardZone = document.getElementById("cardZone");
-  const cardCanvas = document.getElementById("cardCanvas");
-  const dlBtn = document.getElementById("dlBtn");
+  const q = QUESTIONS[idx];
 
-  // ✅ review elements
-  const reviewBox = document.getElementById("reviewBox");
-  const reviewList = document.getElementById("reviewList");
+  qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  if (feedbackEl) feedbackEl.textContent = "";
 
-  const criticalOk = !!(quizPanel && qTitle && frameVideo && optionsEl && nextBtn && playOverlayBtn && resultPanel);
-  if (!criticalOk) {
-    console.error("[Movie Quiz] Missing critical DOM nodes. Check IDs in movie.html.");
+  setImage(q.img);
+  renderOptions(q.options);
+
+  if (nextBtn){
+    nextBtn.disabled = true;
+    nextBtn.classList.remove("isShow");
+  }
+
+  // Persist progress (so refresh doesn't reset)
+  saveProgress(idx, correct, answers);
+}
+
+function submitAnswer(selectedIndex){
+  if (locked) return;
+  locked = true;
+
+  const q = QUESTIONS[idx];
+  const isCorrect = selectedIndex === q.correctIndex;
+
+  answers[idx] = selectedIndex;
+  if (isCorrect) correct += 1;
+
+  markAnswers(selectedIndex, q.correctIndex);
+  lockOptions();
+
+  if (feedbackEl){
+    feedbackEl.textContent = isCorrect ? "✅ Correct!" : "❌ Wrong!";
+  }
+
+  // Reveal silhouette first, then auto-advance
+  setSilhouetteState(true);
+
+  if (nextBtn){
+    nextBtn.disabled = false;
+    nextBtn.classList.add("isShow");
+  }
+
+  autoTimer = setTimeout(() => {
+    goNext();
+  }, AUTO_NEXT_MS);
+
+  // Save after answering as well (so correct count is preserved)
+  saveProgress(idx, correct, answers);
+}
+
+function goNext(){
+  clearAutoTimer();
+
+  if (idx >= QUESTIONS.length - 1){
+    finishQuiz();
     return;
   }
 
-  const saved = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
-  const done = localStorage.getItem(MB_KEYS.doneMovie) === "1";
+  idx += 1;
 
-  let idx = 0;
-  let correct = 0;
-  let selectedIndex = null;
-  let answers = [];
-
-  // ===== Overlay + sound policy =====
-  let soundUnlocked = false;
-
-  function showOverlay() { playOverlayBtn.classList.remove("isHidden"); }
-  function hideOverlay() { playOverlayBtn.classList.add("isHidden"); }
-
-  async function playWithSound() {
-    if (!frameVideo) return;
-
-    if (!soundUnlocked) {
-      soundUnlocked = true;
-      frameVideo.muted = false;
-      frameVideo.volume = 1.0;
-    } else {
-      frameVideo.muted = false;
-    }
-
-    try {
-      await frameVideo.play();
-      hideOverlay();
-    } catch (e) {
-      console.warn("Play failed:", e);
-      showOverlay();
-    }
-  }
-
-  function pauseVideo() {
-    if (!frameVideo) return;
-    try { frameVideo.pause(); } catch {}
-    showOverlay();
-  }
-
-  function togglePlayPauseFromClick() {
-    if (!frameVideo) return;
-
-    if (frameVideo.ended) {
-      try { frameVideo.currentTime = 0; } catch {}
-      playWithSound();
-      return;
-    }
-
-    if (frameVideo.paused) playWithSound();
-    else pauseVideo();
-  }
-
-  playOverlayBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    togglePlayPauseFromClick();
-  });
-
-  frameVideo.addEventListener("click", (e) => {
-    e.preventDefault();
-    togglePlayPauseFromClick();
-  });
-
-  frameVideo.addEventListener("play", () => hideOverlay());
-  frameVideo.addEventListener("pause", () => showOverlay());
-  frameVideo.addEventListener("ended", () => showOverlay());
-
-  // ===== Review helpers =====
-  function showReview() {
-    if (!reviewBox) return;
-    reviewBox.style.display = "block";
-    reviewBox.classList.remove("isHidden");
-    reviewBox.classList.remove("isGone");
-  }
-
-  function hideReviewAnimatedForever() {
-    localStorage.setItem(MB_KEYS.reviewHiddenMovie, "1");
-
-    if (!reviewBox) return;
-    reviewBox.classList.add("isHidden");
-
-    window.setTimeout(() => {
-      reviewBox.classList.add("isGone");
-      reviewBox.style.display = "none";
-    }, 220);
-  }
-
-  function renderAnswerReviewMovie(ans = []) {
-    if (!reviewBox || !reviewList) return;
-
-    const hidden = localStorage.getItem(MB_KEYS.reviewHiddenMovie) === "1";
-    if (hidden) {
-      reviewBox.classList.add("isGone");
-      reviewBox.style.display = "none";
-      return;
-    }
-
-    reviewList.innerHTML = "";
-
-    QUESTIONS.forEach((q, i) => {
-      const correctLabel = q.options?.[q.correctIndex] ?? "—";
-
-      const item = document.createElement("div");
-      item.className = "reviewItem";
-
-      const picked = (ans && ans.length) ? ans[i] : undefined;
-      if (picked !== undefined && picked !== null && picked !== q.correctIndex) {
-        item.classList.add("isWrong");
-      }
-
-      const qEl = document.createElement("div");
-      qEl.className = "reviewQ";
-      qEl.textContent = `QUESTION ${i + 1}`;
-
-      const right = document.createElement("div");
-
-      const aEl = document.createElement("div");
-      aEl.className = "reviewA";
-      aEl.textContent = correctLabel;
-
-      right.appendChild(aEl);
-
-      item.appendChild(qEl);
-      item.appendChild(right);
-      reviewList.appendChild(item);
-    });
-
-    showReview();
-  }
-
-  // ===== Init state =====
-  if (done && saved) {
-    clearProgressMovie();
-    showResult(saved);
+  // Fade out panel, swap, fade in (small polish)
+  if (quizPanel){
+    quizPanel.classList.add("isSwitching");
+    setTimeout(() => {
+      renderQuestion();
+      quizPanel.classList.remove("isSwitching");
+    }, SWITCH_FADE_MS);
   } else {
-    const prog = loadProgressMovie();
-    if (prog) {
-      idx = prog.idx;
-      correct = prog.correct;
-      answers = prog.answers;
-    }
-    saveProgressMovie(idx, correct, answers);
     renderQuestion();
   }
+}
 
-  window.addEventListener("beforeunload", () => {
-    if (localStorage.getItem(MB_KEYS.doneMovie) !== "1") {
-      saveProgressMovie(idx, correct, answers);
-    }
-  });
+function finishQuiz(){
+  clearAutoTimer();
+  clearProgress();
 
-  function renderQuestion() {
-    selectedIndex = null;
-    nextBtn.disabled = true;
-    nextBtn.classList.remove("isShow");
+  const p = getProfile();
+  const name = p?.name || "Player";
+  const avatar = p?.avatar || "";
 
-    const q = QUESTIONS[idx];
-    qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+  const total = QUESTIONS.length;
+  const acc = Math.round((correct / total) * 100);
 
-    frameVideo.pause();
-    frameVideo.muted = true;
+  const result = {
+    title: QUIZ_META.title,
+    name,
+    avatar,
+    total,
+    correct,
+    acc,
+    idText: buildId(QUIZ_META.idPrefix),
+  };
 
-    frameVideo.src = q.frame;
-    frameVideo.load();
-    showOverlay();
+  // Store “done + result” for the Season index page and future visits
+  localStorage.setItem(MB_KEYS.doneMovie, "1");
+  localStorage.setItem(MB_KEYS.resMovie, JSON.stringify(result));
 
-    const onMeta = () => {
-      frameVideo.removeEventListener("loadedmetadata", onMeta);
-      try { frameVideo.currentTime = 0.001; } catch {}
-      frameVideo.pause();
-      showOverlay();
-    };
-    frameVideo.addEventListener("loadedmetadata", onMeta);
+  showResult(result);
+}
 
-    optionsEl.innerHTML = "";
-    (q.options || []).forEach((label, i) => {
-      const btn = document.createElement("button");
-      btn.className = "optionBtn";
-      btn.type = "button";
-      btn.textContent = `${String.fromCharCode(65 + i)}) ${label}`;
-      btn.addEventListener("click", () => {
-        selectedIndex = i;
-        updateSelectedUI();
-        nextBtn.disabled = false;
-        nextBtn.classList.add("isShow");
-      });
-      optionsEl.appendChild(btn);
-    });
+function showResult(result){
+  quizPanel.style.display = "none";
+  resultPanel.style.display = "block";
 
-    saveProgressMovie(idx, correct, answers);
+  rName.textContent = result.name;
+  rTotal.textContent = `${result.total}`;
+  rCorrect.textContent = `${result.correct}`;
+  rAcc.textContent = `${result.acc}%`;
+
+  // Review list (unless hidden)
+  const hideReview = localStorage.getItem(MB_KEYS.reviewHiddenMovie) === "1";
+  if (reviewBox){
+    reviewBox.style.display = hideReview ? "none" : "block";
   }
+  renderReviewList();
 
-  function updateSelectedUI() {
-    [...optionsEl.querySelectorAll(".optionBtn")].forEach((b, i) => {
-      b.classList.toggle("isSelected", i === selectedIndex);
-    });
-  }
+  // Try restore previous generated card preview (optional)
+  restorePreview();
+}
 
-  nextBtn.addEventListener("click", () => {
-    if (selectedIndex === null) return;
+function renderReviewList(){
+  if (!reviewList) return;
+  reviewList.innerHTML = "";
 
-    pauseVideo();
+  QUESTIONS.forEach((q, i) => {
+    const row = document.createElement("div");
+    row.className = "reviewRow";
 
-    const q = QUESTIONS[idx];
-    answers[idx] = selectedIndex;
-    if (selectedIndex === q.correctIndex) correct++;
+    const left = document.createElement("div");
+    left.className = "reviewQ";
+    left.textContent = `Q${i + 1}`;
 
-    idx++;
-    if (idx < QUESTIONS.length) {
-      saveProgressMovie(idx, correct, answers);
-      renderQuestion();
-      return;
-    }
+    const right = document.createElement("div");
+    right.className = "reviewA";
+    right.textContent = `Correct: ${String.fromCharCode(65 + q.correctIndex)} — ${q.options[q.correctIndex]}`;
 
-    const total = QUESTIONS.length;
-    const acc = Math.round((correct / total) * 100);
-    const p = getProfile();
-
-    const old = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
-    const id = old?.id || buildId("MagicViewer");
-
-    const result = { total, correct, acc, answers: Array.isArray(answers) ? answers : [], name: p?.name || "Player", id, ts: Date.now() };
-
-    localStorage.setItem(MB_KEYS.doneMovie, "1");
-    localStorage.setItem(MB_KEYS.resMovie, JSON.stringify(result));
-
-    clearProgressMovie();
-    showResult(result);
+    row.appendChild(left);
+    row.appendChild(right);
+    reviewList.appendChild(row);
   });
+}
 
-  function showResult(result) {
-    quizPanel.style.display = "none";
-    resultPanel.style.display = "block";
+function restorePreview(){
+  const prev = localStorage.getItem(MB_KEYS.prevMovie);
+  if (!prev || !cardCanvas) return false;
 
-    if (rName) rName.textContent = result.name || "Player";
-    if (rTotal) rTotal.textContent = String(result.total);
-    if (rCorrect) rCorrect.textContent = String(result.correct);
-    if (rAcc) rAcc.textContent = `${result.acc}%`;
-
-    renderAnswerReviewMovie((result && result.answers) ? result.answers : answers);
-  }
-
-  genBtn?.addEventListener("click", async () => {
-    // ✅ hide review forever
-    hideReviewAnimatedForever();
-
-    const p = getProfile();
-    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
-    if (!r || !cardCanvas) return;
-
-    await drawQuizResultCard(cardCanvas, {
-      title: "Guess the Movie by the Frame",
-      name: p?.name || "Player",
-      avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      acc: r.acc,
-      idText: r.id || buildId("MagicViewer"),
-      logoSrc: "../../../assets/logo.webm",
-    });
-
-    cardZone?.classList.add("isOpen");
-    if (dlBtn) dlBtn.disabled = false;
-
-    try {
-      const prev = exportPreviewDataURL(cardCanvas, 520, 0.85);
-      setItemWithRetryS2(MB_KEYS.prevMovie, prev);
-    } catch (e) {
-      console.warn("Movie preview save failed:", e);
-      try { localStorage.removeItem(MB_KEYS.prevMovie); } catch {}
-    }
-
-    if (genBtn) genBtn.textContent = "Regenerate Result Card";
-    cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-
-  dlBtn?.addEventListener("click", async () => {
-    if (!cardCanvas) return;
-
-    const p = getProfile();
-    const r = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
-    if (!r) return;
-
-    await drawQuizResultCard(cardCanvas, {
-      title: "Guess the Movie by the Frame",
-      name: p?.name || "Player",
-      avatar: p?.avatar || "",
-      correct: r.correct,
-      total: r.total,
-      acc: r.acc,
-      idText: r.id || buildId("MagicViewer"),
-      logoSrc: "../../../assets/logo.webm",
-    });
-
-    const a = document.createElement("a");
-    a.download = "magicblock-movie-result.png";
-    a.href = cardCanvas.toDataURL("image/png");
-    a.click();
-  });
-
-  restoreQuizPreview(MB_KEYS.prevMovie, cardCanvas, cardZone, dlBtn, genBtn);
-});
-
-/* ===== preview helpers + canvas helpers (unchanged) ===== */
-async function restoreQuizPreview(previewKey, cardCanvas, cardZone, dlBtn, genBtn) {
-  const prev = localStorage.getItem(previewKey);
-  if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
-
-  try {
-    const img = new Image();
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = prev;
-    });
-
+  const img = new Image();
+  img.onload = () => {
     cardCanvas.width = img.naturalWidth || img.width;
     cardCanvas.height = img.naturalHeight || img.height;
-
     const ctx = cardCanvas.getContext("2d");
     ctx.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
     ctx.drawImage(img, 0, 0);
-
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
-    return true;
-  } catch (e) {
-    console.warn("restore movie preview failed:", e);
-    return false;
+  };
+  img.onerror = () => {};
+  img.src = prev;
+  return true;
+}
+
+async function handleGenerate(){
+  const stored = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
+  if (!stored) return;
+
+  if (genBtn) genBtn.disabled = true;
+
+  await drawQuizResultCard(cardCanvas, {
+    title: QUIZ_META.title,
+    name: stored.name,
+    total: stored.total,
+    correct: stored.correct,
+    acc: stored.acc,
+    idText: stored.idText,
+    avatar: stored.avatar,
+    logoSrc: "../../../assets/logo.webm",
+  });
+
+  const png = cardCanvas.toDataURL("image/png");
+
+  // Save PNG and preview thumbnail
+  setItemWithRetryS2(PNG_KEY, png);
+  setItemWithRetryS2(MB_KEYS.prevMovie, exportPreviewDataURL(cardCanvas, 520, 0.85));
+
+  cardZone?.classList.add("isOpen");
+  if (dlBtn) dlBtn.disabled = false;
+  if (genBtn){
+    genBtn.disabled = false;
+    genBtn.textContent = "Regenerate Result Card";
   }
+
+  // Hide review forever after generate (as requested in other quizzes)
+  try {
+    localStorage.setItem(MB_KEYS.reviewHiddenMovie, "1");
+    if (reviewBox) reviewBox.style.display = "none";
+  } catch {}
 }
 
-function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
-  const w = srcCanvas.width;
-  const scale = Math.min(1, maxW / w);
-  const tw = Math.round(w * scale);
-  const th = Math.round(srcCanvas.height * scale);
+function handleDownload(){
+  const png = localStorage.getItem(PNG_KEY);
+  if (!png) return;
 
-  const t = document.createElement("canvas");
-  t.width = tw;
-  t.height = th;
-
-  const ctx = t.getContext("2d");
-  ctx.drawImage(srcCanvas, 0, 0, tw, th);
-  return t.toDataURL("image/jpeg", quality);
+  const a = document.createElement("a");
+  a.href = png;
+  a.download = "MagicBlock_S2_Silhouette_Result.png";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
+
+function init(){
+  renderTopProfile();
+
+  quizPanel   = document.getElementById("quizPanel");
+  resultPanel = document.getElementById("resultPanel");
+  qTitle      = document.getElementById("qTitle");
+  silImg      = document.getElementById("silImg");
+  optionsEl   = document.getElementById("options");
+  feedbackEl  = document.getElementById("feedback");
+  nextBtn     = document.getElementById("nextBtn");
+
+  rName    = document.getElementById("rName");
+  rTotal   = document.getElementById("rTotal");
+  rCorrect = document.getElementById("rCorrect");
+  rAcc     = document.getElementById("rAcc");
+
+  genBtn    = document.getElementById("genBtn");
+  dlBtn     = document.getElementById("dlBtn");
+  cardZone  = document.getElementById("cardZone");
+  cardCanvas= document.getElementById("cardCanvas");
+  reviewBox = document.getElementById("reviewBox");
+  reviewList= document.getElementById("reviewList");
+
+  if (nextBtn){
+    nextBtn.addEventListener("click", () => goNext());
+  }
+  if (genBtn) genBtn.addEventListener("click", handleGenerate);
+  if (dlBtn) dlBtn.addEventListener("click", handleDownload);
+
+  // Default state
+  if (dlBtn) dlBtn.disabled = true;
+
+  // If quiz already completed — show stored result
+  const done = localStorage.getItem(MB_KEYS.doneMovie) === "1";
+  const res  = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
+
+  if (done && res){
+    showResult(res);
+    return;
+  }
+
+  // Resume progress if any
+  const prog = loadProgress();
+  if (prog){
+    idx = prog.idx || 0;
+    correct = prog.correct || 0;
+    answers = Array.isArray(prog.answers) ? prog.answers : [];
+  }
+
+  renderQuestion();
+}
+
+document.addEventListener("DOMContentLoaded", init);
 
 /* =========================
    CANVAS DRAW (Movie)
