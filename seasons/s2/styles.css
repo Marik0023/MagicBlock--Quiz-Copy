@@ -1542,3 +1542,42 @@ body.mbQuiz .cardActions{
   .mbQuiz--movieemoji #questionText{ font-size: 36px; gap: 8px; }
   .mbQuiz--movieemoji #questionText .emojiGlyph{ padding: 5px 7px; border-radius: 12px; }
 }
+
+
+
+/* ===== Movie Emoji — nicer emoji layout ===== */
+.emojiCard .emojiText{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  align-items:center;
+  justify-content:flex-start;
+  padding-top:10px;
+  padding-bottom:6px;
+  min-height:86px;
+}
+
+.emojiGlyph{
+  width:72px;
+  height:72px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:20px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: 0 10px 30px rgba(0,0,0,.18) inset;
+  font-size:42px;
+  line-height:1;
+  user-select:none;
+  -webkit-font-smoothing: antialiased;
+  font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji", system-ui, sans-serif;
+}
+
+/* Make the whole emoji card content sit nicely on smaller screens */
+@media (max-width: 860px){
+  .emojiCard .emojiText{
+    justify-content:center;
+  }
+  .emojiGlyph{ width:64px; height:64px; font-size:38px; border-radius:18px; }
+}
