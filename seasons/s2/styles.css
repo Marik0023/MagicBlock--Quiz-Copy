@@ -1483,3 +1483,33 @@ body.mbQuiz .cardActions{
 .crumbs{font-size:12px; opacity:.75; margin-bottom:10px;}
 .crumbs a{color:inherit; text-decoration:none; opacity:.9;}
 .crumbs a:hover{text-decoration:underline;}
+
+/* Silhouette review list (match other quizzes) */
+.reviewRow{
+  display:flex;
+  gap:12px;
+  align-items:flex-start;
+  padding:14px 16px;
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(0,0,0,.20);
+  margin:10px 0;
+}
+.reviewPill{
+  flex:0 0 auto;
+  font-size:12px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  padding:10px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.10);
+  background:rgba(255,255,255,.04);
+  color:rgba(255,255,255,.85);
+}
+.reviewMain{ flex:1; min-width:0; }
+.reviewCorrectLine{ font-weight:700; }
+.reviewYourLine{ margin-top:6px; color:rgba(255,255,255,.70); font-size:14px; }
+.reviewRow.isWrong .reviewCorrectLine{ color:rgba(255,255,255,.95); }
+.reviewRow.isWrong .reviewYourLine{ color:rgba(255,170,170,.85); }
+.reviewBox.isHidden{ opacity:0; transform:translateY(6px); transition:opacity .25s ease, transform .25s ease; }
+.reviewBox.isGone{ display:none !important; }
