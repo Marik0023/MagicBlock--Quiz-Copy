@@ -539,38 +539,52 @@ async function handleGenerate(){
   const stored = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
   if (!stored) return;
 
-  if (genBtn) genBtn.disabled = true;
-
-  await drawQuizResultCard(cardCanvas, {
-    title: QUIZ_META.title,
-    name: stored.name,
-    total: stored.total,
-    correct: stored.correct,
-    acc: stored.acc,
-    idText: stored.idText,
-    avatar: stored.avatar,
-    logoSrc: "../../../assets/logo.webm",
-  });
-
-  const png = cardCanvas.toDataURL("image/png");
-
-  // Save PNG and preview thumbnail
-  setItemWithRetryS2(PNG_KEY, png);
-  setItemWithRetryS2(MB_KEYS.prevMovie, exportPreviewDataURL(cardCanvas, 520, 0.85));
-
-  cardZone?.classList.add("isOpen");
-  if (dlBtn) dlBtn.disabled = false;
+  // IMPORTANT: always re-enable the button even if card generation fails
   if (genBtn){
-    genBtn.disabled = false;
-    genBtn.textContent = "Regenerate Result Card";
+    genBtn.disabled = true;
+    genBtn.textContent = "Generating…";
   }
 
-  // Hide review forever after generate (as requested in other quizzes)
   try {
-    localStorage.setItem(MB_KEYS.reviewHiddenMovie, "1");
-    if (reviewBox) reviewBox.classList.add("isHidden");
-    setTimeout(()=>reviewBox.classList.add("isGone"), 260);
-  } catch {}
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_META.title,
+      name: stored.name,
+      total: stored.total,
+      correct: stored.correct,
+      acc: stored.acc,
+      idText: stored.idText,
+      avatar: stored.avatar,
+      logoSrc: "../../../assets/logo.webm",
+    });
+
+    const png = cardCanvas.toDataURL("image/png");
+
+    // Save PNG and preview thumbnail
+    setItemWithRetryS2(PNG_KEY, png);
+    setItemWithRetryS2(MB_KEYS.prevMovie, exportPreviewDataURL(cardCanvas, 520, 0.85));
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+
+    // Hide review forever after generate (as requested in other quizzes)
+    try {
+      localStorage.setItem(MB_KEYS.reviewHiddenMovie, "1");
+      if (reviewBox) reviewBox.classList.add("isHidden");
+      setTimeout(()=>reviewBox.classList.add("isGone"), 260);
+    } catch {}
+  } catch (e) {
+    console.error("Silhouette card generation failed:", e);
+    // keep UX consistent: if generation fails, don't lock the UI
+    // (download stays disabled)
+    if (dlBtn) dlBtn.disabled = true;
+    // Optional small notice (safe fallback)
+    try { alert("Could not generate the result card. Please try again."); } catch {}
+  } finally {
+    if (genBtn){
+      genBtn.disabled = false;
+      genBtn.textContent = "Regenerate Result Card";
+    }
+  }
 }
 
 function handleDownload(){
