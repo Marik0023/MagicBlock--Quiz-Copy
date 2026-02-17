@@ -300,7 +300,10 @@ function answeredCountFromProg(progKey, stateKey){
     const state = localStorage.getItem(stateKey);
     if(!state) return 0;
   }
-  return Math.max(0, n);
+  // Convert "next question number" to "answered count".
+  // Example: after answering Q1, nextQ is 2, so answered is 1.
+  const answered = n - 1;
+  return clamp(answered, 0, 10);
 }
 
 const SEASON_DEFS = {
@@ -381,6 +384,7 @@ function applySeasonPickerUI(){
     const pct = seasonProgressPct(seasonId);
     const fill = document.querySelector(`[data-season-progress="${seasonId}"]`);
     const label = document.querySelector(`[data-season-progress-label="${seasonId}"]`);
+    const progWrap = fill ? fill.closest(".miniProg") : null;
     if (fill) fill.style.width = `${pct}%`;
     if (label) label.textContent = `${pct}%`;
 
@@ -390,6 +394,17 @@ function applySeasonPickerUI(){
       const open = seasonAllQuizzesDone(seasonId) && seasonChampionReady(seasonId);
       btn.textContent = open ? "Open" : (hasProg ? "Continue" : "Start");
       btn.disabled = false;
+
+      // Progress bar rules:
+      // - Hidden until user answers at least 1 question in any quiz
+      // - Visible while progressing / completed quizzes
+      // - Hidden again once Champion card is generated (Open state)
+      if (progWrap){
+        progWrap.style.display = (hasProg && !open) ? "block" : "none";
+      }
+      if (label){
+        label.style.display = (hasProg && !open) ? "block" : "none";
+      }
     }
 
     // last played hint (S1/S2 only)
