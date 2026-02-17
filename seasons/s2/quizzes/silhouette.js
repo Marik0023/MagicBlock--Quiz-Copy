@@ -468,28 +468,6 @@
       item.className = "reviewItem";
 
       const picked = a[i];
-      if (picked !== undefined && picked !== null && picked !== correctIdx) {
-        item.classList.add("isWrong");
-      }
-
-      const left = document.createElement("div");
-      left.className = "reviewQ";
-      left.textContent = `Question ${i + 1}`;
-
-      const right = document.createElement("div");
-
-      const aEl = document.createElement("div");
-      aEl.className = "reviewA";
-      aEl.textContent = correctText;
-      right.appendChild(aEl);
-
-      if (picked !== undefined && picked !== null && picked !== correctIdx) {
-        const pickedText = q.options?.[picked] ?? "—";
-        const you = document.createElement("div");
-        you.className = "reviewHint";
-        you.textContent = `Your answer: ${pickedText}`;
-        right.appendChild(you);
-      }
 
       item.appendChild(left);
       item.appendChild(right);

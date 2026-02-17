@@ -54,6 +54,29 @@ function formatEmojiString(s){
   return Array.from(s).join(" ");
 }
 
+function renderEmojiHTML(s){
+  const raw = (s == null) ? "" : String(s);
+  // segment into graphemes (keeps combined emoji intact when possible)
+  let glyphs = [];
+  try{
+    if (typeof Intl !== "undefined" && Intl.Segmenter){
+      const seg = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+      glyphs = Array.from(seg.segment(raw), x => x.segment);
+    } else {
+      glyphs = Array.from(raw);
+    }
+  }catch{
+    glyphs = Array.from(raw);
+  }
+  // if author included spaces, respect them (but keep styling)
+  if (/\s/.test(raw)){
+    const parts = raw.split(/\s+/).filter(Boolean);
+    if (parts.length) glyphs = parts;
+  }
+  const esc = (t) => t.replace(/[&<>"]/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+  return glyphs.map(g => `<span class="emojiGlyph">${esc(g)}</span>`).join("");
+}
+
 function freeStorageSpaceS2(){
   // Remove only heavy previews/cards for Season 2 (keep progress/profile)
   const heavyKeys = [
@@ -320,9 +343,8 @@ const quizPanel = document.getElementById("quizPanel");
     nextBtn.classList.remove("isShow");
 
     qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
-    questionText.textContent = formatEmojiString(q.text || "—");
-
-    optionsEl.innerHTML = "";
+    questionText.innerHTML = renderEmojiHTML(q.text || "—");
+optionsEl.innerHTML = "";
     (q.options || ["A", "B", "C", "D"]).forEach((label, i) => {
       const btn = document.createElement("button");
       btn.className = "optionBtn";
