@@ -324,7 +324,7 @@ img{max-width:100%; display:block}
 .seasonMenu__item{
   display:flex;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:center;
   gap:10px;
   padding: 10px 12px;
   border-radius: 14px;
@@ -1520,14 +1520,17 @@ body.mbQuiz .cardActions{
 /* ===== Movie Emoji — emoji clue inside ONE rounded rectangle ===== */
 .mbQuiz--movieemoji .emojiCard{
   width:100%;
+  display:flex;
+  justify-content:center;
 }
+
 
 .mbQuiz--movieemoji #questionText.emojiText{
   display:flex;
   flex-wrap:wrap;
   gap:18px;
   align-items:center;
-  justify-content:flex-start;
+  justify-content:center;
 
   /* single big rectangle */
   padding:34px;
