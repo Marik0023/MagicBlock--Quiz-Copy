@@ -587,7 +587,7 @@ img{max-width:100%; display:block}
   height: auto;
   display:block;
   filter: brightness(0) saturate(100%) contrast(220%) drop-shadow(0 18px 34px rgba(0,0,0,.55));
-  transition: filter .55s ease, opacity .25s ease, transform .25s ease;
+  transition: filter 1.05s ease, opacity .55s ease, transform .55s ease;
   will-change: filter, opacity, transform;
 }
 
@@ -604,8 +604,8 @@ img{max-width:100%; display:block}
 }
 
 .mbQuiz--silhouette .options{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
+  display:flex;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -630,9 +630,6 @@ img{max-width:100%; display:block}
 }
 
 @media (max-width: 820px){
-  .mbQuiz--silhouette .options{
-    grid-template-columns: 1fr;
-  }
   .mbQuiz--silhouette .mbSilWrap{
     min-height: 280px;
   }
