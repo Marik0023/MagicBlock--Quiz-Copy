@@ -77,6 +77,27 @@ function renderEmojiHTML(s){
   return glyphs.map(g => `<span class="emojiGlyph">${esc(g)}</span>`).join("");
 }
 
+// Defensive: older templates may include a label "EMOJIS Pick the movie title".
+// Remove it so the quiz looks clean.
+function stripLegacyEmojiLabel(){
+  try{
+    const legacy = document.querySelectorAll('.emojiLabel, .emojiHint, .emojiTitle');
+    legacy.forEach(el => {
+      const t = (el.textContent || '').trim();
+      if (/^EMOJIS\s*Pick the movie title$/i.test(t)) el.remove();
+    });
+
+    // Also remove any element inside quiz panel that matches exactly.
+    const quizPanel = document.getElementById('quizPanel');
+    if (quizPanel){
+      quizPanel.querySelectorAll('*').forEach(el => {
+        const t = (el.textContent || '').trim();
+        if (/^EMOJIS\s*Pick the movie title$/i.test(t)) el.remove();
+      });
+    }
+  } catch {}
+}
+
 function freeStorageSpaceS2(){
   // Remove only heavy previews/cards for Season 2 (keep progress/profile)
   const heavyKeys = [
@@ -176,6 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
   forcePlayAll(".bg__video");
   forcePlayAll(".brand__logo");
   renderTopProfile();
+  stripLegacyEmojiLabel();
 
   // Topbar navigation (Seasons dropdown)
   (function initSeasonMenu(){
