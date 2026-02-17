@@ -168,28 +168,6 @@ function setItemWithRetryS2(key, value){
   }
 }
 
-function createSafeFilename(str){
-  return (str || "")
-    .toString()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-zA-Z0-9\-_.]/g, "")
-    .slice(0, 80) || "result";
-}
-
-function exportPreviewDataURL(canvas){
-  try {
-    return canvas.toDataURL("image/png", 1.0);
-  } catch {
-    try {
-      // Fallback for older browsers that throw when passing quality for PNG
-      return canvas.toDataURL("image/png");
-    } catch {
-      return null;
-    }
-  }
-}
-
 function getProfile() {
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
 }
@@ -451,6 +429,7 @@ function finishQuiz(){
     correct,
     acc,
     idText: buildId(QUIZ_META.idPrefix),
+    answers: Array.isArray(answers) ? answers.slice() : [],
   };
 
   // Store “done + result” for the Season index page and future visits
@@ -469,6 +448,11 @@ function showResult(result){
   rCorrect.textContent = `${result.correct}`;
   rAcc.textContent = `${result.acc}%`;
 
+  // Restore answers for review (when opening completed quiz)
+  if ((answers == null || !Array.isArray(answers) || answers.length === 0) && Array.isArray(result.answers)) {
+    answers = result.answers.slice();
+  }
+
   // Review list (unless hidden)
   const hideReview = localStorage.getItem(MB_KEYS.reviewHiddenMovie) === "1";
   if (reviewBox){
@@ -480,40 +464,54 @@ function showResult(result){
   restorePreview();
 }
 
-function renderReviewList(){
-  reviewList.innerHTML = '';
+function renderReviewList(ans = answers){
+  if (!reviewBox || !reviewList) return;
+
+  // If user already generated the card before — keep review hidden
+  if (localStorage.getItem(MB_KEYS.reviewHiddenMovie) === "1"){
+    reviewBox.classList.add("isGone");
+    return;
+  }
+
+  const a = Array.isArray(ans) ? ans : [];
+  reviewList.innerHTML = "";
+
   QUESTIONS.forEach((q, i) => {
-    const pickedIdx = answers[i];
     const correctIdx = q.correctIndex;
-    const pickedText = Number.isInteger(pickedIdx) ? q.options[pickedIdx] : null;
-    const correctText = q.options[correctIdx];
+    const correctText = q.options?.[correctIdx] ?? "—";
 
-    const row = document.createElement('div');
-    row.className = 'reviewRow';
+    const item = document.createElement("div");
+    item.className = "reviewItem";
 
-    const pill = document.createElement('div');
-    pill.className = 'reviewPill';
-    pill.textContent = `QUESTION ${i+1}`;
-    row.appendChild(pill);
-
-    const main = document.createElement('div');
-    main.className = 'reviewMain';
-
-    const correctLine = document.createElement('div');
-    correctLine.className = 'reviewCorrectLine';
-    correctLine.textContent = correctText;
-    main.appendChild(correctLine);
-
-    if(pickedText && pickedIdx !== correctIdx){
-      const yourLine = document.createElement('div');
-      yourLine.className = 'reviewYourLine';
-      yourLine.textContent = `Your answer: ${pickedText}`;
-      main.appendChild(yourLine);
-      row.classList.add('isWrong');
+    const picked = a[i];
+    if (picked !== undefined && picked !== null && picked !== correctIdx){
+      item.classList.add("isWrong");
     }
 
-    row.appendChild(main);
-    reviewList.appendChild(row);
+    const left = document.createElement("div");
+    left.className = "reviewQ";
+    left.textContent = `Question ${i+1}`;
+
+    const right = document.createElement("div");
+
+    const aEl = document.createElement("div");
+    aEl.className = "reviewA";
+    aEl.textContent = correctText;
+    right.appendChild(aEl);
+
+    // Optional: show picked answer if it was wrong
+    if (picked !== undefined && picked !== null && picked !== correctIdx){
+      const pickedText = q.options?.[picked] ?? "—";
+      const you = document.createElement("div");
+      you.className = "reviewHint";
+      you.textContent = `Your answer: ${pickedText}`;
+      right.appendChild(you);
+    }
+
+    item.appendChild(left);
+    item.appendChild(right);
+
+    reviewList.appendChild(item);
   });
 }
 
