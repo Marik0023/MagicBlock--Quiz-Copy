@@ -290,9 +290,17 @@ function getProgNum10(key){
 }
 
 // In quizzes, progress is stored as "next question number" (Q1 answered => nextQ=2)
-function answeredCountFromProg(key){
-  const nextQ = getProgNum10(key);
-  return clamp(nextQ - 1, 0, 10);
+function answeredCountFromProg(progKey, stateKey){
+  const raw = localStorage.getItem(progKey);
+  const n = raw ? parseInt(raw, 10) : 0;
+  if(!n || !Number.isFinite(n)) return 0;
+
+  // Guard against stale/colliding keys: only trust progress if the detailed state exists.
+  if(stateKey){
+    const state = localStorage.getItem(stateKey);
+    if(!state) return 0;
+  }
+  return Math.max(0, n);
 }
 
 const SEASON_DEFS = {
@@ -337,7 +345,7 @@ function seasonProgressPct(seasonId){
   for (const q of def.quizzes){
     const done = localStorage.getItem(q.doneKey) === "1";
     if (done) answered += 10;
-    else answered += answeredCountFromProg(q.progKey);
+    else answered += answeredCountFromProg(q.progKey, q.stateKey);
   }
 
   return Math.round((answered / total) * 100);
@@ -348,7 +356,7 @@ function seasonHasAnyProgress(seasonId){
   if (!def) return false;
   for (const q of def.quizzes){
     if (localStorage.getItem(q.doneKey) === "1") return true;
-    if (answeredCountFromProg(q.progKey) > 0) return true;
+    if (answeredCountFromProg(q.progKey, q.stateKey) > 0) return true;
   }
   return false;
 }
