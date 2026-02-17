@@ -246,6 +246,7 @@ let revealing = false;    // true during reveal animation
 let selectedIndex = null; // current selection (not confirmed until Next)
 let revealTimer = null;
 let quizPanel, resultPanel, qTitle, silImg, optionsEl, feedbackEl, nextBtn;
+let currentResult = null; // holds latest result object for Generate button
 let rName, rTotal, rCorrect, rAcc, genBtn, dlBtn, cardZone, cardCanvas, reviewBox, reviewList;
 
 function clearRevealTimer() {
@@ -439,6 +440,7 @@ function finishQuiz(){
 }
 
 function showResult(result){
+  currentResult = result;
   quizPanel.style.display = "none";
   resultPanel.style.display = "block";
 
@@ -459,25 +461,40 @@ function showResult(result){
 }
 
 function renderReviewList(){
-  if (!reviewList) return;
+  if (!reviewBox || !reviewList) return;
+
+  // If user already generated the card earlier — hide the review block
+  if (localStorage.getItem(MB_KEYS.reviewHiddenMovie) === "1") {
+    reviewBox.classList.add("isGone");
+    return;
+  }
+
   reviewList.innerHTML = "";
 
   QUESTIONS.forEach((q, i) => {
-    const row = document.createElement("div");
-    row.className = "reviewRow";
+    const correctLabel = q.options?.[q.correctIndex] ?? "—";
 
-    const left = document.createElement("div");
-    left.className = "reviewQ";
-    left.textContent = `Q${i + 1}`;
+    const item = document.createElement("div");
+    item.className = "reviewItem";
+
+    const qEl = document.createElement("div");
+    qEl.className = "reviewQ";
+    qEl.textContent = `Question ${i + 1}`;
 
     const right = document.createElement("div");
-    right.className = "reviewA";
-    right.textContent = `Correct: ${String.fromCharCode(65 + q.correctIndex)} — ${q.options[q.correctIndex]}`;
 
-    row.appendChild(left);
-    row.appendChild(right);
-    reviewList.appendChild(row);
+    const aEl = document.createElement("div");
+    aEl.className = "reviewA";
+    aEl.textContent = correctLabel;
+
+    right.appendChild(aEl);
+
+    item.appendChild(qEl);
+    item.appendChild(right);
+    reviewList.appendChild(item);
   });
+
+  reviewBox.classList.remove("isHidden", "isGone");
 }
 
 function restorePreview(){
@@ -501,40 +518,44 @@ function restorePreview(){
 }
 
 async function handleGenerate(){
-  const stored = safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
-  if (!stored) return;
+  const stored = currentResult || safeJSONParse(localStorage.getItem(MB_KEYS.resMovie), null);
+  if (!stored || !cardCanvas) return;
 
   if (genBtn) genBtn.disabled = true;
 
-  await drawQuizResultCard(cardCanvas, {
-    title: QUIZ_META.title,
-    name: stored.name,
-    total: stored.total,
-    correct: stored.correct,
-    acc: stored.acc,
-    idText: stored.idText,
-    avatar: stored.avatar,
-    logoSrc: "../../../assets/logo.webm",
-  });
-
-  const png = cardCanvas.toDataURL("image/png");
-
-  // Save PNG and preview thumbnail
-  setItemWithRetryS2(PNG_KEY, png);
-  setItemWithRetryS2(MB_KEYS.prevMovie, exportPreviewDataURL(cardCanvas, 520, 0.85));
-
-  cardZone?.classList.add("isOpen");
-  if (dlBtn) dlBtn.disabled = false;
-  if (genBtn){
-    genBtn.disabled = false;
-    genBtn.textContent = "Regenerate Result Card";
-  }
-
-  // Hide review forever after generate (as requested in other quizzes)
   try {
-    localStorage.setItem(MB_KEYS.reviewHiddenMovie, "1");
-    if (reviewBox) reviewBox.style.display = "none";
-  } catch {}
+    await drawQuizResultCard(cardCanvas, {
+      title: QUIZ_META.title,
+      name: stored.name,
+      total: stored.total,
+      correct: stored.correct,
+      acc: stored.acc,
+      idText: stored.idText,
+      avatar: stored.avatar,
+      // PNG is safer for canvas than video across browsers
+      logoSrc: "../../../assets/faviconlogo/android-chrome-192x192.png",
+    });
+
+    const png = cardCanvas.toDataURL("image/png");
+
+    // Save PNG and preview thumbnail
+    setItemWithRetryS2(PNG_KEY, png);
+    setItemWithRetryS2(MB_KEYS.prevMovie, exportPreviewDataURL(cardCanvas, 520, 0.85));
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+
+    // Hide review forever after generate (same behavior as other quizzes)
+    try {
+      localStorage.setItem(MB_KEYS.reviewHiddenMovie, "1");
+      if (reviewBox) reviewBox.style.display = "none";
+    } catch {}
+  } finally {
+    if (genBtn){
+      genBtn.disabled = false;
+      genBtn.textContent = "Regenerate Result Card";
+    }
+  }
 }
 
 function handleDownload(){
@@ -863,4 +884,3 @@ function injectBreadcrumb(){
 
 document.addEventListener("DOMContentLoaded", () => {
   injectBreadcrumb();});
-
