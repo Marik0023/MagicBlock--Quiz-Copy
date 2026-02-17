@@ -587,21 +587,19 @@ img{max-width:100%; display:block}
   height: auto;
   display:block;
   filter: brightness(0) saturate(100%) contrast(220%) drop-shadow(0 18px 34px rgba(0,0,0,.55));
-  transition: filter 1.05s ease, opacity .55s ease, transform .55s ease;
+  transition: filter 1.35s ease, opacity .6s ease, transform .6s ease;
   will-change: filter, opacity, transform;
+  opacity: 0.98;
+  transform: scale(0.995);
 }
 
 .mbQuiz--silhouette .silImg.isRevealed{
+  opacity: 1;
+  transform: scale(1);
   filter: drop-shadow(0 18px 34px rgba(0,0,0,.55));
 }
 
-.mbQuiz--silhouette .quizFeedback{
-  min-height: 22px;
-  margin: 0 0 10px;
-  font-weight: 800;
-  letter-spacing: .2px;
-  opacity: .92;
-}
+.mbQuiz--silhouette .quizFeedback{ display:none; }
 
 .mbQuiz--silhouette .options{
   display:flex;
