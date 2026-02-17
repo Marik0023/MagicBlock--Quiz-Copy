@@ -128,7 +128,8 @@ const QUESTIONS = [
   },
 ];
 
-const AUTO_NEXT_MS = 1150; // reveal -> pause -> next
+const REVEAL_MS = 1350;      // reveal animation duration
+const POST_REVEAL_MS = 250;   // small pause before loading next question
 const SWITCH_FADE_MS = 180;
 
 function safeJSONParse(v, fallback = null) {
@@ -240,16 +241,17 @@ function renderTopProfile() {
 let idx = 0;
 let correct = 0;
 let answers = [];
-let locked = false;
-let autoTimer = null;
-
+let locked = false;       // locked while revealing / after confirmed
+let revealing = false;    // true during reveal animation
+let selectedIndex = null; // current selection (not confirmed until Next)
+let revealTimer = null;
 let quizPanel, resultPanel, qTitle, silImg, optionsEl, feedbackEl, nextBtn;
 let rName, rTotal, rCorrect, rAcc, genBtn, dlBtn, cardZone, cardCanvas, reviewBox, reviewList;
 
-function clearAutoTimer(){
-  if (autoTimer){
-    clearTimeout(autoTimer);
-    autoTimer = null;
+function clearRevealTimer() {
+  if (revealTimer) {
+    clearTimeout(revealTimer);
+    revealTimer = null;
   }
 }
 
@@ -293,18 +295,12 @@ function lockOptions(){
   [...optionsEl.querySelectorAll("button")].forEach(b => b.disabled = true);
 }
 
-function markAnswers(selectedIndex, correctIndex){
-  const btns = [...optionsEl.querySelectorAll("button")];
-  btns.forEach((b, i) => {
-    if (i === selectedIndex) b.classList.add("isSelected");
-    if (i === correctIndex) b.classList.add("isCorrect");
-    if (i === selectedIndex && selectedIndex !== correctIndex) b.classList.add("isWrong");
-  });
-}
 
-function renderQuestion(){
+function renderQuestion() {
   locked = false;
-  clearAutoTimer();
+  revealing = false;
+  selectedIndex = null;
+  clearRevealTimer();
 
   const q = QUESTIONS[idx];
 
@@ -312,52 +308,88 @@ function renderQuestion(){
   if (feedbackEl) feedbackEl.textContent = "";
 
   setImage(q.img);
+  setSilhouetteState(false);
+
   renderOptions(q.options);
 
-  if (nextBtn){
+  if (nextBtn) {
     nextBtn.disabled = true;
     nextBtn.classList.remove("isShow");
   }
 
-  // Persist progress (so refresh doesn't reset)
+  // If user refreshed mid-quiz and this question was already answered:
+  const prev = Number.isInteger(answers[idx]) ? answers[idx] : null;
+  if (prev !== null) {
+    selectedIndex = prev;
+    markAnswers(prev);
+    lockOptions();
+    setSilhouetteState(true);
+    locked = true;
+
+    if (nextBtn) {
+      nextBtn.disabled = false;
+      nextBtn.classList.add("isShow");
+    }
+  }
+
   saveProgress(idx, correct, answers);
 }
 
-function submitAnswer(selectedIndex){
-  if (locked) return;
-  locked = true;
+function markAnswers(selected) {
+  const buttons = [...optionsEl.querySelectorAll(".optionBtn")];
+  buttons.forEach((btn, i) => {
+    btn.classList.toggle("isSelected", i === selected);
+    btn.classList.remove("isCorrect", "isWrong");
+  });
+}
 
-  const q = QUESTIONS[idx];
-  const isCorrect = selectedIndex === q.correctIndex;
+function submitAnswer(selected) {
+  if (revealing) return;
+  if (Number.isInteger(answers[idx])) return; // already confirmed
+  selectedIndex = selected;
+  markAnswers(selectedIndex);
 
-  answers[idx] = selectedIndex;
-  if (isCorrect) correct += 1;
-
-  markAnswers(selectedIndex, q.correctIndex);
-  lockOptions();
-
-  if (feedbackEl){
-    feedbackEl.textContent = isCorrect ? "✅ Correct!" : "❌ Wrong!";
-  }
-
-  // Reveal silhouette first, then auto-advance
-  setSilhouetteState(true);
-
-  if (nextBtn){
+  if (nextBtn) {
     nextBtn.disabled = false;
     nextBtn.classList.add("isShow");
   }
+}
 
-  autoTimer = setTimeout(() => {
-    goNext();
-  }, AUTO_NEXT_MS);
+function confirmAndReveal() {
+  if (revealing) return;
+  if (Number.isInteger(answers[idx])) return; // already confirmed
+  if (!Number.isInteger(selectedIndex)) return;
 
-  // Save after answering as well (so correct count is preserved)
+  const q = QUESTIONS[idx];
+
+  // lock UI
+  revealing = true;
+  locked = true;
+  lockOptions();
+
+  // save score once (on confirm)
+  answers[idx] = selectedIndex;
+  if (selectedIndex === q.correctIndex) correct += 1;
+
+  // reveal (no correct/incorrect messaging)
+  setSilhouetteState(true);
+  if (feedbackEl) feedbackEl.textContent = "";
+
+  if (nextBtn) {
+    nextBtn.disabled = true; // prevent double clicks
+    nextBtn.classList.add("isShow");
+  }
+
   saveProgress(idx, correct, answers);
+
+  clearRevealTimer();
+  revealTimer = setTimeout(() => {
+    goNext();
+  }, REVEAL_MS + POST_REVEAL_MS);
 }
 
 function goNext(){
-  clearAutoTimer();
+  clearRevealTimer();
 
   if (idx >= QUESTIONS.length - 1){
     finishQuiz();
@@ -379,7 +411,7 @@ function goNext(){
 }
 
 function finishQuiz(){
-  clearAutoTimer();
+  clearRevealTimer();
   clearProgress();
 
   const p = getProfile();
@@ -541,7 +573,15 @@ function init(){
   reviewList= document.getElementById("reviewList");
 
   if (nextBtn){
-    nextBtn.addEventListener("click", () => goNext());
+    nextBtn.addEventListener("click", () => {
+      // If already answered (e.g. after reload), just go next.
+      if (Number.isInteger(answers[idx])) {
+        goNext();
+        return;
+      }
+      // Otherwise: confirm -> reveal -> auto next.
+      confirmAndReveal();
+    });
   }
   if (genBtn) genBtn.addEventListener("click", handleGenerate);
   if (dlBtn) dlBtn.addEventListener("click", handleDownload);
