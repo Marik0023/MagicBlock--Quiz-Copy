@@ -586,13 +586,19 @@ img{max-width:100%; display:block}
   width: auto;
   height: auto;
   display:block;
-  filter: brightness(0) saturate(100%) contrast(220%) drop-shadow(0 18px 34px rgba(0,0,0,.55));
+
+  /* Use constant filter function list (Safari iOS friendly) */
+  --sil-b: 0;
+  --sil-c: 220%;
+  filter: brightness(var(--sil-b)) saturate(100%) contrast(var(--sil-c)) drop-shadow(0 18px 34px rgba(0,0,0,.55));
+
   transition: filter .55s ease, opacity .25s ease, transform .25s ease;
   will-change: filter, opacity, transform;
 }
 
 .mbQuiz--silhouette .silImg.isRevealed{
-  filter: drop-shadow(0 18px 34px rgba(0,0,0,.55));
+  --sil-b: 1;
+  --sil-c: 100%;
 }
 
 .mbQuiz--silhouette .quizFeedback { display: none; }
@@ -1311,54 +1317,6 @@ body.mbQuiz .cardActions{
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-}
-
-
-/* small pause button (top-right, shows while playing) */
-.mbQuiz .videoPauseBtn{
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 44px;
-  height: 44px;
-
-  display: grid;
-  grid-auto-flow: column;
-  place-content: center;
-  gap: 6px;
-
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.35);
-  border-radius: 14px;
-
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  transition: transform .15s ease, opacity .15s ease, background .15s ease;
-  opacity: 1;
-  z-index: 5;
-}
-
-.mbQuiz .videoPauseBtn.isHidden{
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mbQuiz .videoPauseBtn:hover{
-  background: rgba(0,0,0,.45);
-  transform: translateY(-1px);
-}
-
-.mbQuiz .videoPauseBtn:active{
-  transform: scale(0.97);
-}
-
-.mbQuiz .videoPauseBtn .pauseBar{
-  width: 6px;
-  height: 18px;
-  border-radius: 4px;
-  background: rgba(255,255,255,.92);
-  box-shadow: 0 10px 18px rgba(0,0,0,.35);
 }
 
 /* play icon */
