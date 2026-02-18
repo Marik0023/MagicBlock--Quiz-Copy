@@ -188,17 +188,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   const QUESTIONS = [
-    { audio: "../../../assets/songs/11.mp3", options: ["“Diamonds” — Rihanna", "“Halo” — Beyoncé", "“Royals” — Lorde", "“Umbrella” — Rihanna"], correctIndex: 0 },
-    { audio: "../../../assets/songs/12.mp3", options: ["“Numb” — Linkin Park", "“Bring Me to Life” — Evanescence", "“Boulevard of Broken Dreams” — Green Day", "“In the End” — Linkin Park"], correctIndex: 3 },
-    { audio: "../../../assets/songs/13.mp3", options: ["“Someone You Loved” — Lewis Capaldi", "“Let Her Go” — Passenger", "“Memories” — Maroon 5", "“Sugar” — Maroon 5"], correctIndex: 2 },
-    { audio: "../../../assets/songs/14.mp3", options: ["“Basket Case” — Green Day", "“Smells Like Teen Spirit” — Nirvana", "“Come as You Are” — Nirvana", "“Creep” — Radiohead"], correctIndex: 1 },
-    { audio: "../../../assets/songs/15.mp3", options: ["“rockstar” — Post Malone (feat. 21 Savage)", "“God’s Plan” — Drake", "“SICKO MODE” — Travis Scott", "“Sunflower” — Post Malone & Swae Lee"], correctIndex: 0 },
-    { audio: "../../../assets/songs/16.mp3", options: ["“bad guy” — Billie Eilish", "“Location” — Khalid", "“ocean eyes” — Billie Eilish", "“lovely” — Billie Eilish & Khalid"], correctIndex: 3 },
-    { audio: "../../../assets/songs/17.mp3", options: ["“Thunder” — Imagine Dragons", "“Centuries” — Fall Out Boy", "“Believer” — Imagine Dragons", "“Radioactive” — Imagine Dragons"], correctIndex: 2 },
-    { audio: "../../../assets/songs/18.mp3", options: ["“Candy Shop” — 50 Cent", "“In da Club” — 50 Cent", "“Yeah!” — Usher (feat. Lil Jon & Ludacris)", "“Drop It Like It’s Hot” — Snoop Dogg (feat. Pharrell)"], correctIndex: 1 },
-    { audio: "../../../assets/songs/19.mp3", options: ["“Billie Jean” — Michael Jackson", "“Beat It” — Michael Jackson", "“Smooth Criminal” — Michael Jackson", "“Thriller” — Michael Jackson"], correctIndex: 0 },
-    { audio: "../../../assets/songs/20.mp3", options: ["“Stan” — Eminem", "“Till I Collapse” — Eminem", "“Stronger” — Kanye West", "“Lose Yourself” — Eminem"], correctIndex: 3 },
+    { audio: "../../../assets/songs/11.mp3", options: ["Diamonds — Rihanna", "Halo — Beyoncé", "Royals — Lorde", "Umbrella — Rihanna"], correctIndex: 0 },
+    { audio: "../../../assets/songs/12.mp3", options: ["Numb — Linkin Park", "Bring Me to Life — Evanescence", "Boulevard of Broken Dreams — Green Day", "In the End — Linkin Park"], correctIndex: 3 },
+    { audio: "../../../assets/songs/13.mp3", options: ["Someone You Loved — Lewis Capaldi", "Let Her Go — Passenger", "Memories — Maroon 5", "Sugar — Maroon 5"], correctIndex: 2 },
+    { audio: "../../../assets/songs/14.mp3", options: ["Basket Case — Green Day", "Smells Like Teen Spirit — Nirvana", "Come as You Are — Nirvana", "Creep — Radiohead"], correctIndex: 1 },
+    { audio: "../../../assets/songs/15.mp3", options: ["rockstar — Post Malone (feat. 21 Savage)", "God’s Plan — Drake", "SICKO MODE — Travis Scott", "Sunflower — Post Malone & Swae Lee"], correctIndex: 0 },
+    { audio: "../../../assets/songs/16.mp3", options: ["bad guy — Billie Eilish", "Location — Khalid", "ocean eyes — Billie Eilish", "lovely — Billie Eilish & Khalid"], correctIndex: 3 },
+    { audio: "../../../assets/songs/17.mp3", options: ["Thunder — Imagine Dragons", "Centuries — Fall Out Boy", "Believer — Imagine Dragons", "Radioactive — Imagine Dragons"], correctIndex: 2 },
+    { audio: "../../../assets/songs/18.mp3", options: ["Candy Shop — 50 Cent", "In da Club — 50 Cent", "Yeah! — Usher (feat. Lil Jon & Ludacris)", "Drop It Like It’s Hot — Snoop Dogg (feat. Pharrell)"], correctIndex: 1 },
+    { audio: "../../../assets/songs/19.mp3", options: ["Billie Jean — Michael Jackson", "Beat It — Michael Jackson", "Smooth Criminal — Michael Jackson", "Thriller — Michael Jackson"], correctIndex: 0 },
+    { audio: "../../../assets/songs/20.mp3", options: ["Stan — Eminem", "Till I Collapse — Eminem", "Stronger — Kanye West", "Lose Yourself — Eminem"], correctIndex: 3 },
   ];
+
 
 
   const quizPanel = document.getElementById("quizPanel");
