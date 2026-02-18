@@ -9,28 +9,45 @@
   const last = parts[parts.length - 1] || '';
   const hasFile = /\.[a-z0-9]+$/i.test(last);
 
-  // How many directories deep we are from the site root (repo root or domain root)
-  const depth = Math.max(0, (hasFile ? (parts.length - baseIndex - 1) : (parts.length - baseIndex)));
+  const depth = Math.max(
+    0,
+    hasFile ? (parts.length - baseIndex - 1) : (parts.length - baseIndex)
+  );
   const prefix = '../'.repeat(depth);
 
   const pathLower = window.location.pathname.toLowerCase();
+
   const isActive = (key) => {
-    if (key === 'seasons') return pathLower.includes('/seasons/') || pathLower.endsWith('/index.html') || pathLower.endsWith('/');
+    if (key === 'seasons') {
+      return (
+        pathLower.includes('/seasons/') ||
+        pathLower.endsWith('/index.html') ||
+        pathLower.endsWith('/')
+      );
+    }
     if (key === 'leaderboard') return pathLower.includes('/leaderboard/');
     return false;
   };
 
+  const isIOS = (() => {
+    const ua = navigator.userAgent || '';
+    const iOSUA = /iPad|iPhone|iPod/.test(ua);
+    const iPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return iOSUA || iPadOS;
+  })();
+
   const header = document.createElement('header');
   header.className = 'mbqTopbar';
+
   header.innerHTML = `
     <div class="mbqTopbar__inner">
       <div class="mbqTopbar__left">
         <a class="mbqTopbar__brand" href="${prefix}index.html" aria-label="MagicBlock Quiz Home">
           <span class="mbqTopbar__logo" aria-hidden="true">
-            <video autoplay muted loop playsinline preload="auto">
+            <video class="mbqLogoVideo" autoplay muted loop playsinline preload="auto">
               <source src="${prefix}assets/logo.webm" type="video/webm" />
             </video>
-            <img src="${prefix}assets/faviconlogo/favicon-32x32.png" alt="" />
+            <img class="mbqLogoImg" src="${prefix}assets/faviconlogo/favicon-32x32.png" alt="" />
           </span>
         </a>
       </div>
@@ -42,6 +59,10 @@
       </nav>
 
       <div class="mbqTopbar__right">
+        <button type="button" class="mbqBurger" id="mbqBurgerBtn" aria-label="Open menu" aria-expanded="false">
+          <span aria-hidden="true">☰</span>
+        </button>
+
         <button type="button" class="mbqTopbar__profile" id="profilePill" title="Profile">
           <div class="mbqTopbar__avatar"><img alt="" /></div>
           <div class="mbqTopbar__ptext">
@@ -51,13 +72,26 @@
         </button>
       </div>
     </div>
+
+    <div class="mbqMenuOverlay" id="mbqMenuOverlay" hidden></div>
+
+    <aside class="mbqMenu" id="mbqMenu" hidden aria-label="Menu">
+      <div class="mbqMenu__head">
+        <div class="mbqMenu__title">Menu</div>
+        <button class="mbqMenu__close" id="mbqMenuClose" aria-label="Close menu">✕</button>
+      </div>
+
+      <a class="mbqMenu__item" href="${prefix}index.html">Seasons</a>
+      <a class="mbqMenu__item" href="${prefix}leaderboard/index.html">Leaderboard</a>
+      <button class="mbqMenu__item" type="button" id="mbqMenuAchievements">Achievements</button>
+    </aside>
   `;
 
-  function safeJSON(v, fallback = null){
+  function safeJSON(v, fallback = null) {
     try { return JSON.parse(v); } catch { return fallback; }
   }
 
-  function renderProfilePreview(){
+  function renderProfilePreview() {
     const raw = localStorage.getItem('mb_profile');
     if (!raw) return;
     const p = safeJSON(raw, null);
@@ -73,29 +107,41 @@
     if (hint) hint.textContent = 'Edit';
 
     const img = header.querySelector('.mbqTopbar__avatar img');
-    if (img){
+    if (img) {
       img.referrerPolicy = 'no-referrer';
       img.src = avatar || `${prefix}assets/uploadavatar.jpg`;
     }
   }
 
-  function initTopbar(){
-    // Insert once
-    if (document.querySelector('header.mbqTopbar')) return;
-    if (!document.body) return;
-
-    document.body.insertBefore(header, document.body.firstChild);
-
-    // Logo fallback behavior:
-    // - Keep IMG visible by default
-    // - Hide IMG only after the video is actually ready to render a frame
+  function setupLogoFallback() {
     const logo = header.querySelector('.mbqTopbar__logo');
-    const vid = logo ? logo.querySelector('video') : null;
-    const img = logo ? logo.querySelector('img') : null;
+    if (!logo) return;
 
+    const vid = logo.querySelector('video');
+    const img = logo.querySelector('img');
+
+    // Always show IMG first (safe)
     if (img) img.style.display = 'block';
 
-    if (vid){
+    // iOS: do NOT show webm (black background / alpha issues)
+    if (isIOS) {
+      if (vid) vid.remove();
+
+      // If you add a transparent PNG, we'll prefer it automatically:
+      // /assets/logo.png  (transparent)
+      if (img) {
+        const preferred = `${prefix}assets/logo.png`;
+        const fallback = img.src;
+
+        // Try logo.png; if missing, keep existing favicon
+        img.onerror = () => { img.onerror = null; img.src = fallback; };
+        img.src = preferred;
+      }
+      return;
+    }
+
+    // Non-iOS: video preferred; hide IMG only when video can render
+    if (vid) {
       const hideImg = () => { if (img) img.style.display = 'none'; };
       const showImg = () => { if (img) img.style.display = 'block'; };
 
@@ -103,27 +149,97 @@
       vid.addEventListener('canplay', hideImg, { once: true });
       vid.addEventListener('error', showImg, { once: true });
 
-      setTimeout(() => { try { vid.play(); } catch(_){} }, 50);
+      setTimeout(() => { try { vid.play(); } catch (_) {} }, 50);
     }
+  }
+
+  function setupMenu() {
+    const burgerBtn = header.querySelector('#mbqBurgerBtn');
+    const overlay = header.querySelector('#mbqMenuOverlay');
+    const menu = header.querySelector('#mbqMenu');
+    const closeBtn = header.querySelector('#mbqMenuClose');
+
+    const openMenu = () => {
+      if (!overlay || !menu || !burgerBtn) return;
+      overlay.hidden = false;
+      menu.hidden = false;
+      burgerBtn.setAttribute('aria-expanded', 'true');
+      document.documentElement.classList.add('mbqMenuOpen');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const closeMenu = () => {
+      if (!overlay || !menu || !burgerBtn) return;
+      overlay.hidden = true;
+      menu.hidden = true;
+      burgerBtn.setAttribute('aria-expanded', 'false');
+      document.documentElement.classList.remove('mbqMenuOpen');
+      document.body.style.overflow = '';
+    };
+
+    if (burgerBtn && overlay && menu) {
+      burgerBtn.addEventListener('click', () => {
+        if (menu.hidden) openMenu();
+        else closeMenu();
+      });
+      overlay.addEventListener('click', closeMenu);
+      if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !menu.hidden) closeMenu();
+      });
+    }
+
+    // Achievements from burger menu: reuse the same behavior as the top button
+    const achFromMenu = header.querySelector('#mbqMenuAchievements');
+    if (achFromMenu) {
+      achFromMenu.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeMenu();
+        const btn = header.querySelector('#achievementsBtn');
+        if (btn) btn.click();
+      });
+    }
+  }
+
+  function initTopbar() {
+    if (document.querySelector('header.mbqTopbar')) return;
+    if (!document.body) return;
+
+    document.body.insertBefore(header, document.body.firstChild);
+
+    setupLogoFallback();
+    setupMenu();
 
     // Always keep topbar actions working on every page.
     // If the current page doesn't have the modals wired, redirect to Home with a hash.
     const homeHref = `${prefix}index.html`;
-    const isHome = /\/index\.html$/i.test(pathLower) && !pathLower.includes('/leaderboard/') && !pathLower.includes('/seasons/');
+    const isHome =
+      /\/index\.html$/i.test(pathLower) &&
+      !pathLower.includes('/leaderboard/') &&
+      !pathLower.includes('/seasons/');
 
     const achBtn = header.querySelector('#achievementsBtn');
-    if (achBtn){
+    if (achBtn) {
       achBtn.addEventListener('click', (e) => {
         const hasModal = !!document.getElementById('rewardsModal');
-        if (!isHome || !hasModal){ e.preventDefault(); window.location.href = `${homeHref}#achievements`; return; }
+        if (!isHome || !hasModal) {
+          e.preventDefault();
+          window.location.href = `${homeHref}#achievements`;
+          return;
+        }
       });
     }
 
     const pill = header.querySelector('#profilePill');
-    if (pill){
+    if (pill) {
       pill.addEventListener('click', (e) => {
         const hasModal = !!document.getElementById('profileModal');
-        if (!isHome || !hasModal){ e.preventDefault(); window.location.href = `${homeHref}#edit-profile`; return; }
+        if (!isHome || !hasModal) {
+          e.preventDefault();
+          window.location.href = `${homeHref}#edit-profile`;
+          return;
+        }
       });
     }
 
@@ -141,13 +257,13 @@
     }
   }
 
-  // Init whether the script is loaded with defer or after DOMContentLoaded.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initTopbar);
   } else {
     initTopbar();
   }
 
-  // If script loaded too early (very rare), retry once more on next tick.
-  setTimeout(() => { if (!document.querySelector('header.mbqTopbar')) initTopbar(); }, 0);
+  setTimeout(() => {
+    if (!document.querySelector('header.mbqTopbar')) initTopbar();
+  }, 0);
 })();
