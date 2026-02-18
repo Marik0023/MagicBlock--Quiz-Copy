@@ -252,6 +252,8 @@
   let selectedIndex = null;
   let revealing = false;
   let revealTimer = null;
+  let revealToken = 0; // guards async reveal on fast navigation
+
 
   let quizPanel, resultPanel, qTitle, silImg, optionsEl, feedbackEl, nextBtn;
   let rName, rTotal, rCorrect, rAcc, genBtn, dlBtn, cardZone, cardCanvas, reviewBox, reviewList;
@@ -266,12 +268,19 @@
   function setSilhouetteState(revealed) {
     if (!silImg) return;
 
-    // iOS Safari can "stick" CSS filter transitions unless we force a repaint.
+    // bump token every call to prevent a delayed RAF from affecting next question
+    revealToken += 1;
+    const t = revealToken;
+
     if (revealed) {
       silImg.classList.remove("isRevealed");
       // Force reflow
       void silImg.offsetHeight;
-      requestAnimationFrame(() => silImg.classList.add("isRevealed"));
+
+      requestAnimationFrame(() => {
+        if (t !== revealToken) return;
+        silImg.classList.add("isRevealed");
+      });
     } else {
       silImg.classList.remove("isRevealed");
     }
@@ -471,12 +480,36 @@
 
     QUESTIONS.forEach((q, i) => {
       const correctIdx = q.correctIndex;
-      const correctText = q.options?.[correctIdx] ?? "—";
+      const correctText = (q.options && q.options[correctIdx]) ? q.options[correctIdx] : "—";
+
+      const picked = Number.isInteger(a[i]) ? a[i] : null;
+      const pickedText = (picked !== null && q.options && q.options[picked]) ? q.options[picked] : null;
 
       const item = document.createElement("div");
       item.className = "reviewItem";
 
-      const picked = a[i];
+      // Mark wrong if user picked something and it wasn't correct
+      if (picked !== null && picked !== correctIdx) item.classList.add("isWrong");
+
+      const left = document.createElement("div");
+      left.className = "reviewQ";
+      left.textContent = `Q${i + 1}`;
+
+      const right = document.createElement("div");
+
+      const aLine = document.createElement("div");
+      aLine.className = "reviewA";
+      aLine.textContent = correctText;
+
+      // Optional: show what user picked if wrong
+      if (pickedText && pickedText !== correctText) {
+        const small = document.createElement("div");
+        small.className = "reviewSmall";
+        small.textContent = `Your answer: ${pickedText}`;
+        right.appendChild(small);
+      }
+
+      right.appendChild(aLine);
 
       item.appendChild(left);
       item.appendChild(right);
