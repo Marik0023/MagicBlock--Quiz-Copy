@@ -31,27 +31,27 @@
       options: [
         "Finn (Adventure Time)",
         "Stewie Griffin (Family Guy)",
-        "Gumball Watterson (The Amazing World of Gumball)",
         "SpongeBob SquarePants (SpongeBob SquarePants)",
+        "Gumball Watterson (The Amazing World of Gumball)",
       ],
-      correctIndex: 3,
+      correctIndex: 2,
     },
     {
       img: "../assets/silhouettes/shrek.png",
       options: [
-        "Sulley (Monsters, Inc.)",
-        "Gru (Despicable Me)",
-        "Po (Kung Fu Panda)",
         "Shrek (Shrek)",
+        "Gru (Despicable Me)",
+        "Sulley (Monsters, Inc.)",
+        "Po (Kung Fu Panda)",
       ],
-      correctIndex: 3,
+      correctIndex: 0,
     },
     {
       img: "../assets/silhouettes/walle.png",
       options: [
+        "BMO (Adventure Time)",
         "Astro Boy (Astro Boy)",
         "Gir (Invader Zim)",
-        "BMO (Adventure Time)",
         "WALL·E (WALL·E)",
       ],
       correctIndex: 3,
@@ -59,48 +59,48 @@
     {
       img: "../assets/silhouettes/toothless.png",
       options: [
-        "Charizard (Pokémon)",
-        "Spyro (Spyro)",
         "Mushu (Mulan)",
         "Toothless (How to Train Your Dragon)",
+        "Spyro (Spyro)",
+        "Charizard (Pokémon)",
       ],
-      correctIndex: 3,
+      correctIndex: 1,
     },
     {
       img: "../assets/silhouettes/pikachu.png",
       options: [
-        "Sonic the Hedgehog (Sonic)",
-        "Kirby (Kirby: Right Back at Ya!)",
         "Doraemon (Doraemon)",
+        "Kirby (Kirby: Right Back at Ya!)",
         "Pikachu (Pokémon)",
+        "Sonic the Hedgehog (Sonic)",
       ],
-      correctIndex: 3,
+      correctIndex: 2,
     },
     {
       img: "../assets/silhouettes/homer.png",
       options: [
-        "Peter Griffin (Family Guy)",
-        "Stan Smith (American Dad!)",
-        "Bob Belcher (Bob’s Burgers)",
         "Homer Simpson (The Simpsons)",
+        "Peter Griffin (Family Guy)",
+        "Bob Belcher (Bob’s Burgers)",
+        "Stan Smith (American Dad!)",
       ],
-      correctIndex: 3,
+      correctIndex: 0,
     },
     {
       img: "../assets/silhouettes/rick.png",
       options: [
-        "Professor Farnsworth (Futurama)",
         "Dexter (Dexter’s Laboratory)",
-        "Dr. Doofenshmirtz (Phineas and Ferb)",
         "Rick Sanchez (Rick and Morty)",
+        "Dr. Doofenshmirtz (Phineas and Ferb)",
+        "Professor Farnsworth (Futurama)",
       ],
-      correctIndex: 3,
+      correctIndex: 1,
     },
     {
       img: "../assets/silhouettes/aang.png",
       options: [
-        "Samurai Jack (Samurai Jack)",
         "Naruto Uzumaki (Naruto)",
+        "Samurai Jack (Samurai Jack)",
         "Steven Universe (Steven Universe)",
         "Aang (Avatar: The Last Airbender)",
       ],
@@ -110,23 +110,24 @@
       img: "../assets/silhouettes/tomjerry.png",
       options: [
         "Garfield (Garfield)",
-        "Sylvester (Looney Tunes)",
         "The Cat in the Hat (The Cat in the Hat)",
         "Tom and Jerry (Tom and Jerry)",
+        "Sylvester (Looney Tunes)",
       ],
-      correctIndex: 3,
+      correctIndex: 2,
     },
     {
       img: "../assets/silhouettes/scooby.png",
       options: [
-        "Brian Griffin (Family Guy)",
         "Goofy (Disney)",
-        "Odie (Garfield)",
         "Scooby-Doo (Scooby-Doo)",
+        "Odie (Garfield)",
+        "Brian Griffin (Family Guy)",
       ],
-      correctIndex: 3,
+      correctIndex: 1,
     },
   ];
+
 
   const REVEAL_MS = 1350;
   const POST_REVEAL_MS = 250;
