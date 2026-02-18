@@ -528,7 +528,7 @@ function renderOptions(opts) {
 
       const left = document.createElement("div");
       left.className = "reviewQ";
-      left.textContent = `QUESTION${i + 1}`;
+      left.textContent = `QUESTION ${i + 1}`;
 
       const right = document.createElement("div");
       right.className = "reviewA";
