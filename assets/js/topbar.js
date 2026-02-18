@@ -154,7 +154,19 @@
   }
 
   function setupMenu() {
-    const burgerBtn = header.querySelector('#mbqBurgerBtn');
+    
+  // Achievements:
+  // - on Home (where modal exists) main app.js handles opening the modal
+  // - on other pages, redirect to Home + open via hash
+  const achievementsBtn = document.getElementById("achievementsBtn");
+  achievementsBtn?.addEventListener("click", (e) => {
+    const modal = document.getElementById("rewardsModal");
+    if (modal) return; // home handles modal open
+    e.preventDefault?.();
+    window.location.href = `${prefix}index.html#achievements`;
+  });
+
+const burgerBtn = header.querySelector('#mbqBurgerBtn');
     const overlay = header.querySelector('#mbqMenuOverlay');
     const menu = header.querySelector('#mbqMenu');
     const closeBtn = header.querySelector('#mbqMenuClose');
