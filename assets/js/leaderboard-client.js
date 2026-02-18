@@ -26,32 +26,6 @@
   // Our stable per-browser device id (used as filename in Storage + upsert key)
   const DEVICE_KEY = "mb_device_id";
 
-
-  // Compute site root (works on nested pages like /seasons/s1/ and /leaderboard/)
-  // leaderboard-client.js is expected at: <siteRoot>/assets/js/leaderboard-client.js
-  const __SCRIPT_URL = (() => {
-    try {
-      const src = (document.currentScript && document.currentScript.src) ? document.currentScript.src : "";
-      return src ? new URL(src, window.location.href) : null;
-    } catch {
-      return null;
-    }
-  })();
-
-  const __SITE_ROOT = (() => {
-    try {
-      if (__SCRIPT_URL) return new URL("../..", __SCRIPT_URL).href; // up from /assets/js/ to site root
-    } catch {}
-    // Fallback: best-effort (may be wrong on some setups, but avoids crashes)
-    try { return new URL("./", window.location.href).href; } catch { return ""; }
-  })();
-
-  function toSiteRootAsset(relPath) {
-    if (!relPath) return null;
-    const clean = String(relPath).replace(/^\/+/, "");
-    try { return new URL(clean, __SITE_ROOT || window.location.href).href; } catch { return String(relPath); }
-  }
-
   function getConfig() {
     const url = window.MBQ_SUPABASE_URL;
     const key = window.MBQ_SUPABASE_ANON_KEY; // may be publishable key
@@ -118,22 +92,21 @@
   // /leaderboard/assets/... (404). This helper auto-prefixes "../" for known subpages.
   function toAbsoluteUrlMaybe(u) {
     if (!isNonEmpty(u)) return null;
-    if (isAbsoluteUrl(u) || u.startsWith("data:")) return u;
-
-    // If it's a repo-relative asset path like "assets/...", always resolve from site root.
-    // This avoids 404s on nested pages like /seasons/s1/ or /leaderboard/.
-    if (String(u).startsWith("assets/")) {
-      return toSiteRootAsset(u);
-    }
-
+    const s = String(u).trim();
+    if (isAbsoluteUrl(s) || s.startsWith("data:")) return s;
     try {
-      return new URL(u, window.location.href).href;
-    } catch (e) {
-      return u;
+      // GitHub Pages: always resolve assets from "/<repo>/"
+      const parts = (window.location.pathname || "").split("/").filter(Boolean);
+      const repoBase = parts.length ? ("/" + parts[0] + "/") : "/";
+      if (s.startsWith("assets/")) return new URL(repoBase + s, window.location.origin).href;
+      if (s.startsWith("/")) return new URL(s, window.location.origin).href;
+      return new URL(s, window.location.href).href;
+    } catch {
+      return s;
     }
   }
 
-    const DEVICE_COOKIE = "mbq_device_id";
+  const DEVICE_COOKIE = "mbq_device_id";
   const IDB_DB = "mbq";
   const IDB_STORE = "kv";
   const IDB_KEY = "mb_device_id";
@@ -274,8 +247,27 @@
   }
 
   async function dataUrlToBlob(dataUrl) {
-    const res = await fetch(dataUrl);
-    return await res.blob();
+    // Some browsers/extensions can produce data URLs with whitespace/newlines,
+    // which makes fetch("data:...") throw ERR_INVALID_URL. Handle both cases.
+    try {
+      const res = await fetch(dataUrl);
+      return await res.blob();
+    } catch (e) {
+      const m = String(dataUrl || "").match(/^data:([^;,]+)?(;base64)?,(.*)$/s);
+      if (!m) throw e;
+      const mime = m[1] || "application/octet-stream";
+      const isB64 = !!m[2];
+      let data = m[3] || "";
+      // Remove whitespace/newlines
+      data = data.replace(/\s+/g, "");
+      if (isB64) {
+        const bin = atob(data);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+      }
+      return new Blob([decodeURIComponent(data)], { type: mime });
+    }
   }
 
   async function fetchAsPngBlob(url) {
@@ -336,6 +328,15 @@
     const { url, key } = getConfig();
     const endpoint = url.replace(/\/$/, "") + "/functions/v1/mbq-submit";
 
+    // Edge Functions can be rate-limited. Avoid bursts by spacing requests.
+    const now = Date.now();
+    const minGapMs = 11000;
+    const last = invokeEdgeSubmit._lastCallAt || 0;
+    const waitMs = (last + minGapMs) - now;
+    if (waitMs > 0) await new Promise((r) => setTimeout(r, waitMs));
+    invokeEdgeSubmit._lastCallAt = Date.now();
+
+
     // Prefer an authenticated JWT if available (after anonymous sign-in),
     // otherwise fall back to the publishable key.
     let bearer = key;
@@ -357,10 +358,14 @@
 
     let res = await doRequest();
 
-    // Supabase function has a 10s throttle; retry once after a short wait.
-    if (res.status === 429) {
-      await new Promise((r) => setTimeout(r, 11000));
+    // Rate limit handling: retry a couple of times with backoff.
+    // (Edge Functions often throttle burst requests.)
+    let attempt = 0;
+    while (res.status === 429 && attempt < 2) {
+      const backoff = 12000 * (attempt + 1); // 12s, then 24s
+      await new Promise((r) => setTimeout(r, backoff));
       res = await doRequest();
+      attempt++;
     }
 
     const text = await res.text();
@@ -378,7 +383,9 @@
    * seasonId: "s1" | "s2"
    * championPngDataUrl: data:image/png;base64,...
    */
-  syncFromLocal = async function(seasonId, championPngDataUrl) {
+  let _syncQueue = Promise.resolve();
+
+  async function _syncFromLocalInner(seasonId, championPngDataUrl) {
     const deviceId = await getOrCreateDeviceId();
     const profile = getProfile() || {};
 
@@ -443,7 +450,7 @@
       try {
         // IMPORTANT: on /leaderboard/ page, "assets/..." resolves to "/leaderboard/assets/..." (404).
         // Always use repo-correct relative path.
-        const blob = await fetchAsPngBlob(toSiteRootAsset("assets/uploadavatar.jpg"));
+        const blob = await fetchAsPngBlob(toAbsoluteUrlMaybe("assets/uploadavatar.jpg"));
         if (blob) {
           avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
           try {
@@ -478,10 +485,32 @@
     if (typeof avatarUrl === "string" && avatarUrl.length) {
       payload.avatar_url = avatarUrl;
     }
+    // Dedupe: don't spam the backend with identical payloads in a short window
+    try {
+      const sigKey = "mb_lb_sig_" + seasonId;
+      const tsKey = "mb_lb_ts_" + seasonId;
+      const sig = JSON.stringify(payload);
+      const now = Date.now();
+      const lastSig = localStorage.getItem(sigKey);
+      const lastTs = parseInt(localStorage.getItem(tsKey) || "0", 10) || 0;
+      if (lastSig === sig && (now - lastTs) < 60000) {
+        // Same payload synced less than a minute ago
+        return { ok: true, skipped: true, reason: "recent_dedupe" };
+      }
+      localStorage.setItem(sigKey, sig);
+      localStorage.setItem(tsKey, String(now));
+    } catch {}
+
 
     const resp = await invokeEdgeSubmit(payload);
 
     return resp;
+  }
+
+  // Queue sync calls to avoid hitting Edge Function rate limits (429)
+  syncFromLocal = function(seasonId, championPngDataUrl) {
+    _syncQueue = _syncQueue.then(() => _syncFromLocalInner(seasonId, championPngDataUrl));
+    return _syncQueue;
   };
 
   async function fetchTop(limit = 100) {
