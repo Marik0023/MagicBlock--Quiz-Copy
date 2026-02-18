@@ -268,6 +268,40 @@ function getProgNum(key){
 
 function isDone(key){ return localStorage.getItem(key) === "1"; }
 
+
+function championHref(){
+  return inQuizzesFolder() ? "../champion.html" : "champion.html";
+}
+
+function updateChampionGlowUI(allDone){
+  const champWrap = document.getElementById("championWrap");
+  if (!champWrap || !allDone) return;
+
+  const png = localStorage.getItem(MB_KEYS.champPng);
+  const preview = document.getElementById("championPreview");
+  const img = document.getElementById("championPreviewImg");
+  const hint = document.getElementById("championHint");
+  const btn = document.getElementById("openChampionBtn");
+
+  if (png && png.startsWith("data:image/")){
+    champWrap.classList.add("champion--glow");
+    if (preview) preview.style.display = "block";
+    if (img) img.src = png;
+    if (hint) hint.style.display = "block";
+    if (btn) btn.textContent = "Open Champion Card";
+  } else {
+    champWrap.classList.remove("champion--glow");
+    if (preview) preview.style.display = "none";
+    if (hint) hint.style.display = "none";
+    if (btn) btn.textContent = "Generate Champion Card";
+  }
+
+  if (preview){
+    preview.style.cursor = "pointer";
+    preview.onclick = () => (location.href = championHref());
+  }
+}
+
 /* ===== Badges + mini progress ===== */
 function updateMiniProgressUI(){
   const total = 10;
@@ -318,8 +352,11 @@ function updateBadges(){
     magicblock: { doneKey: MB_KEYS.doneMagic, progKey: MB_KEYS.progMagic },
   };
 
+  let allDone = true;
+
   Object.entries(map).forEach(([k, keys]) => {
     const done = isDone(keys.doneKey);
+    if (!done) allDone = false;
 
     const badge = document.querySelector(`[data-badge="${k}"]`);
     if (badge) badge.style.display = done ? "inline-flex" : "none";
@@ -336,6 +373,9 @@ function updateBadges(){
     btn.textContent = (nextQ >= 2) ? "Continue" : "Start";
   });
 
+  const champ = document.getElementById("championWrap");
+  if (champ) champ.style.display = allDone ? "block" : "none";
+  updateChampionGlowUI(allDone);
   updateMiniProgressUI();
 }
 
@@ -357,7 +397,11 @@ function initHomeButtons(){
       if (k === "magicblock") location.href = "quizzes/magicblock.html";
     });
   });
+
+  const champBtn = document.getElementById("openChampionBtn");
+  champBtn?.addEventListener("click", () => location.href = championHref());
 }
+
 
 /* ===== Rewards modal ===== */
 (function initRewardsModal(){
@@ -560,8 +604,7 @@ function initHomeButtons(){
         openBtn.textContent = "Locked";
         openBtn.disabled = true;
       } else {
-        const readyNow = (hasChampPng || champReady);
-        openBtn.textContent = readyNow ? "Open" : "Generate";
+        openBtn.textContent = "Open";
         openBtn.addEventListener("click", () => location.href = "champion.html");
       }
       actions.appendChild(openBtn);

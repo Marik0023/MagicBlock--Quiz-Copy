@@ -251,11 +251,8 @@ function saveChampionPreview() {
     }
   } catch (e) {
     console.warn("preview save failed:", e);
-    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
-    try { localStorage.removeItem(MB_KEYS.champPngUpload); } catch {}
-    try { localStorage.removeItem(MB_KEYS.champReady); } catch {}
-    alert("Storage full. Preview cleared. Try Generate again (or use smaller avatar).");
-  }
+    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}console.warn("Storage quota hit while saving preview. Skipping local preview persistence.");
+}
 }
 
 // ===== Actions =====
