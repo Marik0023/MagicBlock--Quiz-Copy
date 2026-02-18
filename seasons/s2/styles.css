@@ -604,6 +604,9 @@ img{max-width:100%; display:block}
 /* Hard-hide image during panel switch to avoid any 1-frame flash */
 .mbQuiz--silhouette #quizPanel.isSwitching .silImg{
   opacity: 0 !important;
+  visibility: hidden !important;
+  transition: none !important;
+  -webkit-transition: none !important;
 }
 .mbQuiz--silhouette .silImg.isRevealed{
   --sil-b: 1;
