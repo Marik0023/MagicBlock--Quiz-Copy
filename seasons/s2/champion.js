@@ -107,12 +107,14 @@ function loadResult(key) { return safeJSONParse(localStorage.getItem(key), null)
 
 // ===== Tier logic =====
 function getTierByCorrect(correct) {
-  // S2 totals: 60 (6 quizzes × 10). Keep the same % thresholds as S1.
-  // GOLD: >= 83% (50/60)
-  // SILVER: >= 50% (30/60)
-  if (correct >= 50) return "GOLD";
-  if (correct >= 30) return "SILVER";
-  return "BRONZE";
+  // Season 2 totals: 60 (6 quizzes × 10)
+  // Tier rules (as requested):
+  // 0–30  => bronze
+  // 31–50 => silver
+  // 51–60 => gold
+  if (correct >= 51) return "gold";
+  if (correct >= 31) return "silver";
+  return "bronze";
 }
 
 const TIER_THEME = {
@@ -147,46 +149,42 @@ function getOrCreateChampionId() {
 }
 
 function computeSummary() {
-  const profile = loadProfile();
-  const name = profile?.nickname || "";
+  const p = getProfile();
+  if (sumName) sumName.textContent = p?.name || "Player";
 
-  const doneKeys = [
-    MB_KEYS.doneMovieFrame,
-    MB_KEYS.doneMovieEmojis,
-    MB_KEYS.doneSong,
-    MB_KEYS.doneSilhouette,
-    MB_KEYS.doneTrueFalse,
-    MB_KEYS.doneMagicblock,
+  const doneFlags = [
+    isDone(MB_KEYS.doneMovieFrame),
+    isDone(MB_KEYS.doneMovieEmoji),
+    isDone(MB_KEYS.doneSong),
+    isDone(MB_KEYS.doneSilhouette),
+    isDone(MB_KEYS.doneTrueFalse),
+    isDone(MB_KEYS.doneMagicBlock),
   ];
+  const doneCount = doneFlags.filter(Boolean).length;
+  if (sumDone) sumDone.textContent = `${doneCount} / 6`;
 
-  const results = [
-    loadResult(MB_KEYS.resMovieFrame),
-    loadResult(MB_KEYS.resMovieEmojis),
-    loadResult(MB_KEYS.resSong),
-    loadResult(MB_KEYS.resSilhouette),
-    loadResult(MB_KEYS.resTrueFalse),
-    loadResult(MB_KEYS.resMagicblock),
-  ];
+  const r1 = loadResult(MB_KEYS.resMovieFrame);
+  const r2 = loadResult(MB_KEYS.resMovieEmoji);
+  const r3 = loadResult(MB_KEYS.resSong);
+  const r4 = loadResult(MB_KEYS.resSilhouette);
+  const r5 = loadResult(MB_KEYS.resTrueFalse);
+  const r6 = loadResult(MB_KEYS.resMagicBlock);
 
-  const doneCount = doneKeys.filter(isDone).length;
+  const results = [r1, r2, r3, r4, r5, r6].filter(Boolean);
+  const total = results.reduce((a, r) => a + (r.total || 0), 0);
+  const correct = results.reduce((a, r) => a + (r.correct || 0), 0);
+  const acc = total ? Math.round((correct / total) * 100) : 0;
 
-  // Sum totals from stored results (fallback to 10 each if missing)
-  const totalAll = results.reduce((acc, r) => acc + (Number(r?.total) || 10), 0);
-  const correctAll = results.reduce((acc, r) => acc + (Number(r?.correct) || 0), 0);
-  const accuracy = totalAll > 0 ? Math.round((correctAll / totalAll) * 100) : 0;
+  if (sumTotal) sumTotal.textContent = String(total);
+  if (sumCorrect) sumCorrect.textContent = String(correct);
+  if (sumAcc) sumAcc.textContent = `${acc}%`;
 
-  const unlocked = Boolean(name) && doneCount === 6;
-  const tier = getTierByCorrect(correctAll);
+  const unlocked = doneCount === 6 && results.length === 6 && !!p;
 
-  return {
-    name,
-    doneCount,
-    totalAll,
-    correctAll,
-    accuracy,
-    unlocked,
-    tier,
-  };
+  const tier = getTierByCorrect(correct);
+  const champId = getOrCreateChampionId();
+
+  return { unlocked, total, correct, acc, profile: p, tier, champId };
 }
 
 /* =========================
