@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const QUESTIONS = [
   { text: "🚢🧊💔🌊", options: ["Jaws", "Titanic", "Poseidon", "Pearl Harbor"], correctIndex: 1 },
   { text: "🤵🌹🔫🍝", options: ["The Godfather", "Goodfellas", "Scarface", "The Irishman"], correctIndex: 0 },
-  { text: "🌌🤖⚔️🚀", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars: A New Hope", "Dune"], correctIndex: 2 },
+  { text: "🌌🤖⚔️🚀", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars", "Dune"], correctIndex: 2 },
   { text: "🧙‍♂️⚡️🦉🚂", options: ["The Chronicles of Narnia", "Percy Jackson", "Fantastic Beasts", "Harry Potter"], correctIndex: 3 },
   { text: "💍🧝‍♂️🧙‍♂️👁️", options: ["The Lord of the Rings", "The Hobbit", "The Two Towers", "Willow"], correctIndex: 0 },
   { text: "🦖🏝️🧬🚙", options: ["Kong: Skull Island", "Godzilla", "Jurassic Park", "Jumanji"], correctIndex: 2 },
