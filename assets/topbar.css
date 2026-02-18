@@ -1,10 +1,10 @@
-/* MagicBlock Quiz — unified topbar (short oval height, big animated logo) */
+/* MagicBlock Quiz — unified topbar (oval) + mobile burger menu */
 
 .mbqTopbar{
   position: sticky;
   top: 0;
   z-index: 9999;
-  padding: 10px 16px;        /* outer spacing around the oval */
+  padding: 10px 16px;
   pointer-events: auto;
 }
 
@@ -17,9 +17,8 @@
   justify-content: space-between;
   gap: 14px;
 
-  /* THE OVAL HEIGHT (main thing you wanted) */
-  height: 74px;              /* change: 64 / 70 / 74 */
-  padding: 0 14px;           /* no vertical padding -> oval won't get taller */
+  height: 74px;
+  padding: 0 14px;
 
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,.12);
@@ -27,6 +26,16 @@
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   box-shadow: 0 8px 30px rgba(0,0,0,.35);
+}
+
+/* Ensure left/right can shrink instead of overlapping */
+.mbqTopbar__left,
+.mbqTopbar__right{
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .mbqTopbar__brand{
@@ -42,8 +51,8 @@
 
 /* Big logo, but it will NOT stretch the oval height */
 .mbqTopbar__logo{
-  width: 160px;              /* your big logo width */
-  height: 160px;             /* can stay big */
+  width: 160px;
+  height: 160px;
   border-radius: 0;
   background: transparent;
   border: none;
@@ -56,8 +65,7 @@
 
 .mbqTopbar__logo video,
 .mbqTopbar__logo img{
-  /* constrain inside the oval height */
-  max-height: 62px;          /* must be < .mbqTopbar__inner height */
+  max-height: 62px;
   width: auto;
   height: auto;
   object-fit: contain;
@@ -65,10 +73,13 @@
 }
 
 .mbqTopbar__nav{
+  flex: 1 1 auto;
+  min-width: 0;
+
   display: flex;
   gap: 10px;
   align-items: center;
-  min-width: 0;
+  justify-content: center;
 }
 
 .mbqTopbar__nav a,
@@ -80,7 +91,7 @@
   color: rgba(255,255,255,.92);
   text-decoration: none;
   border-radius: 999px;
-  padding: 9px 14px;         /* slightly shorter */
+  padding: 9px 14px;
   font-weight: 800;
   font-size: 14px;
   cursor: pointer;
@@ -98,6 +109,7 @@
   border-color: rgba(255,255,255,.26);
 }
 
+/* Profile pill */
 .mbqTopbar__profile{
   display: flex;
   align-items: center;
@@ -108,7 +120,7 @@
   color: rgba(255,255,255,.92);
   border-radius: 999px;
 
-  padding: 8px 12px;         /* shorter */
+  padding: 8px 12px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -139,22 +151,113 @@
   line-height: 1.05;
   text-align: left;
 }
-
 .mbqTopbar__pname{
   font-weight: 900;
   font-size: 14px;
 }
-
 .mbqTopbar__pedit{
   opacity: .7;
   font-weight: 700;
   font-size: 12px;
 }
 
+/* Burger button (shown only on mobile) */
+.mbqBurger{
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.20);
+  color: rgba(255,255,255,.92);
+  border-radius: 999px;
+
+  padding: 10px 12px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.mbqBurger:hover{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08);
+}
+
+/* Mobile menu overlay + panel */
+.mbqMenuOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.52);
+  z-index: 9998;
+}
+
+.mbqMenu{
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: min(340px, calc(100vw - 24px));
+
+  border-radius: 18px;
+  background: rgba(20,20,26,.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 18px 60px rgba(0,0,0,.55);
+  z-index: 9999;
+
+  overflow: hidden;
+}
+
+.mbqMenu__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.mbqMenu__title{
+  font-weight: 900;
+  color: rgba(255,255,255,.95);
+  letter-spacing: -0.01em;
+}
+.mbqMenu__close{
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(0,0,0,.20);
+  color: rgba(255,255,255,.92);
+  border-radius: 999px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.mbqMenu__close:hover{
+  border-color: rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08);
+}
+
+.mbqMenu__item{
+  display: block;
+  width: 100%;
+  text-align: left;
+
+  padding: 14px 14px;
+
+  color: rgba(255,255,255,.92);
+  text-decoration: none;
+
+  border: 0;
+  background: transparent;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+}
+.mbqMenu__item:hover{
+  background: rgba(255,255,255,.06);
+}
+
+/* Responsive tweaks */
 @media (max-width: 860px){
   .mbqTopbar__inner{
     border-radius: 22px;
-    height: 70px;            /* slightly smaller on mobile */
+    height: 70px;
   }
   .mbqTopbar__logo video,
   .mbqTopbar__logo img{
@@ -162,6 +265,7 @@
   }
 }
 
+/* Mobile: hide tab nav, show burger */
 @media (max-width: 560px){
   .mbqTopbar{
     padding: 8px 12px;
@@ -170,16 +274,17 @@
     height: 64px;
     padding: 0 10px;
   }
-  .mbqTopbar__nav a,
-  .mbqTopbar__nav button{
-    padding: 8px 10px;
-    font-size: 13px;
+  .mbqTopbar__nav{
+    display: none;
+  }
+  .mbqBurger{
+    display: inline-flex;
   }
   .mbqTopbar__ptext{
     display: none;
   }
   .mbqTopbar__logo{
-    width: 120px;            /* a bit smaller so nav fits */
+    width: 120px;
   }
   .mbqTopbar__logo video,
   .mbqTopbar__logo img{
