@@ -178,13 +178,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const QUESTIONS = [
     { frame: "../../../assets/movies/11.mp4", options: ["Joker", "The Dark Knight", "Taxi Driver", "Nightcrawler"], correctIndex: 0 },
-    { frame: "../../../assets/movies/12.mp4", options: ["Thor", "Captain America: The First Avenger", "Spider-Man: Homecoming", "Iron Man"], correctIndex: 3 },
+    { frame: "../../../assets/movies/12.mp4", options: ["Thor", "Captain America", "Spider-Man", "Iron Man"], correctIndex: 3 },
     { frame: "../../../assets/movies/13.mp4", options: ["The Big Short", "The Wolf of Wall Street", "Catch Me If You Can", "American Hustle"], correctIndex: 1 },
     { frame: "../../../assets/movies/14.mp4", options: ["Taken", "Nobody", "John Wick", "The Equalizer"], correctIndex: 2 },
     { frame: "../../../assets/movies/15.mp4", options: ["We Are Your Friends", "Project X", "Step Up", "The Social Network"], correctIndex: 0 },
     { frame: "../../../assets/movies/16.mp4", options: ["Logan", "Kick-Ass", "Guardians of the Galaxy", "Deadpool"], correctIndex: 3 },
     { frame: "../../../assets/movies/17.mp4", options: ["Ocean's Eleven", "Now You See Me", "The Prestige", "Focus"], correctIndex: 1 },
-    { frame: "../../../assets/movies/18.mp4", options: ["21 Jump Street", "The Hangover", "Ted 2", "Bad Neighbors"], correctIndex: 2 },
+    { frame: "../../../assets/movies/18.mp4", options: ["21 Jump Street", "The Hangover", "Ted", "Bad Neighbors"], correctIndex: 2 },
     { frame: "../../../assets/movies/19.mp4", options: ["Sherlock Holmes", "Knives Out", "Se7en", "The Da Vinci Code"], correctIndex: 0 },
     { frame: "../../../assets/movies/20.mp4", options: ["Dunkirk", "American Sniper", "Mission: Impossible — Fallout", "Top Gun: Maverick"], correctIndex: 3 },
   ];
