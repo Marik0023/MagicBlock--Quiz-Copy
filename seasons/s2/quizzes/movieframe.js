@@ -277,8 +277,15 @@ document.addEventListener("DOMContentLoaded", () => {
     else pauseVideo();
   }
 
+  // Make sure native video UI doesn't get in the way on iOS/touch.
+  try { frameVideo.removeAttribute("controls"); } catch {}
+  try { frameVideo.controls = false; } catch {}
+
   playOverlayBtn.addEventListener("click", (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    togglePlayPauseFromClick();
+  });
 
   if (pauseBtn){
     pauseBtn.addEventListener("click", (e) => {
@@ -287,18 +294,20 @@ document.addEventListener("DOMContentLoaded", () => {
       pauseVideo();
     });
   }
-    e.stopPropagation();
-    togglePlayPauseFromClick();
-  });
 
-  frameVideo.addEventListener("click", (e) => {
-    e.preventDefault();
-    togglePlayPauseFromClick();
-  });
+  // Desktop convenience: click video to toggle. On touch devices we avoid it
+  // because it can trigger Safari's native controls overlay.
+  const isCoarse = window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  if (!isCoarse){
+    frameVideo.addEventListener("click", (e) => {
+      e.preventDefault();
+      togglePlayPauseFromClick();
+    });
+  }
 
-  frameVideo.addEventListener("play", () => hideOverlay());
-  frameVideo.addEventListener("pause", () => showOverlay());
-  frameVideo.addEventListener("ended", () => showOverlay());
+  frameVideo.addEventListener("play", () => { hideOverlay(); showPauseBtn(); });
+  frameVideo.addEventListener("pause", () => { hidePauseBtn(); showOverlay(); });
+  frameVideo.addEventListener("ended", () => { hidePauseBtn(); showOverlay(); });
 
   // ===== Review helpers =====
   function showReview() {
