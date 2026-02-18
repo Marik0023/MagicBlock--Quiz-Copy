@@ -26,6 +26,32 @@
   // Our stable per-browser device id (used as filename in Storage + upsert key)
   const DEVICE_KEY = "mb_device_id";
 
+
+  // Compute site root (works on nested pages like /seasons/s1/ and /leaderboard/)
+  // leaderboard-client.js is expected at: <siteRoot>/assets/js/leaderboard-client.js
+  const __SCRIPT_URL = (() => {
+    try {
+      const src = (document.currentScript && document.currentScript.src) ? document.currentScript.src : "";
+      return src ? new URL(src, window.location.href) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const __SITE_ROOT = (() => {
+    try {
+      if (__SCRIPT_URL) return new URL("../..", __SCRIPT_URL).href; // up from /assets/js/ to site root
+    } catch {}
+    // Fallback: best-effort (may be wrong on some setups, but avoids crashes)
+    try { return new URL("./", window.location.href).href; } catch { return ""; }
+  })();
+
+  function toSiteRootAsset(relPath) {
+    if (!relPath) return null;
+    const clean = String(relPath).replace(/^\/+/, "");
+    try { return new URL(clean, __SITE_ROOT || window.location.href).href; } catch { return String(relPath); }
+  }
+
   function getConfig() {
     const url = window.MBQ_SUPABASE_URL;
     const key = window.MBQ_SUPABASE_ANON_KEY; // may be publishable key
@@ -93,12 +119,19 @@
   function toAbsoluteUrlMaybe(u) {
     if (!isNonEmpty(u)) return null;
     if (isAbsoluteUrl(u) || u.startsWith('data:')) return u;
+
+    // If it's a repo-relative asset path like "assets/...", always resolve from site root.
+    // This avoids 404s on nested pages like /seasons/s1/ or /leaderboard/.
+    if (String(u).startsWith("assets/")) {
+      return toSiteRootAsset(u);
+    }
+
     try {
-      const p = (window.location && window.location.pathname) ? window.location.pathname : "";
-      const onSubpage = p.includes("/leaderboard/") || p.includes("/seasons/") || p.includes("/achievements/");
-      const fixed = (onSubpage && u.startsWith("assets/")) ? ("../" + u) : u;
-      return new URL(fixed, window.location.href).href;
+      return new URL(u, window.location.href).href;
     } catch {
+      return u;
+    }
+  } catch {
       return u;
     }
   }
@@ -413,7 +446,7 @@
       try {
         // IMPORTANT: on /leaderboard/ page, "assets/..." resolves to "/leaderboard/assets/..." (404).
         // Always use repo-correct relative path.
-        const blob = await fetchAsPngBlob("../assets/uploadavatar.jpg");
+        const blob = await fetchAsPngBlob(toSiteRootAsset("assets/uploadavatar.jpg"));
         if (blob) {
           avatarUrl = await uploadDeviceBoundAvatar(deviceId, blob);
           try {
