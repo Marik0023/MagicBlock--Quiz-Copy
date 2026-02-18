@@ -208,18 +208,13 @@ function saveChampionPreview() {
     const uploadPng = exportPreviewPNG(cardCanvas, 1400);
     if (preview && preview.startsWith("data:image/")) {
       localStorage.setItem(MB_KEYS.champPng, preview);
-      if (uploadPng && uploadPng.startsWith("data:image/png")) {
-        localStorage.setItem(MB_KEYS.champPngUpload, uploadPng);
-      }
-      localStorage.setItem(MB_KEYS.champReady, "1");
+      // NOTE: do NOT store upload PNG in localStorage (too big / quota issues)
+localStorage.setItem(MB_KEYS.champReady, "1");
     }
   } catch (e) {
     console.warn("preview save failed:", e);
-    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
-    try { localStorage.removeItem(MB_KEYS.champPngUpload); } catch {}
-    try { localStorage.removeItem(MB_KEYS.champReady); } catch {}
-    alert("Storage full. Preview cleared. Try Generate again (or use smaller avatar).");
-  }
+    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}console.warn("Storage quota hit while saving preview. Skipping local preview persistence.");
+}
 }
 
 // ===== Actions =====
