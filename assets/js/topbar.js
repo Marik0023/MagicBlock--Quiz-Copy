@@ -2,9 +2,25 @@
   // Relative prefix that works on GitHub Pages project sites:
   // /<repo>/<dirs>/<file.html> -> go back (dirs) to /<repo>/
   const parts = window.location.pathname.split('/').filter(Boolean);
-  const depth = Math.max(0, parts.length - 2); // repo/<dirs...>/file.html
-  const prefix = '../'.repeat(depth);
 
+  // Support both:
+  // 1) GitHub Pages project path: /<repo>/seasons/s1/index.html
+  // 2) Custom domain root path:   /seasons/s1/index.html
+  const ROOT_DIRS = new Set(['seasons','leaderboard','assets']);
+  const baseIndex = ROOT_DIRS.has((parts[0] || '').toLowerCase()) ? 0 : 1;
+
+  const last = parts[parts.length - 1] || '';
+  const hasFile = /\.[a-z0-9]+$/i.test(last);
+
+  // How many ".." segments to reach the site root (repo root or domain root)
+  const depthFromBase = Math.max(
+    0,
+    hasFile
+      ? (parts.length - baseIndex - 2)  // exclude repo + filename
+      : (parts.length - baseIndex - 1)  // exclude repo
+  );
+
+  const prefix = '../'.repeat(depthFromBase);
   const pathLower = window.location.pathname.toLowerCase();
   const isActive = (key) => {
     if (key === 'seasons') return pathLower.includes('/seasons/') || pathLower.endsWith('/index.html') || pathLower.endsWith('/');
@@ -93,12 +109,12 @@
       if (raw){
         const p = JSON.parse(raw);
         const nameEl = document.querySelector('[data-profile-name]');
-        if (nameEl && p.nickname) nameEl.textContent = p.nickname;
+        if (nameEl) nameEl.textContent = (p.nickname || p.name || 'Player');
         const hint = document.querySelector('[data-profile-hint]');
         if (hint) hint.textContent = 'Edit';
         const img = document.querySelector('.mbqTopbar__avatar img');
         if (img){
-          img.src = p.avatar_url || '';
+          img.src = (p.avatar_url || p.avatar || (prefix + 'assets/uploadavatar.jpg'));
           img.referrerPolicy = 'no-referrer';
         }
       }
