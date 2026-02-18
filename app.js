@@ -476,9 +476,36 @@ function initAchievementsModal(){
   if (!btn || !modal || !closeBtn || !grid) return;
 
   const SEASONS = [
-    { id:"s1", title:"Season 1 — Champion Card", subLocked:"Complete Season 1 to unlock", pngKey:"mb_champ_png",  readyKey:"mb_champ_ready",  openHref:"seasons/s1/index.html#achievements", active:true },
-    { id:"s2", title:"Season 2 — Champion Card", subLocked:"Complete Season 2 to unlock", pngKey:"mb_s2_champ_png", readyKey:"mb_s2_champ_ready", openHref:"seasons/s2/index.html#achievements", active:true },
-    { id:"s3", title:"Season 3 — Champion Card", subLocked:"Not available yet",          pngKey:"mb_champ_png_s3", readyKey:"mb_champ_ready_s3", openHref:"#", active:false },
+    {
+      id: "s1",
+      title: "Season 1 — Champion Card",
+      subLocked: "Complete Season 1 to unlock",
+      pngKey: "mb_champ_png",
+      readyKey: "mb_champ_ready",
+      indexHref: "seasons/s1/index.html",
+      championHref: "seasons/s1/champion.html",
+      active: true,
+    },
+    {
+      id: "s2",
+      title: "Season 2 — Champion Card",
+      subLocked: "Complete Season 2 to unlock",
+      pngKey: "mb_s2_champ_png",
+      readyKey: "mb_s2_champ_ready",
+      indexHref: "seasons/s2/index.html",
+      championHref: "seasons/s2/champion.html",
+      active: true,
+    },
+    {
+      id: "s3",
+      title: "Season 3 — Champion Card",
+      subLocked: "Not available yet",
+      pngKey: "mb_champ_png_s3",
+      readyKey: "mb_champ_ready_s3",
+      indexHref: "#",
+      championHref: "#",
+      active: false,
+    },
   ];
 
 const HASH = "#achievements";
@@ -538,8 +565,11 @@ window.addEventListener("hashchange", () => {
 
       const s = document.createElement("div");
       s.className = "rewardSub";
+      const allDone = it.active ? seasonAllQuizzesDone(it.id) : false;
       if (!it.active) s.textContent = "Not available yet";
-      else s.textContent = (hasPng || ready) ? "Ready ✅" : it.subLocked;
+      else if (hasPng) s.textContent = "Generated ✅";
+      else if (allDone) s.textContent = "Ready to generate ✅";
+      else s.textContent = it.subLocked;
 
       let prog = null;
       if (it.active){
@@ -563,13 +593,12 @@ window.addEventListener("hashchange", () => {
         openBtn.disabled = true;
       } else {
         const hasProg = seasonHasAnyProgress(it.id);
-        const open = seasonAllQuizzesDone(it.id) && seasonChampionReady(it.id);
-        openBtn.textContent = open ? "Open" : (hasProg ? "Continue" : "Start");
+        openBtn.textContent = allDone ? (hasPng ? "Open" : "Generate") : (hasProg ? "Continue" : "Start");
       }
 
       openBtn.addEventListener("click", () => {
         if (!it.active) return;
-        location.href = it.openHref;
+        location.href = allDone ? it.championHref : it.indexHref;
       });
       actions.appendChild(openBtn);
 
