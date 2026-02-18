@@ -560,7 +560,8 @@ function initHomeButtons(){
         openBtn.textContent = "Locked";
         openBtn.disabled = true;
       } else {
-        openBtn.textContent = "Open";
+        const readyNow = (hasChampPng || champReady);
+        openBtn.textContent = readyNow ? "Open" : "Generate";
         openBtn.addEventListener("click", () => location.href = "champion.html");
       }
       actions.appendChild(openBtn);
