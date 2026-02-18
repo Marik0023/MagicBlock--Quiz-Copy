@@ -265,7 +265,16 @@
 
   function setSilhouetteState(revealed) {
     if (!silImg) return;
-    silImg.classList.toggle("isRevealed", !!revealed);
+
+    // iOS Safari can "stick" CSS filter transitions unless we force a repaint.
+    if (revealed) {
+      silImg.classList.remove("isRevealed");
+      // Force reflow
+      void silImg.offsetHeight;
+      requestAnimationFrame(() => silImg.classList.add("isRevealed"));
+    } else {
+      silImg.classList.remove("isRevealed");
+    }
   }
 
   function setImage(src) {
