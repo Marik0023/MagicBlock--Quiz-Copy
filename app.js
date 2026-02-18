@@ -539,11 +539,7 @@ window.addEventListener("hashchange", () => {
       const s = document.createElement("div");
       s.className = "rewardSub";
       if (!it.active) s.textContent = "Not available yet";
-      else {
-        const allDone = seasonAllQuizzesDone(it.id);
-        if (allDone && !(hasPng || ready)) s.textContent = "Unlocked — generate it";
-        else s.textContent = (hasPng || ready) ? "Ready ✅" : it.subLocked;
-      }
+      else s.textContent = (hasPng || ready) ? "Ready ✅" : it.subLocked;
 
       let prog = null;
       if (it.active){
@@ -567,28 +563,13 @@ window.addEventListener("hashchange", () => {
         openBtn.disabled = true;
       } else {
         const hasProg = seasonHasAnyProgress(it.id);
-        const allDone = seasonAllQuizzesDone(it.id);
-        const champReady = seasonChampionReady(it.id);
-        // If all quizzes are done but Champion card not generated yet -> show Generate
-        if (allDone && !champReady) openBtn.textContent = "Generate";
-        else if (allDone && champReady) openBtn.textContent = "Open";
-        else openBtn.textContent = hasProg ? "Continue" : "Start";
+        const open = seasonAllQuizzesDone(it.id) && seasonChampionReady(it.id);
+        openBtn.textContent = open ? "Open" : (hasProg ? "Continue" : "Start");
       }
 
       openBtn.addEventListener("click", () => {
         if (!it.active) return;
-        const allDone = seasonAllQuizzesDone(it.id);
-        const champReady = seasonChampionReady(it.id);
-        // Route:
-        // - not done -> season page (progress/continue)
-        // - done but not generated -> champion generator
-        // - ready -> champion page (open/download)
-        if (allDone) {
-          const champHref = it.id === "s1" ? "seasons/s1/champion.html" : (it.id === "s2" ? "seasons/s2/champion.html" : it.openHref);
-          location.href = champHref;
-        } else {
-          location.href = it.openHref;
-        }
+        location.href = it.openHref;
       });
       actions.appendChild(openBtn);
 
