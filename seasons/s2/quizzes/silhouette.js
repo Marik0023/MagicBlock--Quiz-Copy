@@ -252,8 +252,6 @@
   let selectedIndex = null;
   let revealing = false;
   let revealTimer = null;
-  let revealToken = 0; // guards async reveal on fast navigation
-
 
   let quizPanel, resultPanel, qTitle, silImg, optionsEl, feedbackEl, nextBtn;
   let rName, rTotal, rCorrect, rAcc, genBtn, dlBtn, cardZone, cardCanvas, reviewBox, reviewList;
@@ -268,19 +266,12 @@
   function setSilhouetteState(revealed) {
     if (!silImg) return;
 
-    // bump token every call to prevent a delayed RAF from affecting next question
-    revealToken += 1;
-    const t = revealToken;
-
+    // iOS Safari can "stick" CSS filter transitions unless we force a repaint.
     if (revealed) {
       silImg.classList.remove("isRevealed");
       // Force reflow
       void silImg.offsetHeight;
-
-      requestAnimationFrame(() => {
-        if (t !== revealToken) return;
-        silImg.classList.add("isRevealed");
-      });
+      requestAnimationFrame(() => silImg.classList.add("isRevealed"));
     } else {
       silImg.classList.remove("isRevealed");
     }
@@ -288,7 +279,12 @@
 
   function setImage(src) {
     if (!silImg) return;
-    setSilhouetteState(false);
+
+    // Prevent "flash" on fast transitions: force silhouette instantly with transitions disabled.
+    silImg.classList.add("noTrans");
+    silImg.classList.remove("isRevealed");
+    // Force style flush
+    void silImg.offsetHeight;
 
     silImg.style.opacity = "0";
     silImg.style.transform = "scale(0.985)";
@@ -301,6 +297,9 @@
       silImg.style.transform = "scale(1)";
     };
     silImg.src = src;
+
+    // Re-enable transitions after the new image is committed
+    requestAnimationFrame(() => silImg.classList.remove("noTrans"));
   }
 
   function renderOptions(opts) {
@@ -480,36 +479,22 @@
 
     QUESTIONS.forEach((q, i) => {
       const correctIdx = q.correctIndex;
-      const correctText = (q.options && q.options[correctIdx]) ? q.options[correctIdx] : "—";
+      const correctText = q.options?.[correctIdx] ?? "—";
 
       const picked = Number.isInteger(a[i]) ? a[i] : null;
-      const pickedText = (picked !== null && q.options && q.options[picked]) ? q.options[picked] : null;
+      const pickedText = picked !== null ? (q.options?.[picked] ?? "—") : "—";
+      const isWrong = picked !== null && picked !== correctIdx;
 
       const item = document.createElement("div");
-      item.className = "reviewItem";
-
-      // Mark wrong if user picked something and it wasn't correct
-      if (picked !== null && picked !== correctIdx) item.classList.add("isWrong");
+      item.className = "reviewItem" + (isWrong ? " isWrong" : "");
 
       const left = document.createElement("div");
       left.className = "reviewQ";
       left.textContent = `Q${i + 1}`;
 
       const right = document.createElement("div");
-
-      const aLine = document.createElement("div");
-      aLine.className = "reviewA";
-      aLine.textContent = correctText;
-
-      // Optional: show what user picked if wrong
-      if (pickedText && pickedText !== correctText) {
-        const small = document.createElement("div");
-        small.className = "reviewSmall";
-        small.textContent = `Your answer: ${pickedText}`;
-        right.appendChild(small);
-      }
-
-      right.appendChild(aLine);
+      right.className = "reviewA";
+      right.textContent = isWrong ? `Correct: ${correctText} · Yours: ${pickedText}` : correctText;
 
       item.appendChild(left);
       item.appendChild(right);
