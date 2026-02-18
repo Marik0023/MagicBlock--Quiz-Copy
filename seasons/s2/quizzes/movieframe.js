@@ -197,6 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionsEl = document.getElementById("options");
   const nextBtn = document.getElementById("nextBtn");
   const playOverlayBtn = document.getElementById("videoPlayBtn");
+  const pauseBtn = document.getElementById("videoPauseBtn");
 
   const rName = document.getElementById("rName");
   const rTotal = document.getElementById("rTotal");
@@ -231,6 +232,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showOverlay() { playOverlayBtn.classList.remove("isHidden"); }
   function hideOverlay() { playOverlayBtn.classList.add("isHidden"); }
+  function showPauseBtn() { if (pauseBtn) pauseBtn.classList.remove("isHidden"); }
+  function hidePauseBtn() { if (pauseBtn) pauseBtn.classList.add("isHidden"); }
 
   async function playWithSound() {
     if (!frameVideo) return;
@@ -246,6 +249,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await frameVideo.play().catch(()=>showMediaHint("Tap to enable media."));
       hideOverlay();
+      showPauseBtn();
     } catch (e) {
       console.warn("Play failed:", e);
       showOverlay();
@@ -255,6 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function pauseVideo() {
     if (!frameVideo) return;
     try { frameVideo.pause(); } catch {}
+    hidePauseBtn();
     showOverlay();
   }
 
@@ -273,6 +278,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   playOverlayBtn.addEventListener("click", (e) => {
     e.preventDefault();
+
+  if (pauseBtn){
+    pauseBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      pauseVideo();
+    });
+  }
     e.stopPropagation();
     togglePlayPauseFromClick();
   });
