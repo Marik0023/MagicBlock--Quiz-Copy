@@ -71,10 +71,26 @@
     const logo = header.querySelector('.mbqTopbar__logo');
     const vid = logo?.querySelector('video');
     const img = logo?.querySelector('img');
-    if (img) img.style.display = 'none';
+
+    // ✅ Keep a visible fallback logo at all times.
+    // We hide the image ONLY after the video is actually ready to render.
+    if (img) img.style.display = 'block';
+
     if (vid) {
-      vid.addEventListener('error', () => { if (img) img.style.display = 'block'; });
-      // Some browsers need an explicit play call.
+      const showImg = () => { if (img) img.style.display = 'block'; };
+      const hideImg = () => { if (img) img.style.display = 'none'; };
+
+      // If video can render a frame -> use it.
+      vid.addEventListener('loadeddata', hideImg, { once: true });
+      vid.addEventListener('canplay', hideImg, { once: true });
+
+      // If video fails (unsupported WebM, 404, etc.) -> keep image.
+      vid.addEventListener('error', showImg, { once: true });
+
+      // iOS/Safari sometimes doesn't fire error but also won't autoplay; keep fallback visible.
+      // We only hide fallback after a positive "loadeddata/canplay" above.
+    }
+    // Some browsers need an explicit play call.
       setTimeout(() => { try { vid.play(); } catch(_){} }, 50);
     }
 
