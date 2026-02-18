@@ -559,10 +559,6 @@ img{max-width:100%; display:block}
   align-items: stretch;
 }
 
-.mbQuiz--silhouette #quizPanel.isSwitching .silImg{
-  opacity: 0;
-}
-
 .mbQuiz--silhouette .mbSilWrap{
   position: relative;
   border-radius: 18px;
@@ -600,6 +596,15 @@ img{max-width:100%; display:block}
   will-change: filter, opacity, transform;
 }
 
+
+.mbQuiz--silhouette .silImg.noTrans{
+  transition: none !important;
+}
+
+/* Hard-hide image during panel switch to avoid any 1-frame flash */
+.mbQuiz--silhouette #quizPanel.isSwitching .silImg{
+  opacity: 0 !important;
+}
 .mbQuiz--silhouette .silImg.isRevealed{
   --sil-b: 1;
   --sil-c: 100%;
@@ -1643,11 +1648,4 @@ body.mbQuiz .cardActions{
     height:66px;
     font-size:40px;
   }
-}
-
-
-.mbQuiz .reviewSmall{
-  margin-bottom: 6px;
-  font-size: 12px;
-  opacity: .78;
 }
