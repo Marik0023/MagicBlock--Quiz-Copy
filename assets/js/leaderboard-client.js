@@ -118,7 +118,7 @@
   // /leaderboard/assets/... (404). This helper auto-prefixes "../" for known subpages.
   function toAbsoluteUrlMaybe(u) {
     if (!isNonEmpty(u)) return null;
-    if (isAbsoluteUrl(u) || u.startsWith('data:')) return u;
+    if (isAbsoluteUrl(u) || u.startsWith("data:")) return u;
 
     // If it's a repo-relative asset path like "assets/...", always resolve from site root.
     // This avoids 404s on nested pages like /seasons/s1/ or /leaderboard/.
@@ -128,10 +128,7 @@
 
     try {
       return new URL(u, window.location.href).href;
-    } catch {
-      return u;
-    }
-  } catch {
+    } catch (e) {
       return u;
     }
   }
