@@ -253,6 +253,8 @@
   let revealing = false;
   let revealTimer = null;
 
+  let renderToken = 0;
+
   let quizPanel, resultPanel, qTitle, silImg, optionsEl, feedbackEl, nextBtn;
   let rName, rTotal, rCorrect, rAcc, genBtn, dlBtn, cardZone, cardCanvas, reviewBox, reviewList;
 
@@ -263,46 +265,76 @@
     }
   }
 
-  function setSilhouetteState(revealed) {
-    if (!silImg) return;
+function setSilhouetteState(revealed) {
+  if (!silImg) return;
 
-    // iOS Safari can "stick" CSS filter transitions unless we force a repaint.
-    if (revealed) {
-      silImg.classList.remove("isRevealed");
-      // Force reflow
-      void silImg.offsetHeight;
-      requestAnimationFrame(() => silImg.classList.add("isRevealed"));
-    } else {
-      silImg.classList.remove("isRevealed");
-    }
-  }
+  // Token guard: prevents delayed RAF from applying to the next question
+  const token = renderToken;
 
-  function setImage(src) {
-    if (!silImg) return;
-
-    // Prevent "flash" on fast transitions: force silhouette instantly with transitions disabled.
-    silImg.classList.add("noTrans");
+  if (revealed) {
     silImg.classList.remove("isRevealed");
-    // Force style flush
+    // Force reflow
     void silImg.offsetHeight;
-
-    silImg.style.opacity = "0";
-    silImg.style.transform = "scale(0.985)";
-    silImg.onload = () => {
-      silImg.style.opacity = "1";
-      silImg.style.transform = "scale(1)";
-    };
-    silImg.onerror = () => {
-      silImg.style.opacity = "1";
-      silImg.style.transform = "scale(1)";
-    };
-    silImg.src = src;
-
-    // Re-enable transitions after the new image is committed
-    requestAnimationFrame(() => silImg.classList.remove("noTrans"));
+    requestAnimationFrame(() => {
+      if (token !== renderToken) return;
+      silImg.classList.add("isRevealed");
+    });
+  } else {
+    silImg.classList.remove("isRevealed");
   }
+}
 
-  function renderOptions(opts) {
+function setImage(src) {
+  if (!silImg) return;
+
+  // Prevent any "flash" on fast transitions:
+  // - disable transitions
+  // - force silhouette state
+  // - hide while swapping src
+  silImg.classList.add("noTrans");
+  silImg.classList.remove("isRevealed");
+
+  silImg.style.visibility = "hidden";
+  silImg.style.opacity = "0";
+  silImg.style.transform = "scale(0.985)";
+
+  // Force style flush
+  void silImg.offsetHeight;
+
+  const token = renderToken;
+  silImg.onload = () => {
+    if (token !== renderToken) return;
+    silImg.style.visibility = "visible";
+    silImg.style.opacity = "1";
+    silImg.style.transform = "scale(1)";
+    requestAnimationFrame(() => silImg.classList.remove("noTrans"));
+  };
+  silImg.onerror = () => {
+    if (token !== renderToken) return;
+    silImg.style.visibility = "visible";
+    silImg.style.opacity = "1";
+    silImg.style.transform = "scale(1)";
+    requestAnimationFrame(() => silImg.classList.remove("noTrans"));
+  };
+
+  silImg.src = src;
+}
+
+  
+function beginSwitch() {
+  if (!silImg) return;
+  // Hide instantly (no transitions) so the previous revealed image can't leak
+  silImg.classList.add("noTrans");
+  silImg.classList.remove("isRevealed");
+  silImg.style.transition = "none";
+  silImg.style.visibility = "hidden";
+  silImg.style.opacity = "0";
+  void silImg.offsetHeight;
+  // restore transition property (CSS handles it) on next frame
+  requestAnimationFrame(() => { if (silImg) silImg.style.transition = ""; });
+}
+
+function renderOptions(opts) {
     optionsEl.innerHTML = "";
     opts.forEach((txt, i) => {
       const b = document.createElement("button");
@@ -328,6 +360,9 @@
     revealing = false;
     selectedIndex = null;
     clearRevealTimer();
+
+    renderToken += 1;
+    beginSwitch();
 
     const q = QUESTIONS[idx];
     if (!q) return;
@@ -403,6 +438,9 @@
       finishQuiz();
       return;
     }
+
+    // Prevent any 1-frame reveal while moving to the next question
+    beginSwitch();
 
     idx += 1;
 
