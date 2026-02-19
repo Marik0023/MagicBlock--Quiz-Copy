@@ -1,3 +1,5 @@
+const CHAMP_DESIGN_VERSION = "s2_card_v2"; // <- міняй якщо ще раз змінюватимеш дизайн
+
 const MB_KEYS = {
   profile: "mb_profile", // shared
   avatar: "mb_avatar", // shared
@@ -22,6 +24,7 @@ const MB_KEYS = {
   champPng: "mb_s2_champ_png",
   champId: "mb_s2_champ_id",
   champReady: "mb_s2_champ_ready",
+  champDesignVer: "mb_s2_champ_design_ver",
 };
 
 function safeJSONParse(v, fallback = null) {
@@ -44,15 +47,16 @@ forcePlayAll(".brand__logo");
 
 // Topbar navigation
 (() => {
-  // ✅ Dropdown Season menu (hover on desktop, tap/click on mobile)
   const seasonMenu = document.getElementById("seasonMenu");
-  if (seasonMenu){
+  if (seasonMenu) {
     const btn = seasonMenu.querySelector("button");
     btn?.addEventListener("click", (e) => {
       e.preventDefault();
       seasonMenu.classList.toggle("isOpen");
     });
-    seasonMenu.querySelectorAll("a").forEach(a => a.addEventListener("click", () => seasonMenu.classList.remove("isOpen")));
+    seasonMenu.querySelectorAll("a").forEach(a =>
+      a.addEventListener("click", () => seasonMenu.classList.remove("isOpen"))
+    );
     document.addEventListener("click", (e) => {
       if (!seasonMenu.contains(e.target)) seasonMenu.classList.remove("isOpen");
     });
@@ -107,11 +111,6 @@ function loadResult(key) { return safeJSONParse(localStorage.getItem(key), null)
 
 // ===== Tier logic =====
 function getTierByCorrect(correct) {
-  // Season 2 totals: 60 (6 quizzes × 10)
-  // Tier rules (as requested):
-  // 0–30  => bronze
-  // 31–50 => silver
-  // 51–60 => gold
   if (correct >= 51) return "gold";
   if (correct >= 31) return "silver";
   return "bronze";
@@ -180,11 +179,24 @@ function computeSummary() {
   if (sumAcc) sumAcc.textContent = `${acc}%`;
 
   const unlocked = doneCount === 6 && results.length === 6 && !!p;
-
   const tier = getTierByCorrect(correct);
   const champId = getOrCreateChampionId();
 
   return { unlocked, total, correct, acc, profile: p, tier, champId };
+}
+
+/* =========================
+   ✅ AUTO INVALIDATE OLD CACHE (fix "без змін")
+========================= */
+function invalidateOldChampionIfDesignChanged() {
+  try {
+    const cur = localStorage.getItem(MB_KEYS.champDesignVer);
+    if (cur !== CHAMP_DESIGN_VERSION) {
+      localStorage.setItem(MB_KEYS.champDesignVer, CHAMP_DESIGN_VERSION);
+      localStorage.removeItem(MB_KEYS.champPng);
+      localStorage.removeItem(MB_KEYS.champReady);
+    }
+  } catch {}
 }
 
 /* =========================
@@ -202,7 +214,6 @@ async function restoreChampionIfExists() {
       img.src = prev;
     });
 
-    // ✅ canvas = preview size (avoid blurry upscale)
     cardCanvas.width = img.naturalWidth || img.width;
     cardCanvas.height = img.naturalHeight || img.height;
 
@@ -212,7 +223,6 @@ async function restoreChampionIfExists() {
 
     cardZone?.classList.add("isOpen");
     if (dlBtn) dlBtn.disabled = false;
-
     if (genBtn) genBtn.textContent = "Regenerate Champion Card";
     return true;
   } catch (e) {
@@ -228,16 +238,16 @@ function saveChampionPreview() {
   if (!cardCanvas) return;
   try {
     const preview = exportPreviewDataURL(cardCanvas, 520, 0.85);
-    const uploadPng = exportPreviewPNG(cardCanvas, 1400);
     if (preview && preview.startsWith("data:image/")) {
       localStorage.setItem(MB_KEYS.champPng, preview);
-      // NOTE: do NOT store upload PNG in localStorage (too big / quota issues)
-localStorage.setItem(MB_KEYS.champReady, "1");
+      localStorage.setItem(MB_KEYS.champReady, "1");
+      localStorage.setItem(MB_KEYS.champDesignVer, CHAMP_DESIGN_VERSION);
     }
   } catch (e) {
     console.warn("preview save failed:", e);
-    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}console.warn("Storage quota hit while saving preview. Skipping local preview persistence.");
-}
+    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
+    console.warn("Storage quota hit while saving preview. Skipping local preview persistence.");
+  }
 }
 
 // ===== Actions =====
@@ -245,26 +255,21 @@ genBtn?.addEventListener("click", async () => {
   const s = computeSummary();
   if (!s.unlocked) return;
 
-  // draw full-res into canvas
   await drawChampionCard(s);
 
-  // show + enable download
   cardZone?.classList.add("isOpen");
   cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
   if (dlBtn) dlBtn.disabled = false;
 
-  // save small preview
   saveChampionPreview();
 
-  // --- Public leaderboard sync (Supabase) ---
-  // Upload a reasonably-sized image (not full-res canvas) to keep file size sane.
   try {
     const uploadDataUrl = exportPreviewPNG(cardCanvas, 1400);
     if (window.MBQ_LEADERBOARD?.syncFromLocal) {
-      await window.MBQ_LEADERBOARD.syncFromLocal('s2', uploadDataUrl);
+      await window.MBQ_LEADERBOARD.syncFromLocal("s2", uploadDataUrl);
     }
   } catch (e) {
-    console.warn('Leaderboard sync failed (S2):', e);
+    console.warn("Leaderboard sync failed (S2):", e);
   }
 
   if (genBtn) genBtn.textContent = "Regenerate Champion Card";
@@ -276,7 +281,6 @@ dlBtn?.addEventListener("click", async () => {
   const s = computeSummary();
   if (!s.unlocked) return;
 
-  // ✅ always render full-res before download (sharp PNG)
   await drawChampionCard(s);
 
   const a = document.createElement("a");
@@ -288,12 +292,12 @@ dlBtn?.addEventListener("click", async () => {
 // ===== Canvas assets cache =====
 let _noisePattern = null;
 let _logoFrame = null;
+let _wmLogo = null;
 
 // ===== DRAW =====
 async function drawChampionCard(summary) {
   if (!cardCanvas) return;
 
-  // Landscape card
   const W = 1400;
   const H = 800;
 
@@ -335,7 +339,7 @@ async function drawChampionCard(summary) {
   roundRect(ctx, 0, 0, W, H, 80, true, false);
   ctx.restore();
 
-  // ===== stronger STATIC shine (for PNG) =====
+  // shine
   ctx.save();
   roundedRectPath(ctx, 0, 0, W, H, 80);
   ctx.clip();
@@ -364,6 +368,9 @@ async function drawChampionCard(summary) {
   ctx.restore();
   ctx.globalCompositeOperation = "source-over";
 
+  // ✅ Watermark (behind content)
+  await drawWatermark(ctx, W, H);
+
   // borders
   ctx.lineWidth = 3;
   ctx.strokeStyle = "rgba(0,0,0,0.35)";
@@ -376,12 +383,18 @@ async function drawChampionCard(summary) {
   // ===== HEADER =====
   await drawLogo(ctx, pad, pad - 38, 310, 122, 0.98);
 
+  // ✅ Title + Season #2 (two lines)
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.textAlign = "center";
+
+  ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   applyTextShadow(ctx, 0.35, 10, 0, 3);
-  ctx.fillText("Champion Card", W / 2, pad + 8);
+  ctx.fillText("Champion Card", W / 2, pad + 0);
+
+  ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("Season #2", W / 2, pad + 64);
+
   clearTextShadow(ctx);
   ctx.restore();
 
@@ -408,7 +421,7 @@ async function drawChampionCard(summary) {
   const name = (summary.profile?.name || "Player").trim();
   const scoreText = `${summary.correct} / ${summary.total}`;
 
-  let y = 260;
+  let y = 290; // трохи нижче, бо зʼявився "Season #2"
   drawLabelValue(ctx, tx, y, "Your Name", name);
   y += 195;
 
@@ -508,7 +521,7 @@ function clearTextShadow(ctx) {
   ctx.shadowOffsetY = 0;
 }
 
-// ===== Logo drawing =====
+// ===== Logo drawing (top-left animated logo frame) =====
 async function drawLogo(ctx, x, y, w, h, opacity = 0.95) {
   try {
     if (!_logoFrame) {
@@ -543,6 +556,74 @@ function loadVideoFrame(src, time = 0) {
       setTimeout(() => { clean(); resolve(v); }, 150);
     };
   });
+}
+
+/* =========================
+   ✅ WATERMARK (logomark on right)
+   Logo file: assets/brand/MagicBlock-Logomark-White.png
+   (tries multiple relative paths to be safe)
+========================= */
+async function getWatermarkLogo() {
+  if (_wmLogo) return _wmLogo;
+
+  const candidates = [
+    "../../assets/brand/MagicBlock-Logomark-White.png",
+    "../assets/brand/MagicBlock-Logomark-White.png",
+    "./assets/brand/MagicBlock-Logomark-White.png",
+    "/assets/brand/MagicBlock-Logomark-White.png",
+  ];
+
+  for (const src of candidates) {
+    try {
+      const img = await loadImage(src);
+      _wmLogo = img;
+      return _wmLogo;
+    } catch {}
+  }
+  return null;
+}
+
+async function drawWatermark(ctx, W, H) {
+  const img = await getWatermarkLogo();
+  if (!img) return;
+
+  ctx.save();
+  roundedRectPath(ctx, 0, 0, W, H, 80);
+  ctx.clip();
+
+  ctx.globalAlpha = 0.12; // як на прикладі (ледь видно)
+  ctx.filter = "none";
+
+  // right-side big mark
+  const boxW = W * 0.44;
+  const boxH = H * 0.78;
+  const boxX = W * 0.56;
+  const boxY = H * 0.12;
+
+  drawContain(ctx, img, boxX, boxY, boxW, boxH);
+
+  ctx.restore();
+}
+
+function drawContain(ctx, img, x, y, w, h) {
+  const iw = img.width;
+  const ih = img.height;
+  const ir = iw / ih;
+  const rr = w / h;
+
+  let dw, dh, dx, dy;
+  if (ir > rr) {
+    dw = w;
+    dh = w / ir;
+    dx = x;
+    dy = y + (h - dh) / 2;
+  } else {
+    dh = h;
+    dw = h * ir;
+    dx = x + (w - dw) / 2;
+    dy = y;
+  }
+  ctx.drawImage(img, dx, dy, dw, dh);
 }
 
 // ===== Helpers =====
@@ -622,7 +703,6 @@ function ensureNoisePattern(ctx) {
     img.data[i + 3] = 255;
   }
   nctx.putImageData(img, 0, 0);
-
   _noisePattern = ctx.createPattern(n, "repeat");
 }
 
@@ -631,11 +711,7 @@ async function drawAvatarRounded(ctx, src, x, y, w, h, r) {
   roundedRectPath(ctx, x, y, w, h, r);
   ctx.clip();
 
-  // Accept both data URLs and normal URLs (e.g. Supabase public URLs).
-  // If loading fails, fall back to placeholder.
-  if (!src) {
-    src = "";
-  }
+  if (!src) src = "";
 
   try {
     const img = await loadImage(src);
@@ -681,7 +757,6 @@ function drawCover(ctx, img, x, y, w, h) {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    // Helps when avatar is hosted on another domain (Supabase public URL)
     if (typeof src === "string" && src && !src.startsWith("data:")) {
       img.crossOrigin = "anonymous";
     }
@@ -709,7 +784,6 @@ function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
   return t.toDataURL("image/jpeg", quality);
 }
 
-// PNG export for leaderboard sync (Supabase client expects PNG)
 function exportPreviewPNG(srcCanvas, maxW = 1400) {
   const w = srcCanvas.width;
   const h = srcCanvas.height;
@@ -729,6 +803,8 @@ function exportPreviewPNG(srcCanvas, maxW = 1400) {
 
 // ===== INIT =====
 (async () => {
+  invalidateOldChampionIfDesignChanged();
+
   const s = computeSummary();
 
   if (dlBtn) dlBtn.disabled = true;
@@ -743,4 +819,3 @@ function exportPreviewPNG(srcCanvas, maxW = 1400) {
     if (genBtn) genBtn.disabled = !s2.unlocked;
   }
 })();
- 
