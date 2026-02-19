@@ -124,6 +124,20 @@
     document.cookie = `${name}=${encodeURIComponent(value)}; Max-Age=315360000; Path=/; SameSite=Lax`;
   }
 
+  // Accept uuid-ish strings and keep them safe to use as device_id (text column).
+  // Returns null if value looks unsafe/unexpected.
+  function sanitizeDeviceId(value) {
+    if (!value) return null;
+    const v = String(value).trim();
+    if (!v) return null;
+    if (v.length > 128) return null;
+    // Allow typical Supabase anon user UUIDs (and our legacy UUID device ids).
+    if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(v)) return v.toLowerCase();
+    // Otherwise allow a conservative charset.
+    if (!/^[a-zA-Z0-9_-]+$/.test(v)) return null;
+    return v;
+  }
+
   function idbOpen() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open(IDB_DB, 1);
@@ -549,26 +563,9 @@
     };
     if (avatarUrl) payload.avatar_url = avatarUrl;
 
-      // In production, do NOT allow direct DB writes from the browser (RLS will/should block it).
-      // You can enable direct upsert only for private testing by setting: window.MBQ_ALLOW_DIRECT_UPSERT = true
-      const allowDirectUpsert = !!window.MBQ_ALLOW_DIRECT_UPSERT;
-      if (allowDirectUpsert) {
-        try {
-          const { ok } = await directUpsertSeasonRow({
-            deviceId,
-            nickname,
-            avatarUrl: avatarUrl || null,
-            seasonNum,
-            champUrl,
-            score,
-          });
-          if (ok) return { ok: true, via: "direct" };
-        } catch (e) {
-          console.warn("[MBQ] Direct leaderboard upsert failed; falling back to Edge Function:", e);
-        }
-      }
-
-      const resp = await invokeEdgeSubmit(payload);
+    // Always use the Edge Function (RLS-safe).
+    // Never write to the DB directly from the browser in production.
+    const resp = await invokeEdgeSubmit(payload);
     return resp;
   }
 
