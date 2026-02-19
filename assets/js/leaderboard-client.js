@@ -520,52 +520,44 @@
     const champPath = `${seasonId}/${deviceId}.png`; // s1/{id}.png or s2/{id}.png
     const champUrl = await uploadPublic("mbq-champions", champPath, champBlob, "image/png");
 
-    const { score } = getSeasonScore(seasonId);
-    const seasonNum = seasonId === "s1" ? 1 : 2;
+    const s1 = getSeasonScore("s1");
+      const s2 = getSeasonScore("s2");
+      const { score, total: season_total } = getSeasonScore(seasonId);
+      const total_score = (s1?.score || 0) + (s2?.score || 0);
 
-    // Submit update via Edge Function
-    const payload = {
-      device_id: deviceId,
-      nickname,
-      season: seasonNum,
-      champ_url: champUrl,
-      score,
-    };
-    if (typeof avatarUrl === "string" && avatarUrl.length) {
-      payload.avatar_url = avatarUrl;
-    }
-    // Dedupe: don't spam the backend with identical payloads in a short window
-    try {
-      const sigKey = "mb_lb_sig_" + seasonId;
-      const tsKey = "mb_lb_ts_" + seasonId;
-      const sig = JSON.stringify(payload);
-      const now = Date.now();
-      const lastSig = localStorage.getItem(sigKey);
-      const lastTs = parseInt(localStorage.getItem(tsKey) || "0", 10) || 0;
-      if (lastSig === sig && (now - lastTs) < 60000) {
-        // Same payload synced less than a minute ago
-        return { ok: true, skipped: true, reason: "recent_dedupe" };
-      }
-      localStorage.setItem(sigKey, sig);
-      localStorage.setItem(tsKey, String(now));
-    } catch {}
-
-
-    // Prefer direct DB upsert in test/dev (no 429). If it fails (RLS), fall back to Edge Function.
-    try {
-      return await directUpsertSeasonRow({
-        deviceId,
+      const payload = {
+        device_id: deviceId,
         nickname,
-        avatarUrl: payload.avatar_url || "",
-        seasonNum,
-        champUrl,
+        season: seasonNum,
+        champ_url: champUrl,
         score,
-      });
-    } catch (e) {
-      console.warn('Direct leaderboard upsert failed; falling back to Edge Function:', e?.message || e);
-    }
+        season_total,
+        score_s1: s1?.score || 0,
+        score_s2: s2?.score || 0,
+        total_score,
+      };
+      if (avatarUrl) payload.avatar_url = avatarUrl;
 
-    const resp = await invokeEdgeSubmit(payload);
+      // In production, do NOT allow direct DB writes from the browser (RLS will/should block it).
+      // You can enable direct upsert only for private testing by setting: window.MBQ_ALLOW_DIRECT_UPSERT = true
+      const allowDirectUpsert = !!window.MBQ_ALLOW_DIRECT_UPSERT;
+      if (allowDirectUpsert) {
+        try {
+          const { ok } = await directUpsertSeasonRow({
+            deviceId,
+            nickname,
+            avatarUrl: avatarUrl || null,
+            seasonNum,
+            champUrl,
+            score,
+          });
+          if (ok) return { ok: true, via: "direct" };
+        } catch (e) {
+          console.warn("[MBQ] Direct leaderboard upsert failed; falling back to Edge Function:", e);
+        }
+      }
+
+      const resp = await invokeEdgeSubmit(payload);
     return resp;
   }
 
