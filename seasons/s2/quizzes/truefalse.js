@@ -150,17 +150,17 @@ document.addEventListener("DOMContentLoaded", () => {
   if (achievementsBtn) achievementsBtn.addEventListener("click", () => (location.href = "../index.html#achievements"));
 
   const QUESTIONS = [
-  { q: "Coming soon — Statement 1", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 2", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 3", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 4", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 5", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 6", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 7", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 8", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 9", a: "True", options: ["True","False"] },
-  { q: "Coming soon — Statement 10", a: "True", options: ["True","False"] }
-];
+    { q: "Magic Router can route a transaction either to Solana or to an Ephemeral Rollup based on metadata.", a: "True", options: ["True","False"] },
+    { q: "Any RPC or validator can become a Magic Router (it’s not limited to MagicBlock-operated nodes).", a: "True", options: ["True","False"] },
+    { q: "In Ephemeral Rollups, delegated accounts are cloned from Solana only when they are first accessed.", a: "True", options: ["True","False"] },
+    { q: "Program bytecode must be delegated to an Ephemeral Rollup for it to execute.", a: "False", options: ["True","False"] },
+    { q: "MagicBlock describes Ephemeral Rollups as enabling real-time, gasless (zero-fee) transactions.", a: "True", options: ["True","False"] },
+    { q: "Private Ephemeral Rollups (PER) primarily highlight Intel TDX as their TEE technology.", a: "True", options: ["True","False"] },
+    { q: "The privacy flow described for PER is: Authenticate → Execute → Attest.", a: "True", options: ["True","False"] },
+    { q: "In PER, the “Attest” step produces TDX-backed proofs suitable for compliance and audits.", a: "True", options: ["True","False"] },
+    { q: "MagicBlock’s approach requires bridging assets to a separate chain before using Ephemeral Rollups.", a: "False", options: ["True","False"] },
+    { q: "MagicBlock lists VRF as one of its products alongside Ephemeral Rollups and Private Ephemeral Rollups.", a: "True", options: ["True","False"] }
+  ];
 
   const quizPanel = document.getElementById("quizPanel");
   const resultPanel = document.getElementById("resultPanel");
