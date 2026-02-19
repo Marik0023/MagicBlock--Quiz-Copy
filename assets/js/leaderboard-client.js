@@ -386,24 +386,28 @@
     invokeEdgeSubmit._lastCallAt = Date.now();
 
 
-    // Prefer an authenticated JWT if available (after anonymous sign-in),
-    // otherwise fall back to the publishable key.
-    let bearer = key;
+    // Prefer an authenticated JWT if available (after anonymous sign-in).
+    // If we don't have a real session token, omit Authorization entirely.
+    // (Then the Edge Function can still accept the request, just without the extra auth.uid==device_id check.)
+    let bearer = "";
     try {
       const client = await getAuthedClient();
       const { data } = await client.auth.getSession();
       if (data?.session?.access_token) bearer = data.session.access_token;
     } catch {}
 
-    const doRequest = () => fetch(endpoint, {
-      method: "POST",
-      headers: {
+    const doRequest = () => {
+      const headers = {
         "Content-Type": "application/json",
         "apikey": key,
-        "Authorization": "Bearer " + bearer,
-      },
-      body: JSON.stringify(payload),
-    });
+      };
+      if (bearer) headers["Authorization"] = "Bearer " + bearer;
+      return fetch(endpoint, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+    };
 
     let res = await doRequest();
 
@@ -520,23 +524,27 @@
     const champPath = `${seasonId}/${deviceId}.png`; // s1/{id}.png or s2/{id}.png
     const champUrl = await uploadPublic("mbq-champions", champPath, champBlob, "image/png");
 
-    const s1 = getSeasonScore("s1");
-      const s2 = getSeasonScore("s2");
-      const { score, total: season_total } = getSeasonScore(seasonId);
-      const total_score = (s1?.score || 0) + (s2?.score || 0);
+    // FIX: `seasonNum` was referenced but never defined, which stopped syncing entirely
+    // (console: ReferenceError: seasonNum is not defined)
+    const seasonNum = (seasonId === 's2') ? 2 : 1;
 
-      const payload = {
-        device_id: deviceId,
-        nickname,
-        season: seasonNum,
-        champ_url: champUrl,
-        score,
-        season_total,
-        score_s1: s1?.score || 0,
-        score_s2: s2?.score || 0,
-        total_score,
-      };
-      if (avatarUrl) payload.avatar_url = avatarUrl;
+    const s1 = getSeasonScore("s1");
+    const s2 = getSeasonScore("s2");
+    const { score, total: season_total } = getSeasonScore(seasonId);
+    const total_score = (s1?.score || 0) + (s2?.score || 0);
+
+    const payload = {
+      device_id: deviceId,
+      nickname,
+      season: seasonNum,
+      champ_url: champUrl,
+      score,
+      season_total,
+      score_s1: s1?.score || 0,
+      score_s2: s2?.score || 0,
+      total_score,
+    };
+    if (avatarUrl) payload.avatar_url = avatarUrl;
 
       // In production, do NOT allow direct DB writes from the browser (RLS will/should block it).
       // You can enable direct upsert only for private testing by setting: window.MBQ_ALLOW_DIRECT_UPSERT = true
