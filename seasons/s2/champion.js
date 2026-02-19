@@ -107,106 +107,189 @@ function loadResult(key) { return safeJSONParse(localStorage.getItem(key), null)
 
 // ===== Tier logic =====
 function getTierByCorrect(correct) {
-  // Season 2 thresholds:
-  // 0–30 = bronze, 31–50 = silver, 51–60 = gold
+  // Season 2 totals: 60 (6 quizzes × 10)
+  // Tier rules (as requested):
+  // 0–30  => bronze
+  // 31–50 => silver
+  // 51–60 => gold
   if (correct >= 51) return "gold";
   if (correct >= 31) return "silver";
   return "bronze";
 }
 
-function computeSummary() {
-  const p = getProfile();
-  const name = (p && (p.name || p.nickname) ? String(p.name || p.nickname) : "").trim();
-  const avatarUrl = (p && (p.avatar || p.avatarUrl) ? String(p.avatar || p.avatarUrl) : "");
+const TIER_THEME = {
+  gold:   { label: "GOLD",   base: "#d2a24d", dark: "#b37f2f" },
+  silver: { label: "SILVER", base: "#bdbdbd", dark: "#8f8f8f" },
+  bronze: { label: "BRONZE", base: "#9b561e", dark: "#6e3610" },
+};
 
-  const doneKeys = [
-    MB_KEYS.doneMovieFrame,
-    MB_KEYS.doneMovieEmoji,
-    MB_KEYS.doneSong,
-    MB_KEYS.doneSilhouette,
-    MB_KEYS.doneTrueFalse,
-    MB_KEYS.doneMagicBlock,
-  ];
+// ===== ID (keeps same after first gen) =====
+function randomIdPart(len = 6) {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
 
-  const isDone = (k) => {
-    const v = localStorage.getItem(k);
-    return v === "1" || v === "true" || v === "yes";
-  };
-
-  const doneCount = doneKeys.reduce((acc, k) => acc + (isDone(k) ? 1 : 0), 0);
-
-  // Results are stored by quizzes under mb_s2_result_*.
-  // We also support legacy mb_s2_res_* keys (and migrate them forward if found).
-  const resultPairs = [
-    [MB_KEYS.resMovieFrame, "mb_s2_res_movieframe"],
-    [MB_KEYS.resMovieEmoji, "mb_s2_res_movieemoji"],
-    [MB_KEYS.resSong, "mb_s2_res_song"],
-    [MB_KEYS.resSilhouette, "mb_s2_res_silhouette"],
-    [MB_KEYS.resTrueFalse, "mb_s2_res_truefalse"],
-    [MB_KEYS.resMagicBlock, "mb_s2_res_magicblock"],
-  ];
-
-  const loadResultAny = (key, legacyKey) => {
-    let raw = localStorage.getItem(key);
-    if (!raw && legacyKey) raw = localStorage.getItem(legacyKey);
-    if (raw && !localStorage.getItem(key) && legacyKey) localStorage.setItem(key, raw);
-    const r = safeJSONParse(raw, null);
-    if (!r) return { correct: 0, total: 0 };
-    return {
-      correct: Number(r.correct || 0),
-      total: Number(r.total || 0),
-    };
-  };
-
-  let totalAll = 0;
-  let correctAll = 0;
-  for (const [key, legacy] of resultPairs) {
-    const r = loadResultAny(key, legacy);
-    totalAll += r.total;
-    correctAll += r.correct;
+  if (window.crypto?.getRandomValues) {
+    const buf = new Uint8Array(len);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < len; i++) out += chars[buf[i] % chars.length];
+    return out;
   }
 
-  const accuracy = totalAll ? Math.round((correctAll / totalAll) * 100) : 0;
+  for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
 
-  const unlocked = Boolean(name) && doneCount === 6;
-  const tier = getTierByCorrect(correctAll);
+function getOrCreateChampionId() {
+  const existing = localStorage.getItem(MB_KEYS.champId);
+  if (existing) return existing;
 
+  const id = `MB-S2-CHAMP-${randomIdPart(6)}`;
+  try { localStorage.setItem(MB_KEYS.champId, id); } catch {}
+  return id;
+}
+
+function computeSummary() {
+  const p = getProfile();
+  if (sumName) sumName.textContent = p?.name || "Player";
+
+  const doneFlags = [
+    isDone(MB_KEYS.doneMovieFrame),
+    isDone(MB_KEYS.doneMovieEmoji),
+    isDone(MB_KEYS.doneSong),
+    isDone(MB_KEYS.doneSilhouette),
+    isDone(MB_KEYS.doneTrueFalse),
+    isDone(MB_KEYS.doneMagicBlock),
+  ];
+  const doneCount = doneFlags.filter(Boolean).length;
+  if (sumDone) sumDone.textContent = `${doneCount} / 6`;
+
+  const r1 = loadResult(MB_KEYS.resMovieFrame);
+  const r2 = loadResult(MB_KEYS.resMovieEmoji);
+  const r3 = loadResult(MB_KEYS.resSong);
+  const r4 = loadResult(MB_KEYS.resSilhouette);
+  const r5 = loadResult(MB_KEYS.resTrueFalse);
+  const r6 = loadResult(MB_KEYS.resMagicBlock);
+
+  const results = [r1, r2, r3, r4, r5, r6].filter(Boolean);
+  const total = results.reduce((a, r) => a + (r.total || 0), 0);
+  const correct = results.reduce((a, r) => a + (r.correct || 0), 0);
+  const acc = total ? Math.round((correct / total) * 100) : 0;
+
+  if (sumTotal) sumTotal.textContent = String(total);
+  if (sumCorrect) sumCorrect.textContent = String(correct);
+  if (sumAcc) sumAcc.textContent = `${acc}%`;
+
+  const unlocked = doneCount === 6 && results.length === 6 && !!p;
+
+  const tier = getTierByCorrect(correct);
   const champId = getOrCreateChampionId();
 
-  return {
-    // for the summary UI
-    name,
-    doneCount,
-    totalAll,
-    correctAll,
-    accuracy,
-    unlocked,
-    tier,
-    champId,
-
-    // for the canvas renderer (drawChampionCard)
-    correct: correctAll,
-    total: totalAll,
-    acc: accuracy,
-    profile: { name, avatarUrl },
-  };
+  return { unlocked, total, correct, acc, profile: p, tier, champId };
 }
 
-let _watermarkPromise = null;
+/* =========================
+   ✅ RESTORE PREVIEW (NO UPSCALE)
+========================= */
+async function restoreChampionIfExists() {
+  const prev = localStorage.getItem(MB_KEYS.champPng);
+  if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
 
-function ensureWatermark() {
-  if (_watermarkPromise) return _watermarkPromise;
-  _watermarkPromise = new Promise((resolve) => {
+  try {
     const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    // champion.html is in /seasons/s2/, so we go up to project root:
-    img.src = "../../assets/brand/MagicBlock-Logomark-White.png";
-  });
-  return _watermarkPromise;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = prev;
+    });
+
+    // ✅ canvas = preview size (avoid blurry upscale)
+    cardCanvas.width = img.naturalWidth || img.width;
+    cardCanvas.height = img.naturalHeight || img.height;
+
+    const ctx = cardCanvas.getContext("2d");
+    ctx.clearRect(0, 0, cardCanvas.width, cardCanvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    cardZone?.classList.add("isOpen");
+    if (dlBtn) dlBtn.disabled = false;
+
+    if (genBtn) genBtn.textContent = "Regenerate Champion Card";
+    return true;
+  } catch (e) {
+    console.warn("restoreChampionIfExists failed:", e);
+    return false;
+  }
 }
 
+/* =========================
+   ✅ SAVE SMALL PREVIEW (JPEG)
+========================= */
+function saveChampionPreview() {
+  if (!cardCanvas) return;
+  try {
+    const preview = exportPreviewDataURL(cardCanvas, 520, 0.85);
+    const uploadPng = exportPreviewPNG(cardCanvas, 1400);
+    if (preview && preview.startsWith("data:image/")) {
+      localStorage.setItem(MB_KEYS.champPng, preview);
+      // NOTE: do NOT store upload PNG in localStorage (too big / quota issues)
+localStorage.setItem(MB_KEYS.champReady, "1");
+    }
+  } catch (e) {
+    console.warn("preview save failed:", e);
+    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}console.warn("Storage quota hit while saving preview. Skipping local preview persistence.");
+}
+}
+
+// ===== Actions =====
+genBtn?.addEventListener("click", async () => {
+  const s = computeSummary();
+  if (!s.unlocked) return;
+
+  // draw full-res into canvas
+  await drawChampionCard(s);
+
+  // show + enable download
+  cardZone?.classList.add("isOpen");
+  cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (dlBtn) dlBtn.disabled = false;
+
+  // save small preview
+  saveChampionPreview();
+
+  // --- Public leaderboard sync (Supabase) ---
+  // Upload a reasonably-sized image (not full-res canvas) to keep file size sane.
+  try {
+    const uploadDataUrl = exportPreviewPNG(cardCanvas, 1400);
+    if (window.MBQ_LEADERBOARD?.syncFromLocal) {
+      await window.MBQ_LEADERBOARD.syncFromLocal('s2', uploadDataUrl);
+    }
+  } catch (e) {
+    console.warn('Leaderboard sync failed (S2):', e);
+  }
+
+  if (genBtn) genBtn.textContent = "Regenerate Champion Card";
+});
+
+dlBtn?.addEventListener("click", async () => {
+  if (!cardCanvas) return;
+
+  const s = computeSummary();
+  if (!s.unlocked) return;
+
+  // ✅ always render full-res before download (sharp PNG)
+  await drawChampionCard(s);
+
+  const a = document.createElement("a");
+  a.download = "magicblock-champion-card-s2.png";
+  a.href = cardCanvas.toDataURL("image/png");
+  a.click();
+});
+
+// ===== Canvas assets cache =====
+let _noisePattern = null;
+let _logoFrame = null;
+
+// ===== DRAW =====
 async function drawChampionCard(summary) {
   if (!cardCanvas) return;
 
@@ -243,20 +326,6 @@ async function drawChampionCard(summary) {
   ctx.clip();
   drawMesh(ctx, W, H, 0.14);
   ctx.restore();
-
-  // Watermark (Season #2)
-  try {
-    const wm = await ensureWatermark();
-    const wmSize = 620;
-    const wmX = W - wmSize - 90;
-    const wmY = 105;
-    ctx.save();
-    roundedRectPath(ctx, 0, 0, W, H, 80);
-    ctx.clip();
-    ctx.globalAlpha = 0.12;
-    ctx.drawImage(wm, wmX, wmY, wmSize, wmSize);
-    ctx.restore();
-  } catch {}
 
   // grain
   ensureNoisePattern(ctx);
@@ -313,9 +382,6 @@ async function drawChampionCard(summary) {
   ctx.textAlign = "center";
   applyTextShadow(ctx, 0.35, 10, 0, 3);
   ctx.fillText("Champion Card", W / 2, pad + 8);
-  ctx.font = "900 44px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  applyTextShadow(ctx, 0.30, 10, 0, 3);
-  ctx.fillText("Season #2", W / 2, pad + 66);
   clearTextShadow(ctx);
   ctx.restore();
 
