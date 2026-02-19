@@ -148,17 +148,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const achievementsBtn = document.getElementById("achievementsBtn");
   if (achievementsBtn) achievementsBtn.addEventListener("click", () => (location.href = "../index.html#achievements"));
 
-  const QUESTIONS = [
-  { q: "Coming soon — Season 2 MagicBlock Q1", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q2", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q3", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q4", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q5", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q6", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q7", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q8", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q9", a: "A", options: ["A","B","C","D"] },
-  { q: "Coming soon — Season 2 MagicBlock Q10", a: "A", options: ["A","B","C","D"] }
+ const QUESTIONS = [
+  { q: "What does Magic Router do?", a: "B", options: ["Encrypts all transactions by default","Routes transactions to Solana or an Ephemeral Rollup based on delegation/metadata","Bridges assets between Solana and Ethereum","Schedules cranks on Solana only"] },
+  { q: "Which capability is explicitly listed as something an Ephemeral Rollup runtime can be customized to include?", a: "D", options: ["Mandatory MEV auctions","Forced on-chain KYC","PoW mining","Integrated scheduling (ticking mechanism)"] },
+  { q: "What is the hardware security technology highlighted for Private Ephemeral Rollups (PER)?", a: "A", options: ["Intel TDX (Trusted Execution Environment)","AMD SEV-SNP","Apple Secure Enclave","ARM TrustZone"] },
+  { q: "Which program is used to delegate Solana accounts to an Ephemeral Rollup validator?", a: "C", options: ["System Program","Stake Program","Delegation Program","Token Program"] },
+  { q: "When is a delegated account cloned into an Ephemeral Rollup?", a: "D", options: ["Every block","Always at startup","Only at the end of the session","Only when it’s first accessed"] },
+  { q: "According to Magic Router’s description, what is a key developer benefit?", a: "A", options: ["No manual routing logic/config needed","Developers must hardcode routing rules","Developers must deploy a custom wallet","Developers must run a bridge server"] },
+  { q: "In the Magic Router concept, what can become a Magic Router?", a: "B", options: ["Only a private TEE node","Any RPC or validator","Only a Solana wallet extension","Only MagicBlock’s own sequencer"] },
+  { q: "In MagicBlock docs, how are Ephemeral Rollups positioned in terms of fees/UX?", a: "C", options: ["Same fees as Solana L1","Fees paid only in $BLOCK","Zero-fee (gasless) real-time transactions","Higher fees for faster speed"] },
+  { q: "On the PER (privacy) page, what are the 3 steps described for how privacy works?", a: "A", options: ["Authenticate → Execute → Attest","Bridge → Swap → Settle","Delegate → Vote → Finalize","Encrypt → Shard → Compress"] },
+  { q: "What does the “Attest” step produce in Private Ephemeral Rollups?", a: "C", options: ["A proof of stake delegation","A token burn receipt","Intel TDX-backed proofs for compliance/audits","A bridge signature to Ethereum"] }
 ];
 
   const quizPanel = document.getElementById("quizPanel");
