@@ -136,8 +136,12 @@
           avatarResolvedBusted += (avatarResolvedBusted.includes('?') ? '&' : '?') + 'v=' + stamp;
         }
         // If it's our local freshly edited avatar url, also bust with current time to reflect instantly.
+        // IMPORTANT: do NOT append query params to data:/blob: URLs (Chrome treats `data:...?...` as invalid).
         if (isMe && localAvatar && avatarResolvedBusted) {
-          avatarResolvedBusted += (avatarResolvedBusted.includes('?') ? '&' : '?') + 't=' + Date.now();
+          const isInline = /^data:/i.test(avatarResolvedBusted) || /^blob:/i.test(avatarResolvedBusted);
+          if (!isInline) {
+            avatarResolvedBusted += (avatarResolvedBusted.includes('?') ? '&' : '?') + 't=' + Date.now();
+          }
         }
       } catch {}
 
