@@ -164,46 +164,49 @@
   }
 
   async function getOrCreateDeviceId() {
-    // Prefer a previously-known device id from cookie/IDB/localStorage.
-    // This keeps leaderboard identity stable across reloads and many "clear cache" flows.
-    // If nothing is found, fall back to Supabase anonymous uid.
-    let id = "";
-    try { id = (localStorage.getItem(DEVICE_KEY) || "").trim(); } catch {}
-    if (!id) id = (getCookie(DEVICE_COOKIE) || "").trim();
-    if (!id) id = String(await idbGet(IDB_KEY) || "").trim();
+    // Canonical identity for a player is the Supabase (anonymous) user id.
+    // We intentionally keep device_id == auth user id so:
+    // 1) Edge Function can safely verify user == device_id
+    // 2) Storage ownership / RLS policies can be simple and secure.
+    const client = await getAuthedClient();
 
-    // Older dev builds sometimes stored a fixed test id (e.g. "dev_test") or fallback "dev_*".
-    // Treat those as invalid so you don't get stuck with a non-unique identity or fail Storage ownership checks.
-    const badId = String(id || "").trim().toLowerCase();
-    if (badId === "dev_test" || badId === "devtest" || badId === "test" || badId.startsWith("dev_")) {
-      id = "";
-    }
+    // Read any previously stored id (for migration / fallback)
+    const storedIdRaw = (() => {
+      try { return localStorage.getItem(DEVICE_KEY); } catch { return null; }
+    })() || getCookie(DEVICE_COOKIE) || (await idbGet(IDB_KEY));
+    let id = sanitizeDeviceId(storedIdRaw);
 
-
-    if (!id) {
-      const client = await getAuthedClient();
+    // Get current auth user id (anon auth is created automatically in getAuthedClient)
+    let authedId = "";
+    try {
+      const { data } = await client.auth.getUser();
+      authedId = data?.user?.id || "";
+    } catch {}
+    if (!authedId) {
       try {
-        const { data, error } = await client.auth.getUser();
-        if (error) console.warn("Supabase getUser error:", error);
-        id = data?.user?.id || "";
-      } catch (e) {
-        console.warn("Supabase getUser exception:", e);
-      }
-      if (!id) {
-        try {
-          const { data } = await client.auth.getSession();
-          id = data?.session?.user?.id || "";
-        } catch {}
-      }
+        const { data } = await client.auth.getSession();
+        authedId = data?.session?.user?.id || "";
+      } catch {}
     }
-    // As a last-resort fallback (should be rare), keep old behavior, but this id will NOT have Storage ownership.
+
+    if (authedId) {
+      const canonical = sanitizeDeviceId(authedId) || authedId;
+      if (id && id !== canonical) {
+        console.warn("[MBQ] Device id migrated:", id, "->", canonical);
+      }
+      id = canonical;
+    }
+
+    // As a last-resort fallback (should be rare)
     if (!id) {
       id = (crypto?.randomUUID?.() || ("dev_" + Math.random().toString(36).slice(2) + Date.now()));
     }
-    // Mirror into browser stores for convenience (non-authoritative).
+
+    // Mirror into browser stores for convenience (non-authoritative)
     try { localStorage.setItem(DEVICE_KEY, id); } catch {}
     try { setCookie(DEVICE_COOKIE, id); } catch {}
     idbSet(IDB_KEY, id);
+
     return id;
   }
 
