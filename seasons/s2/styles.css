@@ -827,6 +827,11 @@ img{max-width:100%; display:block}
 /* pop-in */
 .cardZone.isOpen .cardPreview{
   animation: mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.12),
+    0 0 18px rgba(255,255,255,.18),
+    0 0 55px rgba(168, 90, 255, .20),
+    0 0 95px rgba(168, 90, 255, .10);
 }
 
 @keyframes mbCardPopIn{

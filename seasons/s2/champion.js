@@ -203,6 +203,13 @@ function invalidateOldChampionIfDesignChanged() {
    ✅ RESTORE PREVIEW (NO UPSCALE)
 ========================= */
 async function restoreChampionIfExists() {
+  // If дизайн змінився — не показуємо старий cached preview (інакше здається "без змін")
+  const ver = localStorage.getItem(MB_KEYS.champVer);
+  if (ver !== CHAMP_DESIGN_VERSION) {
+    try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
+    return false;
+  }
+
   const prev = localStorage.getItem(MB_KEYS.champPng);
   if (!prev || !prev.startsWith("data:image/") || !cardCanvas) return false;
 
@@ -241,6 +248,7 @@ function saveChampionPreview() {
     if (preview && preview.startsWith("data:image/")) {
       localStorage.setItem(MB_KEYS.champPng, preview);
       localStorage.setItem(MB_KEYS.champReady, "1");
+      localStorage.setItem(MB_KEYS.champVer, CHAMP_DESIGN_VERSION);
       localStorage.setItem(MB_KEYS.champDesignVer, CHAMP_DESIGN_VERSION);
     }
   } catch (e) {
@@ -248,6 +256,78 @@ function saveChampionPreview() {
     try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
     console.warn("Storage quota hit while saving preview. Skipping local preview persistence.");
   }
+}
+
+
+/* =========================
+   🎉 CONFETTI (after Generate)
+   - No libs, works on GitHub Pages/offline
+========================= */
+function launchConfetti(durationMs = 1600) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  Object.assign(canvas.style, {
+    position: "fixed",
+    inset: "0",
+    width: "100vw",
+    height: "100vh",
+    pointerEvents: "none",
+    zIndex: "9999",
+  });
+  document.body.appendChild(canvas);
+
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const resize = () => {
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+  };
+  resize();
+  window.addEventListener("resize", resize);
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const colors = ["#ffffff", "#ffd54a", "#bdbdbd", "#9b561e", "#6e3610"];
+  const pieces = Array.from({ length: 180 }, () => ({
+    x: rand(0, canvas.width),
+    y: rand(-canvas.height * 0.2, canvas.height * 0.2),
+    vx: rand(-2.2, 2.2) * dpr,
+    vy: rand(2.0, 6.0) * dpr,
+    g: rand(0.08, 0.16) * dpr,
+    w: rand(6, 12) * dpr,
+    h: rand(3, 8) * dpr,
+    rot: rand(0, Math.PI * 2),
+    vr: rand(-0.18, 0.18),
+    c: colors[(Math.random() * colors.length) | 0],
+    life: rand(0.75, 1.0),
+  }));
+
+  const t0 = performance.now();
+  function tick(t) {
+    const p = (t - t0) / durationMs;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    pieces.forEach(o => {
+      o.vy += o.g;
+      o.x += o.vx;
+      o.y += o.vy;
+      o.rot += o.vr;
+
+      const fade = Math.max(0, 1 - p / o.life);
+      ctx.save();
+      ctx.globalAlpha = fade;
+      ctx.translate(o.x, o.y);
+      ctx.rotate(o.rot);
+      ctx.fillStyle = o.c;
+      ctx.fillRect(-o.w / 2, -o.h / 2, o.w, o.h);
+      ctx.restore();
+    });
+
+    if (p < 1) requestAnimationFrame(tick);
+    else {
+      window.removeEventListener("resize", resize);
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(tick);
 }
 
 // ===== Actions =====
@@ -259,6 +339,8 @@ genBtn?.addEventListener("click", async () => {
 
   cardZone?.classList.add("isOpen");
   cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // 🎉 confetti burst
+  launchConfetti(1700);
   if (dlBtn) dlBtn.disabled = false;
 
   saveChampionPreview();
@@ -292,6 +374,7 @@ dlBtn?.addEventListener("click", async () => {
 // ===== Canvas assets cache =====
 let _noisePattern = null;
 let _logoFrame = null;
+let _wmLogo = null;
 let _wmLogo = null;
 
 // ===== DRAW =====
@@ -367,6 +450,9 @@ async function drawChampionCard(summary) {
 
   ctx.restore();
   ctx.globalCompositeOperation = "source-over";
+
+  // watermark (Season 2)
+  await drawWatermark(ctx, W, H);
 
   // ✅ Watermark (behind content)
   await drawWatermark(ctx, W, H);
@@ -533,6 +619,39 @@ async function drawLogo(ctx, x, y, w, h, opacity = 0.95) {
     ctx.restore();
   } catch {}
 }
+
+// ===== Watermark (S2) =====
+async function drawWatermark(ctx, W, H) {
+  try {
+    if (!_wmLogo) {
+      _wmLogo = await loadImage("../../assets/brand/MagicBlock-Logomark-White.png");
+    }
+
+    ctx.save();
+    // subtle watermark like the screenshot
+    ctx.globalAlpha = 0.12;
+    ctx.globalCompositeOperation = "screen";
+
+    const size = Math.min(W, H) * 0.78; // ~ 600-650 on 1400x800
+    const x = W * 0.73;
+    const y = H * 0.52;
+
+    ctx.translate(x, y);
+    ctx.rotate(-0.08);
+
+    // soft blur/glow behind watermark
+    ctx.filter = "blur(1.2px)";
+    ctx.drawImage(_wmLogo, -size / 2, -size / 2, size, size);
+
+    ctx.filter = "none";
+    ctx.globalAlpha = 0.10;
+    ctx.drawImage(_wmLogo, -size / 2, -size / 2, size, size);
+
+    ctx.restore();
+    ctx.globalCompositeOperation = "source-over";
+  } catch {}
+}
+
 
 function loadVideoFrame(src, time = 0) {
   return new Promise((resolve, reject) => {
