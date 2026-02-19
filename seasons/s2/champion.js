@@ -107,14 +107,12 @@ function loadResult(key) { return safeJSONParse(localStorage.getItem(key), null)
 
 // ===== Tier logic =====
 function getTierByCorrect(correct) {
-  // Season 2 totals: 60 (6 quizzes × 10)
-  // Tier rules (as requested):
-  // 0–30  => bronze
-  // 31–50 => silver
-  // 51–60 => gold
-  if (correct >= 51) return "gold";
-  if (correct >= 31) return "silver";
-  return "bronze";
+  // S2 totals: 60 (6 quizzes × 10). Keep the same % thresholds as S1.
+  // GOLD: >= 83% (50/60)
+  // SILVER: >= 50% (30/60)
+  if (correct >= 50) return "GOLD";
+  if (correct >= 30) return "SILVER";
+  return "BRONZE";
 }
 
 const TIER_THEME = {
@@ -149,42 +147,46 @@ function getOrCreateChampionId() {
 }
 
 function computeSummary() {
-  const p = getProfile();
-  if (sumName) sumName.textContent = p?.name || "Player";
+  const profile = loadProfile();
+  const name = profile?.nickname || "";
 
-  const doneFlags = [
-    isDone(MB_KEYS.doneMovieFrame),
-    isDone(MB_KEYS.doneMovieEmoji),
-    isDone(MB_KEYS.doneSong),
-    isDone(MB_KEYS.doneSilhouette),
-    isDone(MB_KEYS.doneTrueFalse),
-    isDone(MB_KEYS.doneMagicBlock),
+  const doneKeys = [
+    MB_KEYS.doneMovieFrame,
+    MB_KEYS.doneMovieEmojis,
+    MB_KEYS.doneSong,
+    MB_KEYS.doneSilhouette,
+    MB_KEYS.doneTrueFalse,
+    MB_KEYS.doneMagicblock,
   ];
-  const doneCount = doneFlags.filter(Boolean).length;
-  if (sumDone) sumDone.textContent = `${doneCount} / 6`;
 
-  const r1 = loadResult(MB_KEYS.resMovieFrame);
-  const r2 = loadResult(MB_KEYS.resMovieEmoji);
-  const r3 = loadResult(MB_KEYS.resSong);
-  const r4 = loadResult(MB_KEYS.resSilhouette);
-  const r5 = loadResult(MB_KEYS.resTrueFalse);
-  const r6 = loadResult(MB_KEYS.resMagicBlock);
+  const results = [
+    loadResult(MB_KEYS.resMovieFrame),
+    loadResult(MB_KEYS.resMovieEmojis),
+    loadResult(MB_KEYS.resSong),
+    loadResult(MB_KEYS.resSilhouette),
+    loadResult(MB_KEYS.resTrueFalse),
+    loadResult(MB_KEYS.resMagicblock),
+  ];
 
-  const results = [r1, r2, r3, r4, r5, r6].filter(Boolean);
-  const total = results.reduce((a, r) => a + (r.total || 0), 0);
-  const correct = results.reduce((a, r) => a + (r.correct || 0), 0);
-  const acc = total ? Math.round((correct / total) * 100) : 0;
+  const doneCount = doneKeys.filter(isDone).length;
 
-  if (sumTotal) sumTotal.textContent = String(total);
-  if (sumCorrect) sumCorrect.textContent = String(correct);
-  if (sumAcc) sumAcc.textContent = `${acc}%`;
+  // Sum totals from stored results (fallback to 10 each if missing)
+  const totalAll = results.reduce((acc, r) => acc + (Number(r?.total) || 10), 0);
+  const correctAll = results.reduce((acc, r) => acc + (Number(r?.correct) || 0), 0);
+  const accuracy = totalAll > 0 ? Math.round((correctAll / totalAll) * 100) : 0;
 
-  const unlocked = doneCount === 6 && results.length === 6 && !!p;
+  const unlocked = Boolean(name) && doneCount === 6;
+  const tier = getTierByCorrect(correctAll);
 
-  const tier = getTierByCorrect(correct);
-  const champId = getOrCreateChampionId();
-
-  return { unlocked, total, correct, acc, profile: p, tier, champId };
+  return {
+    name,
+    doneCount,
+    totalAll,
+    correctAll,
+    accuracy,
+    unlocked,
+    tier,
+  };
 }
 
 /* =========================
@@ -288,6 +290,7 @@ dlBtn?.addEventListener("click", async () => {
 // ===== Canvas assets cache =====
 let _noisePattern = null;
 let _logoFrame = null;
+let _watermarkImg = null;
 
 // ===== DRAW =====
 async function drawChampionCard(summary) {
@@ -326,6 +329,20 @@ async function drawChampionCard(summary) {
   ctx.clip();
   drawMesh(ctx, W, H, 0.14);
   ctx.restore();
+
+  // Watermark (Season #2)
+  try {
+    const wm = await ensureWatermark();
+    const wmSize = 620;
+    const wmX = W - wmSize - 90;
+    const wmY = 105;
+    ctx.save();
+    roundedRectPath(ctx, 0, 0, W, H, 80);
+    ctx.clip();
+    ctx.globalAlpha = 0.12;
+    ctx.drawImage(wm, wmX, wmY, wmSize, wmSize);
+    ctx.restore();
+  } catch {}
 
   // grain
   ensureNoisePattern(ctx);
@@ -382,6 +399,9 @@ async function drawChampionCard(summary) {
   ctx.textAlign = "center";
   applyTextShadow(ctx, 0.35, 10, 0, 3);
   ctx.fillText("Champion Card", W / 2, pad + 8);
+  ctx.font = "900 44px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.30, 10, 0, 3);
+  ctx.fillText("Season #2", W / 2, pad + 66);
   clearTextShadow(ctx);
   ctx.restore();
 
