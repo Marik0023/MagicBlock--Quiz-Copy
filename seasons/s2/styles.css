@@ -776,7 +776,36 @@ img{max-width:100%; display:block}
   padding: 14px;
   display:none;
 }
-.cardZone.isOpen{ display:block; }
+.cardZone.isOpen{ display:block; position: relative; overflow: visible; }
+
+/* iridescent neon aura behind the card */
+.cardZone.isOpen::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  width: min(760px, 96%);
+  height: min(460px, 70vw);
+  transform: translate(-50%,-50%);
+  pointer-events:none;
+  z-index:0;
+
+  background: conic-gradient(from 0deg at 50% 50%,
+    rgba(168,85,247,0),
+    rgba(168,85,247,.55),
+    rgba(59,130,246,.55),
+    rgba(34,197,94,.38),
+    rgba(236,72,153,.45),
+    rgba(168,85,247,.55),
+    rgba(168,85,247,0)
+  );
+  filter: blur(34px);
+  opacity: .32;
+  mix-blend-mode: screen;
+
+  animation: mbNeonSpinZone 6s linear infinite, mbGlowBreath 4s ease-in-out infinite;
+}
+
 
 .cardActions{
   margin-top: 12px;
@@ -826,13 +855,40 @@ img{max-width:100%; display:block}
 
 /* pop-in */
 .cardZone.isOpen .cardPreview{
-  animation: mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
+  position: relative;
+  z-index: 1;
+
+  animation:
+    mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both,
+    mbNeonPulse 3.6s ease-in-out .25s infinite;
+
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.12),
-    0 0 18px rgba(255,255,255,.18),
-    0 0 55px rgba(168, 90, 255, .20),
-    0 0 95px rgba(168, 90, 255, .10);
+    0 0 0 1px rgba(255,255,255,.14),
+    0 0 28px rgba(255,255,255,.20),
+    0 0 80px rgba(168, 90, 255, .34),
+    0 0 140px rgba(59, 130, 246, .22),
+    0 0 200px rgba(34, 197, 94, .12);
 }
+
+@keyframes mbNeonPulse{
+  0%,100%{
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.14),
+      0 0 24px rgba(255,255,255,.18),
+      0 0 70px rgba(168, 90, 255, .30),
+      0 0 120px rgba(59, 130, 246, .18),
+      0 0 180px rgba(34, 197, 94, .10);
+  }
+  50%{
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.16),
+      0 0 34px rgba(255,255,255,.24),
+      0 0 95px rgba(168, 90, 255, .40),
+      0 0 160px rgba(59, 130, 246, .26),
+      0 0 240px rgba(236, 72, 153, .14);
+  }
+}
+
 
 @keyframes mbCardPopIn{
   from{
@@ -910,12 +966,6 @@ img{max-width:100%; display:block}
   78%{ opacity: .55; }
   90%{ transform: translateX(110%) rotate(-8deg); opacity: 0; }
   100%{ transform: translateX(110%) rotate(-8deg); opacity: 0; }
-}
-
-
-@keyframes mbNeonSpin{
-  0%{ transform: rotate(0deg); }
-  100%{ transform: rotate(360deg); }
 }
 
 /* reduce motion */
@@ -1034,42 +1084,29 @@ body.mbQuiz .cardActions{
 }
 
 .champion.champion--glow .championPreview .cardPreview{
-  /* stronger neon around the card */
   box-shadow:
     0 18px 60px rgba(0,0,0,.55),
-    0 0 0 2px rgba(255,255,255,.10) inset,
-    0 0 70px rgba(255,255,255,.10),
-    0 0 110px rgba(168,85,247,.32),
-    0 0 150px rgba(59,130,246,.26),
-    0 0 190px rgba(34,197,94,.14);
+    0 0 0 2px rgba(255,255,255,.08) inset,
+    0 0 60px rgba(255,255,255,.08);
 }
 
-/* shimmering / iridescent aura */
+/* reuse the same shine as cardZone but always on when ready */
 .champion.champion--glow .championPreview .cardPreview::before{
   content:"";
   position:absolute;
-  inset:-35%;
+  inset:-25%;
   pointer-events:none;
 
-  background: conic-gradient(from 0deg at 50% 50%,
-    rgba(168,85,247,.0),
-    rgba(168,85,247,.55),
-    rgba(59,130,246,.55),
-    rgba(34,197,94,.38),
-    rgba(236,72,153,.45),
-    rgba(168,85,247,.55),
-    rgba(168,85,247,.0)
-  );
+  background: radial-gradient(900px 520px at 28% 18%,
+    rgba(255,255,255,.18),
+    rgba(255,255,255,0) 60%);
 
   mix-blend-mode: screen;
-  opacity: .22;
-  filter: blur(22px);
-  transform: rotate(0deg);
-
-  animation: mbNeonSpin 6s linear infinite, mbGlowBreath 4s ease-in-out infinite;
+  opacity: .16;
+  filter: blur(1px);
+  animation: mbGlowBreath 4s ease-in-out infinite;
 }
 
-/* brighter shine sweep */
 .champion.champion--glow .championPreview .cardPreview::after{
   content:"";
   position:absolute;
@@ -1079,21 +1116,22 @@ body.mbQuiz .cardActions{
   background: linear-gradient(120deg,
     rgba(255,255,255,0)    0%,
     rgba(255,255,255,0)   34%,
-    rgba(168,85,247,.18)  44%,
-    rgba(255,255,255,.70) 50%,
-    rgba(59,130,246,.22)  56%,
+    rgba(255,255,255,.10) 44%,
+    rgba(255,255,255,.48) 50%,
+    rgba(255,255,255,.10) 56%,
     rgba(255,255,255,0)   66%,
     rgba(255,255,255,0)  100%
   );
 
   mix-blend-mode: screen;
-  filter: blur(1.1px);
+  filter: blur(.9px);
 
   transform: translateX(-110%) rotate(-8deg);
   opacity: 0;
 
-  animation: mbShineEvery2s 2.8s ease-in-out infinite;
+  animation: mbShineEvery2s 2s ease-in-out infinite;
 }
+
 @media (prefers-reduced-motion: reduce){
   .champion.champion--glow .championPreview .cardPreview,
   .champion.champion--glow .championPreview .cardPreview::before,
@@ -1674,4 +1712,9 @@ body.mbQuiz .cardActions{
     height:66px;
     font-size:40px;
   }
+}
+
+@keyframes mbNeonSpinZone{
+  0%{ transform: translate(-50%,-50%) rotate(0deg); }
+  100%{ transform: translate(-50%,-50%) rotate(360deg); }
 }
