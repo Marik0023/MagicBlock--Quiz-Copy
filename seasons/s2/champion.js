@@ -521,7 +521,7 @@ async function drawChampionCard(summary) {
 
 // ✅ season badge (small pill under title)
 function drawSeasonBadge(ctx, centerX, y, label) {
-  const padX = 32;
+  const padX = 40;
   const h = 56;
   ctx.save();
 
