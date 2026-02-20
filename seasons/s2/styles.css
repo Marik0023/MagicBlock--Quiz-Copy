@@ -805,7 +805,9 @@ img{max-width:100%; display:block}
   margin: 0 auto;
 
   border-radius: 22px;
-  overflow: hidden;
+
+  /* важливо: даємо неону “вилазити” назовні */
+  overflow: visible;
   isolation: isolate;
 
   border: 1px solid rgba(255,255,255,.12);
@@ -814,16 +816,66 @@ img{max-width:100%; display:block}
   transform-origin: 50% 30%;
 }
 
+/* Canvas — саме він має бути “обрізаний” по радіусу */
 .cardPreview canvas{
   width: 100%;
   height: auto;
   display: block;
 
-  border: 0;
-  border-radius: 0;
   background: transparent;
+  border: 0;
+
+  border-radius: inherit;
 }
 
+/* ===== Neon ring (animated) =====
+   Працює тільки якщо в HTML є <div class="neonRing"></div> всередині .cardPreview
+*/
+.cardPreview .neonRing{
+  position: absolute;
+  inset: -16px;              /* товщина/виліт ореолу */
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+
+  background: conic-gradient(
+    from 0deg,
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.18),
+    rgba(168, 90, 255, 0.55),
+    rgba(255, 120, 200, 0.45),
+    rgba(255, 180, 80, 0.40),
+    rgba(120, 140, 255, 0.45),
+    rgba(255,255,255,0.18),
+    rgba(255,255,255,0.00)
+  );
+
+  filter: blur(16px);
+  opacity: .86;
+  transform: translateZ(0);
+
+  animation:
+    neonSpin 2.8s linear infinite,
+    neonPulse 1.6s ease-in-out infinite,
+    neonHue 4.5s linear infinite;
+}
+
+/* піднімаємо canvas над glow */
+.cardPreview canvas{ position: relative; z-index: 1; }
+
+@keyframes neonSpin{ to { transform: rotate(360deg); } }
+@keyframes neonPulse{
+  0%,100% { opacity: .70; filter: blur(15px); }
+  50%     { opacity: .98; filter: blur(18px); }
+}
+@keyframes neonHue{
+  0%   { filter: blur(16px) hue-rotate(0deg); }
+  100% { filter: blur(16px) hue-rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .cardPreview .neonRing{ animation: none !important; }
+}
 /* pop-in */
 .cardZone.isOpen .cardPreview{
   animation: mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
