@@ -776,36 +776,7 @@ img{max-width:100%; display:block}
   padding: 14px;
   display:none;
 }
-.cardZone.isOpen{ display:block; position: relative; overflow: visible; }
-
-/* iridescent neon aura behind the card */
-.cardZone.isOpen::before{
-  content:"";
-  position:absolute;
-  left:50%;
-  top:50%;
-  width: min(760px, 96%);
-  height: min(460px, 70vw);
-  transform: translate(-50%,-50%);
-  pointer-events:none;
-  z-index:0;
-
-  background: conic-gradient(from 0deg at 50% 50%,
-    rgba(168,85,247,0),
-    rgba(168,85,247,.55),
-    rgba(59,130,246,.55),
-    rgba(34,197,94,.38),
-    rgba(236,72,153,.45),
-    rgba(168,85,247,.55),
-    rgba(168,85,247,0)
-  );
-  filter: blur(34px);
-  opacity: .32;
-  mix-blend-mode: screen;
-
-  animation: mbNeonSpinZone 6s linear infinite, mbGlowBreath 4s ease-in-out infinite;
-}
-
+.cardZone.isOpen{ display:block; }
 
 .cardActions{
   margin-top: 12px;
@@ -855,40 +826,13 @@ img{max-width:100%; display:block}
 
 /* pop-in */
 .cardZone.isOpen .cardPreview{
-  position: relative;
-  z-index: 1;
-
-  animation:
-    mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both,
-    mbNeonPulse 3.6s ease-in-out .25s infinite;
-
+  animation: mbCardPopIn .45s cubic-bezier(.2,.9,.2,1) both;
   box-shadow:
-    0 0 0 1px rgba(255,255,255,.14),
-    0 0 28px rgba(255,255,255,.20),
-    0 0 80px rgba(168, 90, 255, .34),
-    0 0 140px rgba(59, 130, 246, .22),
-    0 0 200px rgba(34, 197, 94, .12);
+    0 0 0 1px rgba(255,255,255,.12),
+    0 0 18px rgba(255,255,255,.18),
+    0 0 55px rgba(168, 90, 255, .20),
+    0 0 95px rgba(168, 90, 255, .10);
 }
-
-@keyframes mbNeonPulse{
-  0%,100%{
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,.14),
-      0 0 24px rgba(255,255,255,.18),
-      0 0 70px rgba(168, 90, 255, .30),
-      0 0 120px rgba(59, 130, 246, .18),
-      0 0 180px rgba(34, 197, 94, .10);
-  }
-  50%{
-    box-shadow:
-      0 0 0 1px rgba(255,255,255,.16),
-      0 0 34px rgba(255,255,255,.24),
-      0 0 95px rgba(168, 90, 255, .40),
-      0 0 160px rgba(59, 130, 246, .26),
-      0 0 240px rgba(236, 72, 153, .14);
-  }
-}
-
 
 @keyframes mbCardPopIn{
   from{
@@ -1712,9 +1656,4 @@ body.mbQuiz .cardActions{
     height:66px;
     font-size:40px;
   }
-}
-
-@keyframes mbNeonSpinZone{
-  0%{ transform: translate(-50%,-50%) rotate(0deg); }
-  100%{ transform: translate(-50%,-50%) rotate(360deg); }
 }
