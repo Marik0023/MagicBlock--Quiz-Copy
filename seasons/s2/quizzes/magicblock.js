@@ -1,4 +1,9 @@
+/* =========================
+   Season 2 — MagicBlock Quiz (FIXED)
+========================= */
+
 localStorage.setItem("mb_last_s2", "MagicBlock Quiz");
+
 const MB_KEYS = {
   profile: "mb_profile",
 
@@ -13,19 +18,20 @@ const MB_KEYS = {
   reviewHiddenMagic: "mb_s2_review_hidden_magicblock",
 };
 
-const PNG_KEY = "mb_s2_png_magicblock";
-
 const QUIZ_CARD = {
   title: "How well do you know MagicBlock?",
   idPrefix: "MagicStudent",
 };
 
 function safeJSONParse(v, fallback = null) {
-  try { return JSON.parse(v); } catch { return fallback; }
+  try {
+    return JSON.parse(v);
+  } catch {
+    return fallback;
+  }
 }
 
-function freeStorageSpaceS2(){
-  // Remove only heavy previews/cards for Season 2 (keep progress/profile)
+function freeStorageSpaceS2() {
   const heavyKeys = [
     "mb_s2_prev_movieframe",
     "mb_s2_prev_movieemoji",
@@ -36,27 +42,29 @@ function freeStorageSpaceS2(){
     "mb_s2_champ_png",
     "mb_s2_champ_ready",
   ];
-  for (const k of heavyKeys){
-    try { localStorage.removeItem(k); } catch {}
+  for (const k of heavyKeys) {
+    try {
+      localStorage.removeItem(k);
+    } catch {}
   }
 }
 
-function setItemWithRetryS2(key, value){
+function setItemWithRetryS2(key, value) {
   try {
     localStorage.setItem(key, value);
     return true;
-  } catch (e){
-    // QuotaExceededError or similar
-    try { freeStorageSpaceS2(); } catch {}
+  } catch (e) {
+    try {
+      freeStorageSpaceS2();
+    } catch {}
     try {
       localStorage.setItem(key, value);
       return true;
-    } catch (e2){
+    } catch {
       return false;
     }
   }
 }
-
 
 function getProfile() {
   return safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
@@ -65,7 +73,7 @@ function getProfile() {
 function forcePlayAll(selector) {
   const vids = document.querySelectorAll(selector);
   if (!vids.length) return;
-  const tryPlay = () => vids.forEach(v => v.play().catch(() => {}));
+  const tryPlay = () => vids.forEach((v) => v.play().catch(() => {}));
   tryPlay();
   window.addEventListener("click", tryPlay, { once: true });
   window.addEventListener("touchstart", tryPlay, { once: true });
@@ -77,16 +85,17 @@ function makeSerial(len = 6) {
   for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
+
 function ensureResultId(prefix, existing) {
   if (existing && typeof existing === "string" && existing.startsWith("MB-")) return existing;
   return `MB-${prefix}-${makeSerial(6)}`;
 }
 
-/* ===== Progress helpers (MagicBlock) ===== */
-function saveProgressMagic(idx0, correct, answers) {
-  const total = 10;
-  const idx = Math.max(0, Math.min(total - 1, Number(idx0) || 0));
-  const qNum = Math.max(1, Math.min(total, idx + 1));
+/* ===== Progress helpers ===== */
+function saveProgressMagic(idx0, correct, answers, total) {
+  const t = Number.isFinite(total) ? total : 10;
+  const idx = Math.max(0, Math.min(t - 1, Number(idx0) || 0));
+  const qNum = Math.max(1, Math.min(t, idx + 1));
 
   localStorage.setItem(MB_KEYS.progMagic, String(qNum));
   localStorage.setItem(
@@ -99,33 +108,82 @@ function saveProgressMagic(idx0, correct, answers) {
   );
 }
 
-function loadProgressMagic() {
+function loadProgressMagic(total) {
+  const t = Number.isFinite(total) ? total : 10;
+
   const n = Number(localStorage.getItem(MB_KEYS.progMagic) || "0");
   const state = safeJSONParse(localStorage.getItem(MB_KEYS.progMagicState), null);
   if (!Number.isFinite(n) || n <= 0) return null;
 
-  const fallbackIdx = Math.max(0, Math.min(9, n - 1));
+  const fallbackIdx = Math.max(0, Math.min(t - 1, n - 1));
   const idx = Number.isFinite(state?.idx) ? state.idx : fallbackIdx;
 
   return {
-    idx: Math.max(0, Math.min(9, idx)),
+    idx: Math.max(0, Math.min(t - 1, idx)),
     correct: Number.isFinite(state?.correct) ? state.correct : 0,
     answers: Array.isArray(state?.answers) ? state.answers : [],
   };
 }
 
 function clearProgressMagic() {
-  localStorage.removeItem(MB_KEYS.progMagic);
-  localStorage.removeItem(MB_KEYS.progMagicState);
+  try {
+    localStorage.removeItem(MB_KEYS.progMagic);
+    localStorage.removeItem(MB_KEYS.progMagicState);
+  } catch {}
 }
 
+/* =========================
+   TOP PROFILE PILL
+========================= */
+function renderTopProfile() {
+  const pill = document.getElementById("profilePill");
+  if (!pill) return;
+
+  const img = pill.querySelector("img");
+  const nameEl = pill.querySelector("[data-profile-name]");
+  const hintEl = pill.querySelector("[data-profile-hint]");
+
+  const p = safeJSONParse(localStorage.getItem(MB_KEYS.profile), null);
+  if (!p) {
+    if (img) img.src = "";
+    if (nameEl) nameEl.textContent = "No profile";
+    if (hintEl) hintEl.textContent = "Go Home";
+    pill.addEventListener("click", () => (location.href = "../index.html"));
+    return;
+  }
+
+  if (img) img.src = p.avatar || "";
+  if (nameEl) nameEl.textContent = p.name || "Player";
+  if (hintEl) hintEl.textContent = "Edit on Home";
+  pill.addEventListener("click", () => (location.href = "../index.html"));
+}
+
+/* =========================
+   BREADCRUMB
+========================= */
+function injectBreadcrumb() {
+  const hero = document.querySelector(".quizHero");
+  if (!hero) return;
+  if (hero.querySelector(".crumbs")) return;
+
+  const crumbs = document.createElement("div");
+  crumbs.className = "crumbs";
+  crumbs.innerHTML = `<a href="../../../index.html">All Seasons</a> / <a href="../index.html">Season 2</a> / <span>MagicBlock Quiz</span>`;
+  hero.insertBefore(crumbs, hero.firstChild);
+}
+
+/* =========================
+   INIT
+========================= */
 document.addEventListener("DOMContentLoaded", () => {
+  injectBreadcrumb();
+
   forcePlayAll(".bg__video");
   forcePlayAll(".brand__logo");
   renderTopProfile();
 
   // Topbar navigation (Seasons dropdown)
-  (function initSeasonMenu(){
+  (function initSeasonMenu() {
     const menu = document.getElementById("seasonMenu");
     if (!menu) return;
     const btn = menu.querySelector("button");
@@ -135,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       menu.classList.toggle("isOpen");
     });
-    links.forEach(a => a.addEventListener("click", () => menu.classList.remove("isOpen")));
+    links.forEach((a) => a.addEventListener("click", () => menu.classList.remove("isOpen")));
 
     document.addEventListener("click", (e) => {
       if (!menu.contains(e.target)) menu.classList.remove("isOpen");
@@ -148,19 +206,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const achievementsBtn = document.getElementById("achievementsBtn");
   if (achievementsBtn) achievementsBtn.addEventListener("click", () => (location.href = "../index.html#achievements"));
 
- const QUESTIONS = [
-  { q: "What does Magic Router do?", a: "B", options: ["Encrypts all transactions by default","Routes transactions to Solana or an Ephemeral Rollup based on delegation/metadata","Bridges assets between Solana and Ethereum","Schedules cranks on Solana only"] },
-  { q: "Which capability is explicitly listed as something an Ephemeral Rollup runtime can be customized to include?", a: "D", options: ["Mandatory MEV auctions","Forced on-chain KYC","PoW mining","Integrated scheduling (ticking mechanism)"] },
-  { q: "What is the hardware security technology highlighted for Private Ephemeral Rollups (PER)?", a: "A", options: ["Intel TDX (Trusted Execution Environment)","AMD SEV-SNP","Apple Secure Enclave","ARM TrustZone"] },
-  { q: "Which program is used to delegate Solana accounts to an Ephemeral Rollup validator?", a: "C", options: ["System Program","Stake Program","Delegation Program","Token Program"] },
-  { q: "When is a delegated account cloned into an Ephemeral Rollup?", a: "D", options: ["Every block","Always at startup","Only at the end of the session","Only when it’s first accessed"] },
-  { q: "According to Magic Router’s description, what is a key developer benefit?", a: "A", options: ["No manual routing logic/config needed","Developers must hardcode routing rules","Developers must deploy a custom wallet","Developers must run a bridge server"] },
-  { q: "In the Magic Router concept, what can become a Magic Router?", a: "B", options: ["Only a private TEE node","Any RPC or validator","Only a Solana wallet extension","Only MagicBlock’s own sequencer"] },
-  { q: "In MagicBlock docs, how are Ephemeral Rollups positioned in terms of fees/UX?", a: "C", options: ["Same fees as Solana L1","Fees paid only in $BLOCK","Zero-fee (gasless) real-time transactions","Higher fees for faster speed"] },
-  { q: "On the PER (privacy) page, what are the 3 steps described for how privacy works?", a: "A", options: ["Authenticate → Execute → Attest","Bridge → Swap → Settle","Delegate → Vote → Finalize","Encrypt → Shard → Compress"] },
-  { q: "What does the “Attest” step produce in Private Ephemeral Rollups?", a: "C", options: ["A proof of stake delegation","A token burn receipt","Intel TDX-backed proofs for compliance/audits","A bridge signature to Ethereum"] }
-];
+  // ===== Your original question format =====
+  const RAW_QUESTIONS = [
+    { q: "What does Magic Router do?", a: "B", options: ["Encrypts all transactions by default","Routes transactions to Solana or an Ephemeral Rollup based on delegation/metadata","Bridges assets between Solana and Ethereum","Schedules cranks on Solana only"] },
+    { q: "Which capability is explicitly listed as something an Ephemeral Rollup runtime can be customized to include?", a: "D", options: ["Mandatory MEV auctions","Forced on-chain KYC","PoW mining","Integrated scheduling (ticking mechanism)"] },
+    { q: "What is the hardware security technology highlighted for Private Ephemeral Rollups (PER)?", a: "A", options: ["Intel TDX (Trusted Execution Environment)","AMD SEV-SNP","Apple Secure Enclave","ARM TrustZone"] },
+    { q: "Which program is used to delegate Solana accounts to an Ephemeral Rollup validator?", a: "C", options: ["System Program","Stake Program","Delegation Program","Token Program"] },
+    { q: "When is a delegated account cloned into an Ephemeral Rollup?", a: "D", options: ["Every block","Always at startup","Only at the end of the session","Only when it’s first accessed"] },
+    { q: "According to Magic Router’s description, what is a key developer benefit?", a: "A", options: ["No manual routing logic/config needed","Developers must hardcode routing rules","Developers must deploy a custom wallet","Developers must run a bridge server"] },
+    { q: "In the Magic Router concept, what can become a Magic Router?", a: "B", options: ["Only a private TEE node","Any RPC or validator","Only a Solana wallet extension","Only MagicBlock’s own sequencer"] },
+    { q: "In MagicBlock docs, how are Ephemeral Rollups positioned in terms of fees/UX?", a: "C", options: ["Same fees as Solana L1","Fees paid only in $BLOCK","Zero-fee (gasless) real-time transactions","Higher fees for faster speed"] },
+    { q: "On the PER (privacy) page, what are the 3 steps described for how privacy works?", a: "A", options: ["Authenticate → Execute → Attest","Bridge → Swap → Settle","Delegate → Vote → Finalize","Encrypt → Shard → Compress"] },
+    { q: "What does the “Attest” step produce in Private Ephemeral Rollups?", a: "C", options: ["A proof of stake delegation","A token burn receipt","Intel TDX-backed proofs for compliance/audits","A bridge signature to Ethereum"] }
+  ];
 
+  // ✅ Normalize to required format: text + options + correctIndex
+  function toIndex(letter) {
+    const L = String(letter || "").trim().toUpperCase();
+    const map = { A: 0, B: 1, C: 2, D: 3 };
+    return Number.isFinite(map[L]) ? map[L] : 0;
+  }
+
+  const QUESTIONS = RAW_QUESTIONS.map((it) => ({
+    text: it.q || "—",
+    options: Array.isArray(it.options) ? it.options : ["A", "B", "C", "D"],
+    correctIndex: toIndex(it.a),
+  }));
+
+  const TOTAL = QUESTIONS.length;
+
+  // DOM
   const quizPanel = document.getElementById("quizPanel");
   const resultPanel = document.getElementById("resultPanel");
 
@@ -196,7 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const savedRes = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
   const done = localStorage.getItem(MB_KEYS.doneMagic) === "1";
 
-  // ===== Answer Review render =====
   function renderAnswerReviewMagic(ans = []) {
     if (!reviewBox || !reviewList) return;
 
@@ -214,7 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const item = document.createElement("div");
       item.className = "reviewItem";
 
-      const picked = (ans && ans.length) ? ans[i] : undefined;
+      const picked = ans?.[i];
       if (picked !== undefined && picked !== null && picked !== q.correctIndex) {
         item.classList.add("isWrong");
       }
@@ -244,42 +318,17 @@ document.addEventListener("DOMContentLoaded", () => {
     reviewBox.classList.remove("isHidden", "isGone");
   }
 
-  // If completed => show result
-  if (done && savedRes) {
-    if (!savedRes.id) {
-      savedRes.id = ensureResultId(QUIZ_CARD.idPrefix, savedRes.id);
-      localStorage.setItem(MB_KEYS.resMagic, JSON.stringify(savedRes));
-    }
-  
-    clearProgressMagic();
-    showResult(savedRes);
-  
-    // ✅ важливо: preview відновлюємо, але НЕ виходимо зі скрипта
-    restoreQuizPreview(MB_KEYS.prevMagic, cardCanvas, cardZone, dlBtn, genBtn);
-  
-  } else {
-    const prog = loadProgressMagic();
-    if (prog) {
-      idx = prog.idx;
-      correct = prog.correct;
-      answers = prog.answers;
-    }
-  
-    saveProgressMagic(idx, correct, answers);
-    renderQuestion();
-  
-    window.addEventListener("beforeunload", () => {
-      if (localStorage.getItem(MB_KEYS.doneMagic) !== "1") {
-        saveProgressMagic(idx, correct, answers);
-      }
-    });
-  }
+  function showResult(result) {
+    quizPanel.style.display = "none";
+    resultPanel.style.display = "block";
 
-  window.addEventListener("beforeunload", () => {
-    if (localStorage.getItem(MB_KEYS.doneMagic) !== "1") {
-      saveProgressMagic(idx, correct, answers);
-    }
-  });
+    if (rName) rName.textContent = result.name || "Player";
+    if (rTotal) rTotal.textContent = String(result.total);
+    if (rCorrect) rCorrect.textContent = String(result.correct);
+    if (rAcc) rAcc.textContent = `${result.acc}%`;
+
+    renderAnswerReviewMagic(result?.answers || answers);
+  }
 
   function renderQuestion() {
     const q = QUESTIONS[idx];
@@ -289,7 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
     nextBtn.disabled = true;
     nextBtn.classList.remove("isShow");
 
-    qTitle.textContent = `Question ${idx + 1} of ${QUESTIONS.length}`;
+    qTitle.textContent = `Question ${idx + 1} of ${TOTAL}`;
     questionText.textContent = q.text || "—";
 
     optionsEl.innerHTML = "";
@@ -307,12 +356,40 @@ document.addEventListener("DOMContentLoaded", () => {
       optionsEl.appendChild(btn);
     });
 
-    saveProgressMagic(idx, correct, answers);
+    saveProgressMagic(idx, correct, answers, TOTAL);
   }
 
   function updateSelectedUI() {
     [...optionsEl.querySelectorAll(".optionBtn")].forEach((b, i) => {
       b.classList.toggle("isSelected", i === selectedIndex);
+    });
+  }
+
+  // If completed => show result
+  if (done && savedRes) {
+    if (!savedRes.id) {
+      savedRes.id = ensureResultId(QUIZ_CARD.idPrefix, savedRes.id);
+      localStorage.setItem(MB_KEYS.resMagic, JSON.stringify(savedRes));
+    }
+
+    clearProgressMagic();
+    showResult(savedRes);
+    restoreQuizPreview(MB_KEYS.prevMagic, cardCanvas, cardZone, dlBtn, genBtn);
+  } else {
+    const prog = loadProgressMagic(TOTAL);
+    if (prog) {
+      idx = prog.idx;
+      correct = prog.correct;
+      answers = prog.answers;
+    }
+
+    saveProgressMagic(idx, correct, answers, TOTAL);
+    renderQuestion();
+
+    window.addEventListener("beforeunload", () => {
+      if (localStorage.getItem(MB_KEYS.doneMagic) !== "1") {
+        saveProgressMagic(idx, correct, answers, TOTAL);
+      }
     });
   }
 
@@ -325,21 +402,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     idx++;
 
-    if (idx < QUESTIONS.length) {
-      saveProgressMagic(idx, correct, answers);
+    if (idx < TOTAL) {
+      saveProgressMagic(idx, correct, answers, TOTAL);
       renderQuestion();
       return;
     }
 
-    const total = QUESTIONS.length;
-    const acc = Math.round((correct / total) * 100);
+    const acc = Math.round((correct / TOTAL) * 100);
     const p = getProfile();
 
     const old = safeJSONParse(localStorage.getItem(MB_KEYS.resMagic), null);
     const id = ensureResultId(QUIZ_CARD.idPrefix, old?.id || null);
 
     const result = {
-      total,
+      total: TOTAL,
       correct,
       acc,
       answers: Array.isArray(answers) ? answers : [],
@@ -355,20 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showResult(result);
   });
 
-  function showResult(result) {
-    quizPanel.style.display = "none";
-    resultPanel.style.display = "block";
-
-    if (rName) rName.textContent = result.name || "Player";
-    if (rTotal) rTotal.textContent = String(result.total);
-    if (rCorrect) rCorrect.textContent = String(result.correct);
-    if (rAcc) rAcc.textContent = `${result.acc}%`;
-
-    renderAnswerReviewMagic((result && result.answers) ? result.answers : answers);
-  }
-
   genBtn?.addEventListener("click", async () => {
-    // Hide review назавжди
     if (reviewBox && !reviewBox.classList.contains("isGone")) {
       reviewBox.classList.add("isHidden");
       setTimeout(() => reviewBox.classList.add("isGone"), 220);
@@ -398,7 +461,9 @@ document.addEventListener("DOMContentLoaded", () => {
       setItemWithRetryS2(MB_KEYS.prevMagic, prev);
     } catch (e) {
       console.warn("MagicBlock preview save failed:", e);
-      try { localStorage.removeItem(MB_KEYS.prevMagic); } catch {}
+      try {
+        localStorage.removeItem(MB_KEYS.prevMagic);
+      } catch {}
     }
 
     if (genBtn) genBtn.textContent = "Regenerate Result Card";
@@ -424,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const a = document.createElement("a");
-    a.download = "magicblock-knowledge-result.png";
+    a.download = "magicblock-quiz-result.png";
     a.href = cardCanvas.toDataURL("image/png");
     a.click();
   });
@@ -479,6 +544,7 @@ function exportPreviewDataURL(srcCanvas, maxW = 520, quality = 0.85) {
 
   return t.toDataURL("image/jpeg", quality);
 }
+
 
 /* =========================
    CANVAS DRAW (MagicBlock)
