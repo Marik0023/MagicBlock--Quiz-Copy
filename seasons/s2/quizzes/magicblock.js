@@ -814,15 +814,3 @@ function renderTopProfile() {
 }
 
 
-function injectBreadcrumb(){
-  const hero = document.querySelector(".quizHero");
-  if (!hero) return;
-  const crumbs = document.createElement("div");
-  crumbs.className = "crumbs";
-  crumbs.innerHTML = `<a href="../../../index.html">All Seasons</a> / <a href="../index.html">Season 2</a> / <span>MagicBlock Quiz</span>`;
-  hero.insertBefore(crumbs, hero.firstChild);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  injectBreadcrumb();});
-
