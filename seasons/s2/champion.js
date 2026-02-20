@@ -474,7 +474,7 @@ async function drawChampionCard(summary) {
   clearTextShadow(ctx);
 
   // season pill under title
-  drawSeasonBadge(ctx, W / 2, pad + 52, "SEASON 2");
+  drawSeasonBadge(ctx, W / 2, pad + 44, "SEASON 2");
 
   ctx.restore();
 
@@ -521,8 +521,8 @@ async function drawChampionCard(summary) {
 
 // ✅ season badge (small pill under title)
 function drawSeasonBadge(ctx, centerX, y, label) {
-  const padX = 22;
-  const h = 40;
+  const padX = 26;
+  const h = 46;
   ctx.save();
 
   ctx.font = "900 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
