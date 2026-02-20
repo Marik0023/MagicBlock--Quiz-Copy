@@ -1,4 +1,4 @@
-const CHAMP_DESIGN_VERSION = "s2_card_v2"; // <- міняй якщо ще раз змінюватимеш дизайн
+const CHAMP_DESIGN_VERSION = "s2_card_v3"; // <- bump коли міняєш дизайн
 
 const MB_KEYS = {
   profile: "mb_profile", // shared
@@ -24,7 +24,7 @@ const MB_KEYS = {
   champPng: "mb_s2_champ_png",
   champId: "mb_s2_champ_id",
   champReady: "mb_s2_champ_ready",
-  champDesignVer: "mb_s2_champ_design_ver",
+  champDesignVer: "mb_s2_champ_design_ver", // ✅ single source of truth
 };
 
 function safeJSONParse(v, fallback = null) {
@@ -186,7 +186,7 @@ function computeSummary() {
 }
 
 /* =========================
-   ✅ AUTO INVALIDATE OLD CACHE (fix "без змін")
+   ✅ AUTO INVALIDATE OLD CACHE
 ========================= */
 function invalidateOldChampionIfDesignChanged() {
   try {
@@ -203,8 +203,8 @@ function invalidateOldChampionIfDesignChanged() {
    ✅ RESTORE PREVIEW (NO UPSCALE)
 ========================= */
 async function restoreChampionIfExists() {
-  // If дизайн змінився — не показуємо старий cached preview (інакше здається "без змін")
-  const ver = localStorage.getItem(MB_KEYS.champVer);
+  // ✅ якщо дизайн версія інша — не підтягуємо старий preview
+  const ver = localStorage.getItem(MB_KEYS.champDesignVer);
   if (ver !== CHAMP_DESIGN_VERSION) {
     try { localStorage.removeItem(MB_KEYS.champPng); } catch {}
     return false;
@@ -248,7 +248,6 @@ function saveChampionPreview() {
     if (preview && preview.startsWith("data:image/")) {
       localStorage.setItem(MB_KEYS.champPng, preview);
       localStorage.setItem(MB_KEYS.champReady, "1");
-      localStorage.setItem(MB_KEYS.champVer, CHAMP_DESIGN_VERSION);
       localStorage.setItem(MB_KEYS.champDesignVer, CHAMP_DESIGN_VERSION);
     }
   } catch (e) {
@@ -258,10 +257,8 @@ function saveChampionPreview() {
   }
 }
 
-
 /* =========================
    🎉 CONFETTI (after Generate)
-   - No libs, works on GitHub Pages/offline
 ========================= */
 function launchConfetti(durationMs = 1600) {
   const canvas = document.createElement("canvas");
@@ -339,8 +336,9 @@ genBtn?.addEventListener("click", async () => {
 
   cardZone?.classList.add("isOpen");
   cardZone?.scrollIntoView({ behavior: "smooth", block: "start" });
-  // 🎉 confetti burst
+
   launchConfetti(1700);
+
   if (dlBtn) dlBtn.disabled = false;
 
   saveChampionPreview();
@@ -450,10 +448,7 @@ async function drawChampionCard(summary) {
   ctx.restore();
   ctx.globalCompositeOperation = "source-over";
 
-  // watermark (Season 2)
-  await drawWatermark(ctx, W, H);
-
-  // ✅ Watermark (behind content)
+  // ✅ watermark behind content (ONE time)
   await drawWatermark(ctx, W, H);
 
   // borders
@@ -468,19 +463,19 @@ async function drawChampionCard(summary) {
   // ===== HEADER =====
   await drawLogo(ctx, pad, pad - 38, 310, 122, 0.98);
 
-  // ✅ Title + Season #2 (two lines)
+  // ✅ Variant 2: BIG "Champion Card" + small pill "SEASON 2"
   ctx.save();
   ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.textAlign = "center";
 
-  ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.font = "900 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   applyTextShadow(ctx, 0.35, 10, 0, 3);
-  ctx.fillText("Champion Card", W / 2, pad + 0);
-
-  ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText("Season #2", W / 2, pad + 64);
-
+  ctx.fillText("Champion Card", W / 2, pad + 10);
   clearTextShadow(ctx);
+
+  // season pill under title
+  drawSeasonBadge(ctx, W / 2, pad + 52, "SEASON 2");
+
   ctx.restore();
 
   drawStatusPill(ctx, W - pad - 220, pad - 44, 220, 62, (TIER_THEME[summary.tier] || TIER_THEME.bronze).label);
@@ -506,7 +501,7 @@ async function drawChampionCard(summary) {
   const name = (summary.profile?.name || "Player").trim();
   const scoreText = `${summary.correct} / ${summary.total}`;
 
-  let y = 290; // трохи нижче, бо зʼявився "Season #2"
+  let y = 280; // трохи нижче, щоб header дихав
   drawLabelValue(ctx, tx, y, "Your Name", name);
   y += 195;
 
@@ -521,6 +516,31 @@ async function drawChampionCard(summary) {
   ctx.fillStyle = "rgba(0,0,0,0.40)";
   ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   ctx.fillText(`Accuracy: ${summary.acc}%`, pad, H - 60);
+  ctx.restore();
+}
+
+// ✅ season badge (small pill under title)
+function drawSeasonBadge(ctx, centerX, y, label) {
+  const padX = 22;
+  const h = 40;
+  ctx.save();
+
+  ctx.font = "900 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  const w = Math.ceil(ctx.measureText(label).width + padX * 2);
+  const x = Math.round(centerX - w / 2);
+
+  ctx.fillStyle = "rgba(0,0,0,0.24)";
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, w, h, 20, true, true);
+
+  ctx.fillStyle = "rgba(255,255,255,0.92)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  applyTextShadow(ctx, 0.22, 8, 0, 2);
+  ctx.fillText(label, x + w / 2, y + h / 2 + 1);
+  clearTextShadow(ctx);
+
   ctx.restore();
 }
 
@@ -609,48 +629,13 @@ function clearTextShadow(ctx) {
 // ===== Logo drawing (top-left animated logo frame) =====
 async function drawLogo(ctx, x, y, w, h, opacity = 0.95) {
   try {
-    if (!_logoFrame) {
-      _logoFrame = await loadVideoFrame("../../assets/logo.webm", 0.0);
-    }
+    if (!_logoFrame) _logoFrame = await loadVideoFrame("../../assets/logo.webm", 0.0);
     ctx.save();
     ctx.globalAlpha = opacity;
     ctx.drawImage(_logoFrame, x, y, w, h);
     ctx.restore();
   } catch {}
 }
-
-// ===== Watermark (S2) =====
-async function drawWatermark(ctx, W, H) {
-  try {
-    if (!_wmLogo) {
-      _wmLogo = await loadImage("../../assets/brand/MagicBlock-Logomark-White.png");
-    }
-
-    ctx.save();
-    // subtle watermark like the screenshot
-    ctx.globalAlpha = 0.12;
-    ctx.globalCompositeOperation = "screen";
-
-    const size = Math.min(W, H) * 0.78; // ~ 600-650 on 1400x800
-    const x = W * 0.73;
-    const y = H * 0.52;
-
-    ctx.translate(x, y);
-    ctx.rotate(-0.08);
-
-    // soft blur/glow behind watermark
-    ctx.filter = "blur(1.2px)";
-    ctx.drawImage(_wmLogo, -size / 2, -size / 2, size, size);
-
-    ctx.filter = "none";
-    ctx.globalAlpha = 0.10;
-    ctx.drawImage(_wmLogo, -size / 2, -size / 2, size, size);
-
-    ctx.restore();
-    ctx.globalCompositeOperation = "source-over";
-  } catch {}
-}
-
 
 function loadVideoFrame(src, time = 0) {
   return new Promise((resolve, reject) => {
@@ -677,9 +662,7 @@ function loadVideoFrame(src, time = 0) {
 }
 
 /* =========================
-   ✅ WATERMARK (logomark on right)
-   Logo file: assets/brand/MagicBlock-Logomark-White.png
-   (tries multiple relative paths to be safe)
+   ✅ WATERMARK (single)
 ========================= */
 async function getWatermarkLogo() {
   if (_wmLogo) return _wmLogo;
@@ -709,10 +692,9 @@ async function drawWatermark(ctx, W, H) {
   roundedRectPath(ctx, 0, 0, W, H, 80);
   ctx.clip();
 
-  ctx.globalAlpha = 0.12; // як на прикладі (ледь видно)
-  ctx.filter = "none";
+  ctx.globalAlpha = 0.12;
+  ctx.globalCompositeOperation = "screen";
 
-  // right-side big mark
   const boxW = W * 0.44;
   const boxH = H * 0.78;
   const boxX = W * 0.56;
@@ -721,6 +703,7 @@ async function drawWatermark(ctx, W, H) {
   drawContain(ctx, img, boxX, boxY, boxW, boxH);
 
   ctx.restore();
+  ctx.globalCompositeOperation = "source-over";
 }
 
 function drawContain(ctx, img, x, y, w, h) {
@@ -731,15 +714,9 @@ function drawContain(ctx, img, x, y, w, h) {
 
   let dw, dh, dx, dy;
   if (ir > rr) {
-    dw = w;
-    dh = w / ir;
-    dx = x;
-    dy = y + (h - dh) / 2;
+    dw = w; dh = w / ir; dx = x; dy = y + (h - dh) / 2;
   } else {
-    dh = h;
-    dw = h * ir;
-    dx = x + (w - dw) / 2;
-    dy = y;
+    dh = h; dw = h * ir; dx = x + (w - dw) / 2; dy = y;
   }
   ctx.drawImage(img, dx, dy, dw, dh);
 }
@@ -875,9 +852,7 @@ function drawCover(ctx, img, x, y, w, h) {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    if (typeof src === "string" && src && !src.startsWith("data:")) {
-      img.crossOrigin = "anonymous";
-    }
+    if (typeof src === "string" && src && !src.startsWith("data:")) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
