@@ -375,7 +375,6 @@ dlBtn?.addEventListener("click", async () => {
 let _noisePattern = null;
 let _logoFrame = null;
 let _wmLogo = null;
-let _wmLogo = null;
 
 // ===== DRAW =====
 async function drawChampionCard(summary) {
