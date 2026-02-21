@@ -1446,3 +1446,115 @@ body.mbQuiz .cardActions{
   flex-wrap:wrap;
 }
 .homeChampCard__actions .btn{ padding: 10px 14px; }
+
+
+/* ===== Global Footer (MagicBlock links) ===== */
+.mbFooter{
+  margin-top: 22px;
+  padding-bottom: 12px;
+}
+
+.mbFooter__inner{
+  width: min(1120px, 92vw);
+  margin: 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  min-height: 46px;
+  padding: 10px 14px;
+
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.12);
+  background:
+    linear-gradient(140deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow:
+    0 10px 34px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.mbFooter__left{
+  color: rgba(255,255,255,.72);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.mbFooter__links{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.mbFooter__link{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 74px;
+  height: 32px;
+  padding: 0 12px;
+
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.04);
+
+  color: rgba(255,255,255,.88);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .02em;
+
+  transition:
+    transform .15s ease,
+    background .15s ease,
+    border-color .15s ease,
+    box-shadow .15s ease,
+    color .15s ease;
+}
+
+.mbFooter__link:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.22);
+  color: rgba(255,255,255,.98);
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,.06) inset,
+    0 0 18px rgba(160,120,255,.10);
+}
+
+.mbFooter__link:active{
+  transform: translateY(0);
+}
+
+/* mobile */
+@media (max-width: 720px){
+  .mbFooter__inner{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .mbFooter__left{
+    text-align: center;
+    white-space: normal;
+    letter-spacing: .08em;
+  }
+
+  .mbFooter__links{
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .mbFooter__link{
+    min-width: 90px;
+  }
+}
