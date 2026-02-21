@@ -378,6 +378,55 @@ function seasonChampionReady(seasonId){
   return png.startsWith("data:image/") || ready;
 }
 
+function renderHomeChampionCards(){
+  const seasons = ["s1", "s2"];
+
+  for (const seasonId of seasons){
+    const preview = document.getElementById(seasonId === "s1" ? "homeChampPreviewS1" : "homeChampPreviewS2");
+    const status  = document.getElementById(seasonId === "s1" ? "homeChampStatusS1"  : "homeChampStatusS2");
+    const hint    = document.getElementById(seasonId === "s1" ? "homeChampHintS1"    : "homeChampHintS2");
+    if (!preview || !status || !hint) continue;
+
+    const def = SEASON_DEFS[seasonId];
+    const png = (localStorage.getItem(def?.champ?.pngKey || "") || "").trim();
+    const hasImage = png.startsWith("data:image/");
+    const completed = seasonAllQuizzesDone(seasonId);
+
+    preview.classList.remove("hasImage");
+    status.classList.remove("isReady", "isLegacy");
+
+    if (hasImage){
+      preview.classList.add("hasImage");
+      preview.innerHTML = `<img src="${png}" alt="${seasonId.toUpperCase()} Champion Card">`;
+      status.textContent = "Generated";
+      status.classList.add("isReady");
+      hint.textContent = seasonId === "s1"
+        ? "Season 1 champion card is saved locally and ready for leaderboard sync."
+        : "Season 2 champion card is saved locally.";
+      continue;
+    }
+
+    if (completed){
+      preview.innerHTML = `<div class="homeChampCard__placeholder">${seasonId.toUpperCase()} is completed, but champion card is not generated yet.</div>`;
+      if (seasonId === "s1"){
+        status.textContent = "Regenerate needed";
+        hint.textContent = "Older Season 1 users: regenerate Champion Card to appear in leaderboard.";
+      } else {
+        status.textContent = "Generate card";
+        hint.textContent = "Open Season 2 Champion Page and generate the card.";
+      }
+      status.classList.add("isLegacy");
+      continue;
+    }
+
+    preview.innerHTML = `<div class="homeChampCard__placeholder">No ${seasonId.toUpperCase()} champion card yet</div>`;
+    status.textContent = "No card yet";
+    hint.textContent = seasonId === "s1"
+      ? "Complete Season 1 and generate the champion card."
+      : "Complete Season 2 and generate the champion card.";
+  }
+}
+
 function applySeasonPickerUI(){
   // Only S1 and S2 have progress on the season picker right now
   ["s1","s2"].forEach(seasonId => {
@@ -445,12 +494,14 @@ document.addEventListener("DOMContentLoaded", () => {
   
   updateSeasonCompletedBadges();
   applySeasonPickerUI();
+  renderHomeChampionCards();
 
   // keep UI in sync across tabs
   window.addEventListener("storage", () => {
     renderTopProfile();
     updateSeasonCompletedBadges();
     applySeasonPickerUI();
+    renderHomeChampionCards();
   });
 
   const pill = document.getElementById("profilePill");
