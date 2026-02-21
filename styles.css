@@ -1413,6 +1413,7 @@ body.mbQuiz .cardActions{
   width:70%;
   height:auto;
   display:block;
+  margin: 0 auto;
 }
 .homeChampCard__preview.hasImage{
   background: radial-gradient(80% 80% at 50% 50%, rgba(180,120,255,.10), rgba(0,0,0,.15));
