@@ -117,9 +117,9 @@ function getTierByCorrect(correct) {
 }
 
 const TIER_THEME = {
-  gold:   { label: "GOLD",   base: "#d2a24d", dark: "#b37f2f" },
-  silver: { label: "SILVER", base: "#bdbdbd", dark: "#8f8f8f" },
-  bronze: { label: "BRONZE", base: "#9b561e", dark: "#6e3610" },
+  gold:   { label: "GOLD",   base: "#F3C456", dark: "#8B5A12", bg1:"#1f160d", bg2:"#3a2814", glow:"rgba(255,196,86,.35)", line:"rgba(255,220,150,.70)", text:"#FFEAB2" },
+  silver: { label: "SILVER", base: "#DDE3EE", dark: "#6C7483", bg1:"#13171d", bg2:"#28303a", glow:"rgba(186,212,255,.28)", line:"rgba(225,236,255,.62)", text:"#F4F8FF" },
+  bronze: { label: "BRONZE", base: "#D9864D", dark: "#6D3418", bg1:"#1b120d", bg2:"#382015", glow:"rgba(255,148,92,.26)", line:"rgba(255,176,126,.58)", text:"#FFE0CC" },
 };
 
 // ===== ID (keeps same after first gen) =====
@@ -380,7 +380,6 @@ async function drawChampionCard(summary) {
 
   const W = 1400;
   const H = 800;
-
   if (cardCanvas.width !== W) cardCanvas.width = W;
   if (cardCanvas.height !== H) cardCanvas.height = H;
 
@@ -388,134 +387,214 @@ async function drawChampionCard(summary) {
   ctx.clearRect(0, 0, W, H);
 
   const theme = TIER_THEME[summary.tier] || TIER_THEME.bronze;
-  const pad = 70;
+  const pad = 58;
 
-  // --- background gradient by tier ---
-  const g = ctx.createLinearGradient(0, 0, W, H);
-  g.addColorStop(0, theme.base);
-  g.addColorStop(1, theme.dark);
-  ctx.fillStyle = g;
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, theme.bg1 || "#18130f");
+  bg.addColorStop(0.55, theme.bg2 || "#2a2018");
+  bg.addColorStop(1, "#0e0f12");
+  ctx.fillStyle = bg;
   roundRect(ctx, 0, 0, W, H, 80, true, false);
 
-  // soft highlight
-  const hi = ctx.createRadialGradient(W * 0.50, H * 0.35, 120, W * 0.55, H * 0.55, H * 0.95);
-  hi.addColorStop(0, "rgba(255,255,255,0.20)");
-  hi.addColorStop(1, "rgba(0,0,0,0.14)");
-  ctx.fillStyle = hi;
-  roundRect(ctx, 0, 0, W, H, 80, true, false);
+  const rg1 = ctx.createRadialGradient(W*0.20, H*0.16, 20, W*0.20, H*0.16, W*0.58);
+  rg1.addColorStop(0, theme.glow || "rgba(255,200,120,.28)");
+  rg1.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = rg1; roundRect(ctx,0,0,W,H,80,true,false);
 
-  // mesh waves
+  const rg2 = ctx.createRadialGradient(W*0.86, H*0.78, 20, W*0.86, H*0.78, W*0.40);
+  rg2.addColorStop(0, (theme.glow||"rgba(255,200,120,.28)").replace(/\.\d+\)/, '.20)'));
+  rg2.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = rg2; roundRect(ctx,0,0,W,H,80,true,false);
+
   ctx.save();
-  roundedRectPath(ctx, 0, 0, W, H, 80);
-  ctx.clip();
-  drawMesh(ctx, W, H, 0.14);
+  roundedRectPath(ctx, 0, 0, W, H, 80); ctx.clip();
+  ctx.globalAlpha = 0.08;
+  ctx.strokeStyle = theme.line || "rgba(255,255,255,.45)";
+  ctx.lineWidth = 1;
+  const r = 16;
+  const hw = Math.sqrt(3) * r;
+  const hh = 2 * r;
+  const vstep = hh * 0.75;
+  for (let row = -2, y = 40; y < H + 30; row++, y += vstep) {
+    const offset = (row % 2 ? hw / 2 : 0);
+    for (let x = -40 + offset; x < W + 40; x += hw) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 3 * i + Math.PI / 6;
+        const px = x + r * Math.cos(a);
+        const py = y + r * Math.sin(a);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 
-  // grain
-  ensureNoisePattern(ctx);
   ctx.save();
-  ctx.globalAlpha = 0.09;
-  ctx.fillStyle = _noisePattern;
-  roundRect(ctx, 0, 0, W, H, 80, true, false);
-  ctx.restore();
-
-  // shine
-  ctx.save();
-  roundedRectPath(ctx, 0, 0, W, H, 80);
-  ctx.clip();
-
-  ctx.globalCompositeOperation = "screen";
-  ctx.globalAlpha = 0.55;
-
-  const shine = ctx.createLinearGradient(-W * 0.4, H * 0.15, W * 1.4, H * 0.85);
-  shine.addColorStop(0.00, "rgba(255,255,255,0.00)");
-  shine.addColorStop(0.40, "rgba(255,255,255,0.00)");
-  shine.addColorStop(0.50, "rgba(255,255,255,0.18)");
-  shine.addColorStop(0.56, "rgba(255,255,255,0.42)");
-  shine.addColorStop(0.62, "rgba(255,255,255,0.14)");
-  shine.addColorStop(0.70, "rgba(255,255,255,0.00)");
-  shine.addColorStop(1.00, "rgba(255,255,255,0.00)");
-  ctx.fillStyle = shine;
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.globalAlpha = 0.26;
-  const bloom = ctx.createRadialGradient(W * 0.20, H * 0.15, 40, W * 0.20, H * 0.15, H * 0.62);
-  bloom.addColorStop(0, "rgba(255,255,255,0.28)");
-  bloom.addColorStop(1, "rgba(255,255,255,0.00)");
-  ctx.fillStyle = bloom;
-  ctx.fillRect(0, 0, W, H);
-
+  roundedRectPath(ctx, 0, 0, W, H, 80); ctx.clip();
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 70; i++) {
+    const x = 40 + ((i * 97) % (W - 80));
+    const y = 40 + ((i * 131) % (H - 80));
+    const size = (i % 3) + 1;
+    ctx.globalAlpha = i % 5 === 0 ? 0.45 : 0.18;
+    ctx.fillStyle = theme.line || "rgba(255,255,255,.5)";
+    ctx.fillRect(x, y, size, size);
+  }
   ctx.restore();
   ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
 
-  // ✅ watermark behind content (ONE time)
-  await drawWatermark(ctx, W, H);
+  const edge = ctx.createLinearGradient(0, 0, W, H);
+  edge.addColorStop(0, theme.base);
+  edge.addColorStop(0.5, "#fff2bf");
+  edge.addColorStop(1, theme.base);
 
-  // borders
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "rgba(0,0,0,0.35)";
-  roundRect(ctx, 0, 0, W, H, 80, false, true);
+  ctx.save();
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = edge;
+  ctx.shadowColor = theme.glow || "rgba(255,200,120,.25)";
+  ctx.shadowBlur = 16;
+  roundRect(ctx, 10, 10, W - 20, H - 20, 72, false, true);
+  ctx.restore();
 
   ctx.lineWidth = 2;
   ctx.strokeStyle = "rgba(255,255,255,0.16)";
-  roundRect(ctx, 6, 6, W - 12, H - 12, 76, false, true);
+  roundRect(ctx, 18, 18, W - 36, H - 36, 66, false, true);
+  ctx.strokeStyle = theme.line || "rgba(255,255,255,.32)";
+  ctx.globalAlpha = 0.75;
+  roundRect(ctx, 22, 22, W - 44, H - 44, 64, false, true);
+  ctx.globalAlpha = 1;
 
-  // ===== HEADER =====
-  await drawLogo(ctx, pad, pad - 38, 310, 122, 0.98);
+  await drawWatermark(ctx, W, H);
+  await drawLogo(ctx, pad, 26, 300, 110, 0.98);
 
-  // ✅ Variant 2: BIG "Champion Card" + small pill "SEASON 2"
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
   ctx.textAlign = "center";
-
-  ctx.font = "900 58px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  applyTextShadow(ctx, 0.35, 10, 0, 3);
-  ctx.fillText("Champion Card", W / 2, pad + 10);
+  ctx.fillStyle = theme.text || "rgba(255,255,255,.95)";
+  ctx.font = "900 60px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  applyTextShadow(ctx, 0.28, 10, 0, 2);
+  ctx.fillText("Champion Card", W / 2, 78);
   clearTextShadow(ctx);
-
-  // season pill under title
-  drawSeasonBadge(ctx, W / 2, pad + 44, "SEASON 2");
-
+  drawSeasonBadgePremium(ctx, W / 2, 104, "SEASON 2", theme);
   ctx.restore();
 
-  drawStatusPill(ctx, W - pad - 220, pad - 44, 220, 62, (TIER_THEME[summary.tier] || TIER_THEME.bronze).label);
+  drawStatusPillPremium(ctx, W - pad - 190, 28, 190, 66, theme.label, theme);
 
-  // ===== AVATAR =====
-  const ax = pad;
-  const ay = 210;
-  const as = 360;
-  const ar = 78;
-
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = "rgba(0,0,0,0.55)";
-  roundRect(ctx, ax, ay, as, as, ar, false, true);
-
-  ctx.fillStyle = "rgba(255,255,255,0.10)";
-  roundRect(ctx, ax + 8, ay + 8, as - 16, as - 16, ar - 10, true, false);
-
-  const avatarSrc = summary.profile?.avatar || "";
-  await drawAvatarRounded(ctx, avatarSrc, ax + 12, ay + 12, as - 24, as - 24, ar - 14);
-
-  // ===== TEXT =====
-  const tx = 520;
-  const name = (summary.profile?.name || "Player").trim();
-  const scoreText = `${summary.correct} / ${summary.total}`;
-
-  let y = 280; // трохи нижче, щоб header дихав
-  drawLabelValue(ctx, tx, y, "Your Name", name);
-  y += 195;
-
-  drawDivider(ctx, tx, y - 40, W - pad - tx);
-  drawLabelValue(ctx, tx, y, "Total Score", scoreText);
-  y += 195;
-
-  drawDivider(ctx, tx, y - 40, W - pad - tx);
-  drawIdTable(ctx, tx, y - 12, 520, 84, summary.champId);
+  const ax = 56, ay = 170, as = 360, ar = 66;
+  const ring = ctx.createLinearGradient(ax, ay, ax + as, ay + as);
+  ring.addColorStop(0, theme.base);
+  ring.addColorStop(0.45, "#fff0be");
+  ring.addColorStop(1, theme.dark);
 
   ctx.save();
-  ctx.fillStyle = "rgba(0,0,0,0.40)";
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = ring;
+  ctx.shadowColor = theme.glow || "rgba(255,200,120,.25)";
+  ctx.shadowBlur = 14;
+  roundRect(ctx, ax, ay, as, as, ar, false, true);
+  ctx.restore();
+
+  ctx.fillStyle = "rgba(255,255,255,.04)";
+  roundRect(ctx, ax + 8, ay + 8, as - 16, as - 16, ar - 10, true, false);
+  ctx.strokeStyle = "rgba(255,255,255,.15)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, ax + 8, ay + 8, as - 16, as - 16, ar - 10, false, true);
+
+  await drawAvatarRounded(ctx, summary.profile?.avatar || "", ax + 14, ay + 14, as - 28, as - 28, ar - 16);
+
+  const tx = 500;
+  const maxRight = W - 90;
+  const name = (summary.profile?.name || "Player").trim() || "Player";
+  const scoreText = `${summary.correct} / ${summary.total}`;
+
+  ctx.fillStyle = "rgba(255,245,220,.92)";
+  ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.textAlign = "left";
+  ctx.fillText("Your Name", tx, 285);
+
+  fitFillLeft(ctx, name, tx, 360, maxRight - tx, 78, 42, 950, theme.text || "#fff");
+
+  ctx.strokeStyle = "rgba(255,255,255,.18)";
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(tx, 405); ctx.lineTo(maxRight, 405); ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,245,220,.92)";
+  ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  ctx.fillText("Total Score", tx, 470);
+
+  fitFillLeft(ctx, scoreText, tx, 548, 360, 86, 46, 950, theme.text || "#fff", true, theme.glow);
+
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = theme.line || "rgba(255,255,255,.4)";
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(48, 620); ctx.lineTo(W - 48, 620); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "rgba(255,230,180,.90)";
   ctx.font = "800 30px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  ctx.fillText(`Accuracy: ${summary.acc}%`, pad, H - 60);
+  ctx.fillText(`Accuracy: ${summary.acc}%`, 78, 705);
+
+  drawStatusPillPremium(ctx, 400, 653, 560, 70, `ID: ${summary.champId}`, theme, 24);
+  drawStatusPillPremium(ctx, W - 250, 653, 180, 70, theme.label, theme, 28);
+}
+
+function fitFillLeft(ctx, text, x, y, maxW, startSize, minSize, weight, color, glow = false, glowColor = "rgba(255,255,255,.2)") {
+  let size = startSize;
+  while (size >= minSize) {
+    ctx.font = `${weight} ${size}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+    if (ctx.measureText(text).width <= maxW) break;
+    size -= 2;
+  }
+  ctx.fillStyle = color;
+  if (glow) { ctx.shadowColor = glowColor; ctx.shadowBlur = 10; }
+  ctx.fillText(text, x, y);
+  if (glow) clearTextShadow(ctx);
+}
+
+function drawSeasonBadgePremium(ctx, centerX, y, label, theme) {
+  ctx.save();
+  ctx.font = "900 22px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+  const w = Math.ceil(ctx.measureText(label).width + 74);
+  const h = 52;
+  const x = Math.round(centerX - w / 2);
+  ctx.fillStyle = "rgba(255,255,255,.05)";
+  ctx.strokeStyle = "rgba(255,255,255,.16)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, w, h, 20, true, true);
+  ctx.fillStyle = theme.text || "rgba(255,255,255,.95)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + w / 2, y + h / 2 + 1);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = theme.line || "rgba(255,255,255,.35)";
+  ctx.globalAlpha = 0.65;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x - 56, y + h/2); ctx.lineTo(x - 12, y + h/2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + w + 12, y + h/2); ctx.lineTo(x + w + 56, y + h/2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawStatusPillPremium(ctx, x, y, w, h, label, theme, fontSize) {
+  ctx.save();
+  const fillG = ctx.createLinearGradient(x, y, x, y + h);
+  fillG.addColorStop(0, "rgba(255,255,255,.09)");
+  fillG.addColorStop(1, "rgba(0,0,0,.20)");
+  ctx.fillStyle = fillG;
+  ctx.strokeStyle = theme.line || "rgba(255,255,255,.3)";
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, w, h, Math.min(26, h/2), true, true);
+
+  ctx.fillStyle = theme.text || "rgba(255,255,255,.95)";
+  ctx.font = `900 ${fontSize || 30}px system-ui, -apple-system, Segoe UI, Roboto, Arial`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  applyTextShadow(ctx, 0.18, 6, 0, 1);
+  ctx.fillText(label, x + w/2, y + h/2 + 1);
+  clearTextShadow(ctx);
   ctx.restore();
 }
 
