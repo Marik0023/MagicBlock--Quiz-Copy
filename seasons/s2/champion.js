@@ -537,7 +537,6 @@ async function drawChampionCard(summary) {
   ctx.fillText(`Accuracy: ${summary.acc}%`, 78, 705);
 
   drawStatusPillPremium(ctx, 400, 653, 560, 70, `ID: ${summary.champId}`, theme, 24);
-  drawStatusPillPremium(ctx, W - 250, 653, 180, 70, theme.label, theme, 28);
 }
 
 function fitFillLeft(ctx, text, x, y, maxW, startSize, minSize, weight, color, glow = false, glowColor = "rgba(255,255,255,.2)") {
