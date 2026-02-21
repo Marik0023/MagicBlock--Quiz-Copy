@@ -1410,7 +1410,7 @@ body.mbQuiz .cardActions{
   position:relative;
 }
 .homeChampCard__preview img{
-  width:100%;
+  width:70%;
   height:auto;
   display:block;
 }
