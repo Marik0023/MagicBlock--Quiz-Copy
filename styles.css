@@ -1488,6 +1488,22 @@ body.mbQuiz .cardActions{
   white-space: nowrap;
 }
 
+.mbFooter__right{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* заголовок + кнопки справа */
+  gap: 6px;
+}
+
+.mbFooter__linksTitle{
+  color: rgba(255,255,255,.88);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .mbFooter__links{
   display: flex;
   align-items: center;
@@ -1548,6 +1564,15 @@ body.mbQuiz .cardActions{
     text-align: center;
     white-space: normal;
     letter-spacing: .08em;
+  }
+
+    .mbFooter__right{
+    align-items: center;
+  }
+
+  .mbFooter__linksTitle{
+    text-align: center;
+    white-space: normal;
   }
 
   .mbFooter__links{
