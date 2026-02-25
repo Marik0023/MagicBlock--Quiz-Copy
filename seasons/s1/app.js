@@ -127,43 +127,10 @@ function renderTopProfile(){
 
   if (avatarImg) avatarImg.src = p.avatar || PLACEHOLDER_AVATAR;
   if (nameEl) nameEl.textContent = p.name || "Player";
-  if (hintEl) hintEl.textContent = inQuizzesFolder() ? "Home" : "Edit";
+  if (hintEl) hintEl.textContent = "Edit";
 }
 
-/* ===== Profile modal logic (home) ===== */
-// function openProfileModal(force = false){
-//   const modal = document.getElementById("profileModal");
-//   if (!modal) return;
-//   modal.classList.add("isOpen");
-
-//   const p = getProfile();
-//   const nameInput = document.getElementById("profileName");
-//   const fileInput = document.getElementById("profileFile");
-//   const preview = document.getElementById("profilePreview");
-//   const saveBtn = document.getElementById("profileSaveBtn");
-//   const avatarBox = document.getElementById("avatarBox");
-
-//   if (nameInput) nameInput.value = p?.name || "";
-
-//   if (preview){
-//     if (p?.avatar && p.avatar.startsWith("data:")){
-//       preview.src = p.avatar;
-//       avatarBox?.classList.remove("isPlaceholder");
-//     } else {
-//       preview.src = PLACEHOLDER_AVATAR;
-//       avatarBox?.classList.add("isPlaceholder");
-//     }
-//   }
-
-//   if (fileInput) fileInput.value = "";
-
-//   const closeBtn = document.getElementById("profileCloseBtn");
-//   if (closeBtn){
-//     closeBtn.style.display = (force && !p) ? "none" : "flex";
-//   }
-
-//   if (saveBtn) saveBtn.disabled = false;
-// }
+/* ===== Profile modal ===== */
 function openProfileModal(force = false){
   const modal = document.getElementById("profileModal");
   if (!modal) return;

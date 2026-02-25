@@ -11,15 +11,17 @@
   <link rel="manifest" href="../../assets/faviconlogo/site.webmanifest">
   <meta name="theme-color" content="#0b0b0f">
   <link rel="stylesheet" href="styles.css?v=20260203" />
+  <link rel="stylesheet" href="../../assets/topbar.css" />
+
+  <!-- Topbar (must load first so header renders before page body) -->
+  <script src="../../assets/js/topbar.js" defer></script>
 
   <!-- Supabase (public leaderboard sync) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../assets/js/supabase-config.js?v=20260219"></script>
-  <script src="../../assets/js/leaderboard-client.js?v=20260219b"></script>
+  <script src="../../assets/js/supabase-config.js?v=20260219" defer></script>
+  <script src="../../assets/js/leaderboard-client.js?v=20260219b" defer></script>
 
   <script src="champion.js?v=20260215" defer></script>
-<link rel="stylesheet" href="../../assets/topbar.css" />
-  <script src="../../assets/js/topbar.js" defer></script>
 
 </head>
 
