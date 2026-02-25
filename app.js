@@ -5,12 +5,10 @@ const MB_KEYS = {
 };
 
 const BIG_STORAGE_KEYS = [
-  // season 1 quiz result cards
+  // season 1 quiz result cards (also covered legacy S2 collisions — deduplicated)
   "mb_png_song","mb_png_movie","mb_png_magicblock",
-  // season 2 quiz result cards (new namespaced)
+  // season 2 quiz result cards (namespaced)
   "mb_s2_png_song","mb_s2_png_movieframe","mb_s2_png_movieemoji","mb_s2_png_silhouette","mb_s2_png_truefalse","mb_s2_png_magicblock",
-  // legacy collisions (older builds saved S2 into these)
-  "mb_png_song","mb_png_movie","mb_png_magicblock",
   // champion cards
   "mb_champ_png","mb_champ_ready",
   "mb_s2_champ_png","mb_s2_champ_ready",
@@ -385,6 +383,8 @@ function renderHomeChampionCards(){
     const preview = document.getElementById(seasonId === "s1" ? "homeChampPreviewS1" : "homeChampPreviewS2");
     const status  = document.getElementById(seasonId === "s1" ? "homeChampStatusS1"  : "homeChampStatusS2");
     const hint    = document.getElementById(seasonId === "s1" ? "homeChampHintS1"    : "homeChampHintS2");
+    // S1 action button gets a dynamic label depending on state
+    const actionBtn = seasonId === "s1" ? document.getElementById("homeChampActionS1") : null;
     if (!preview || !status || !hint) continue;
 
     const def = SEASON_DEFS[seasonId];
@@ -403,14 +403,17 @@ function renderHomeChampionCards(){
       hint.textContent = seasonId === "s1"
         ? "Season 1 champion card is saved locally and ready for leaderboard sync."
         : "Season 2 champion card is saved locally.";
+      // Card already exists — show "Regenerate / Open Card"
+      if (actionBtn) actionBtn.textContent = "Regenerate / Open Card";
       continue;
     }
 
     if (completed){
       preview.innerHTML = `<div class="homeChampCard__placeholder">${seasonId.toUpperCase()} is completed, but champion card is not generated yet.</div>`;
       if (seasonId === "s1"){
-        status.textContent = "Regenerate needed";
-        hint.textContent = "Older Season 1 users: regenerate Champion Card to appear in leaderboard.";
+        status.textContent = "Generate card";
+        hint.textContent = "Season 1 complete! Open the Champion page to generate your card.";
+        if (actionBtn) actionBtn.textContent = "Generate Champion Card";
       } else {
         status.textContent = "Generate card";
         hint.textContent = "Open Season 2 Champion Page and generate the card.";
@@ -424,6 +427,8 @@ function renderHomeChampionCards(){
     hint.textContent = seasonId === "s1"
       ? "Complete Season 1 and generate the champion card."
       : "Complete Season 2 and generate the champion card.";
+    // No card, not completed — default label for new users
+    if (actionBtn) actionBtn.textContent = "Generate / Open Card";
   }
 }
 
